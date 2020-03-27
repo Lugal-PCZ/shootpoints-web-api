@@ -1,0 +1,7 @@
+[SERIAL]
+; Set port to auto, demo, or the path (e.g., /dev/ttyAMA0).
+port = auto
+
+[TOTAL STATION]
+make = Topcon
+model = GTS-303
