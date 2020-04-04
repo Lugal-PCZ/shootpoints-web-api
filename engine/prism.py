@@ -1,8 +1,9 @@
 # Set the default prism offset values.
 # Direction is FROM the point TO the prism.
-# Options are: U, D, F, B, N, S, E, W, Z 
-offset = {
-    'direction1': 'U', 'distance1': 0,
-    'direction2': None, 'distance2': 0,
-    'direction3': None, 'distance3': 0,
-}
+# Options are: U, D, F, B, N, S, E, W, Z
+
+offset =(
+    {'offset_1': {'direction': None, 'distance': 0.0}},
+    {'offset_2': {'direction': None, 'distance': 0.0}},
+    {'offset_3': {'direction': None, 'distance': 0.0}},
+)
