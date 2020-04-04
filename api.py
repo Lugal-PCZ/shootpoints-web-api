@@ -5,87 +5,63 @@ from . import engine
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET'])
+@app.route('/')
 def index():
-    actions = [
-        {
-            'description': 'Set the total station to horizontal right mode.',
-            'route': '/mode_hr/set/',
-        },
-        {
-            'description': 'Set the azimuth on the total station.',
-            'route': '/azimuth/set/',
-        },
-        {
-            'description': 'Tell the total station to start measuring a point.',
-            'route': '/measurement/get/',
-        },
-        {
-            'description': 'Get the prism offset.',
-            'route': '/prism/get/',
-        },
-        {
-            'description': 'Set the prism offset.',
-            'route': '/prism/set/',
-        },
-        {
-            'description': 'Get the coordinates of the occupied point.',
-            'route': '/occupied_point/get/',
-        },
-        {
-            'description': 'Set the coordinates of the occupied point.',
-            'route': '/occupied_point/set/',
-        },
+    routes = [
+        f'{request.url}mode_hr/',  # POST
+        f'{request.url}azimuth/',  # POST
+        f'{request.url}measurement/',  # GET
+        f'{request.url}occupied_point/',  # GET, POST
+        f'{request.url}instrument_height/',  # GET, POST
+        f'{request.url}prism_offset/',  # GET, POST
     ]
-    for each in actions:
-        each['url'] = f'{request.url}{each["route"][1:]}'
-    return jsonify({'actions': actions})
+    return jsonify(routes)
 
 
-@app.route('/mode_hr/set/', methods=['POST'])
-def set_mode_hr():
+# Set the total station to horizontal right mode.
+@app.route('/mode_hr/', methods=['POST'])
+def mode_hr():
     result = engine.total_station.set_mode_hr()
     return jsonify(result)
 
 
-@app.route('/azimuth/set/', methods=['POST'])
-def set_azimuth():
+# Set the azimuth on the total station.
+@app.route('/azimuth/', methods=['POST'])
+def azimuth():
     degrees = request.args.get('degrees', 0)
     minutes = request.args.get('minutes', 0)
     seconds = request.args.get('seconds', 0)
     return f'{degrees}.{minutes}{seconds}'
 
 
-@app.route('/measurement/get/', methods=['GET'])
-def take_measurement():
+# Tell the total station to start measuring a point.
+@app.route('/measurement/', methods=['GET'])
+def measurement():
     result = engine.total_station.take_measurement()
     return jsonify(result)
 
 
-@app.route('/occupied_point/get/', methods=['GET'])
-def get_occupied_point():
-    result = engine.station.occupied_point
-    return jsonify(result)
-
-
-@app.route('/occupied_point/set/', methods=['POST'])
-def set_occupied_point():
-    try:
+# Get or set the coordinates of the occupied point.
+@app.route('/occupied_point/', methods=['GET', 'POST'])
+def occupied_point():
+    if request.method == 'POST':
         engine.station.occupied_point ['n'] = request.form['n']
         engine.station.occupied_point ['e'] = request.form['e']
         engine.station.occupied_point ['z'] = request.form['z']
-    except:
+    return jsonify(engine.station.occupied_point)
+
+
+# Get or set the instrument height above the occupied point.
+@app.route('/instrument_height/', methods=['GET', 'POST'])
+def instrument_height():
+    if request.method == 'POST':
+        engine.station.instrument_height = request.form['h']
+    return jsonify(engine.station.instrument_height)
+
+
+# Get or set the prism offset.
+@app.route('/prism_offset/', methods=['GET', 'POST'])
+def prism_offset():
+    if request.method == 'POST':
         pass
-    return get_occupied_point()
-
-
-@app.route('/prism/get/', methods=['GET'])
-def get_prism_offset():
-    result = engine.prism.offset
-    return jsonify(result)
-
-
-@app.route('/prism/set/', methods=['POST'])
-def set_prism_offset():
-    result = engine.prism.offset
-    return jsonify(result)
+    return jsonify(engine.prism.offset)
