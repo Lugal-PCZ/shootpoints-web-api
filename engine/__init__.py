@@ -4,7 +4,7 @@ import importlib
 import serial
 
 from . import angle_math
-from . import occupied_point
+from . import station
 from . import prism
 
 
