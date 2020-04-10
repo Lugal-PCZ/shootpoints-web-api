@@ -11,6 +11,7 @@ def index():
         f'{request.url}mode_hr/',  # POST
         f'{request.url}azimuth/',  # POST
         f'{request.url}measurement/',  # GET
+        f'{request.url}cancel/',  # GET
         f'{request.url}occupied_point/',  # GET, POST
         f'{request.url}instrument_height/',  # GET, POST
         f'{request.url}prism_offset/',  # GET, POST
@@ -40,6 +41,13 @@ def azimuth():
 def measurement():
     result = engine.total_station.take_measurement()
     return jsonify(result)
+
+
+# Stop a measurement in progress.
+@app.route('/cancel/', methods=['GET'])
+def cancel():
+    result = engine.total_station.cancel_measurement()
+    return result
 
 
 # Get or set the coordinates of the occupied point.

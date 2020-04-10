@@ -1,6 +1,5 @@
 # Communications constants and methods for interfacing with Topcon GTS-300 Series total stations.
 
-
 # Communications constants:
 BAUDRATE=1200
 PARITY='E'
@@ -12,8 +11,11 @@ ACK = chr(6) + '006'
 
 port = None  # This property is set by engine/__init__.py once the serial port has been initialized.
 
+canceled = False
+
 def _read(timeout: float=0.2) -> bytes:
     """Reads all characters waiting in the serial port's buffer."""
+    global port
     port.timeout = timeout
     buffer = port.read_until(bytes(ETX, 'ascii'))
     return buffer
@@ -21,6 +23,7 @@ def _read(timeout: float=0.2) -> bytes:
 
 def _write(command: str) -> None:
     """Blindly writes the command to the serial port."""
+    global port
     command = bytes(command + ETX, 'ascii')
     port.write(command)
     _clear_buffers()
@@ -28,6 +31,7 @@ def _write(command: str) -> None:
 
 def _clear_buffers() -> None:
     """Clears the serial port buffers."""
+    global port
     port.reset_input_buffer()
     port.reset_output_buffer()
 
@@ -43,9 +47,12 @@ def _calculate_bcc(data: str) -> str:
 
 def _wait_for_ack(count: int=10) -> bool:
     """Waits for the ACK returned from the total station."""
+    global canceled
     ack_received = False
     for _ in range(count):
-        if _read() == bytes(ACK + ETX, 'ascii'):
+        if canceled:
+            break
+        elif _read() == bytes(ACK + ETX, 'ascii'):
             ack_received = True
             break
     return ack_received
@@ -110,9 +117,9 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
     return result
 
 
-
 def take_measurement() -> dict:
-    """Tells the total station to begin measuring a point"""
+    """Tells the total station to begin measuring a point."""
+    global canceled
     data = b''
     _write('Z64088')
     if _wait_for_ack():
@@ -138,8 +145,24 @@ def take_measurement() -> dict:
                 'errors': [f'Unexpected data format: {measurement}.']
             }
     except:
-        result = {
-            'success': False,
-            'errors': ['Measurement failed.']
-        }
+        if canceled:
+            result = None
+        else:
+            result = {
+                'success': False,
+                'errors': ['Measurement failed.']
+            }
     return result
+
+
+def cancel_measurement() -> dict:
+    """Cancels a measurement in progress."""
+    global canceled
+    canceled = True  # Flag to short circuit _wait_for_ack() and take_measurement().
+    set_mode_hr()  # Issue harmless command that interrupts the GTS.
+    canceled = False  # Reset flag.
+    return {
+        'success': True,
+        'result': 'Measurement canceled.'
+    }
+
