@@ -15,7 +15,7 @@ def index():
         f'{request.url}instrument_height/',  # GET, POST
         f'{request.url}prism_offset/',  # GET, POST
     ]
-    return jsonify(routes)
+    return jsonify(routes)  
 
 
 # Set the total station to horizontal right mode.
@@ -26,12 +26,13 @@ def mode_hr():
 
 
 # Set the azimuth on the total station.
-@app.route('/azimuth/', methods=['POST'])
+@app.route('/azimuth/', methods=['GET'])
 def azimuth():
-    degrees = request.args.get('degrees', 0)
-    minutes = request.args.get('minutes', 0)
-    seconds = request.args.get('seconds', 0)
-    return f'{degrees}.{minutes}{seconds}'
+    degrees = request.form.get('degrees', 0)
+    minutes = request.form.get('minutes', 0)
+    seconds = request.form.get('seconds', 0)
+    result = engine.total_station.set_azimuth(degrees, minutes, seconds)
+    return result
 
 
 # Tell the total station to start measuring a point.
@@ -44,24 +45,33 @@ def measurement():
 # Get or set the coordinates of the occupied point.
 @app.route('/occupied_point/', methods=['GET', 'POST'])
 def occupied_point():
-    if request.method == 'POST':
-        engine.station.occupied_point ['n'] = request.form['n']
-        engine.station.occupied_point ['e'] = request.form['e']
-        engine.station.occupied_point ['z'] = request.form['z']
-    return jsonify(engine.station.occupied_point)
+    if request.method == 'GET':
+        result = engine.station.get_occupied_point()
+    elif request.method == 'POST':
+        northing = request.form.get('northing')
+        easting = request.form.get('easting')
+        elevation = request.form.get('elevation')
+        result = engine.station.set_occupied_point(northing, easting, elevation)
+    return jsonify(result)
 
 
 # Get or set the instrument height above the occupied point.
 @app.route('/instrument_height/', methods=['GET', 'POST'])
 def instrument_height():
-    if request.method == 'POST':
-        engine.station.instrument_height = request.form['h']
-    return jsonify(engine.station.instrument_height)
+    if request.method == 'GET':
+        result = engine.station.get_instrument_height()
+    elif request.method == 'POST':
+        height = request.form.get('height')
+        result = engine.station.set_instrument_height(height)
+    return jsonify(result)
 
 
 # Get or set the prism offset.
 @app.route('/prism_offset/', methods=['GET', 'POST'])
 def prism_offset():
-    if request.method == 'POST':
-        pass
-    return jsonify(engine.prism.offset)
+    if request.method == 'GET':
+        result = engine.prism.get_prism_offset()
+    elif request.method == 'POST':
+        args = dict(request.form)
+        result = engine.prism.set_prism_offset(**args)
+    return result

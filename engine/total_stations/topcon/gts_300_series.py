@@ -51,31 +51,67 @@ def _wait_for_ack(count: int=10) -> bool:
     return ack_received
 
 
-def set_mode_hr() -> bool:
+def set_mode_hr() -> dict:
     """Sets the total station to V/H mode with Horizontal Right."""
-    success = False
     _write('Z12089')
     if _wait_for_ack():
-        success = True
-    return {'success': success}
+        result = {
+            'success': True,
+            'result': 'Mode set to Horizontal Right.'
+        }
+    else:
+        result = {
+            'success': False,
+            'errors': ['Failed to set mode to Horizontal Right.']
+        }
+    return result
 
 
-def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> bool:
+def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
     """Sets the azimuth reading on the total station."""
-    success = False
-    angle = (degrees * 10000) + (minutes * 100) + seconds
-    command = 'J+{}d'.format(angle)
-    bcc = _calculate_bcc(command)
-    _write('J074')
-    if _wait_for_ack():
-        _write(command + bcc)
+    errors = []
+    try:
+        degrees = int(degrees)
+    except ValueError:
+        errors.append(f'A non-integer value ({degrees}) was entered for degrees.')
+    try:
+        minutes = int(minutes)
+    except ValueError:
+        errors.append(f'A non-integer value ({minutes}) was entered for minutes.')
+    try:
+        seconds = int(seconds)
+    except ValueError:
+        errors.append(f'A non-integer value ({seconds}) was entered for seconds.')
+    if not 0 <= degrees <= 359:
+        errors.append(f'Degrees entered ({degrees}) is out of range (0 to 359).')
+    elif not 0 <= minutes <= 59:
+        errors.append(f'Minutes entered ({minutes}) is out of range (0 to 59).')
+    elif not 0 <= seconds <= 59:
+        errors.append(f'Seconds entered ({seconds}) is out of range (0 to 59).')
+    if errors:
+        result = {'success': False, 'errors': errors}
+    else:
+        angle = (degrees * 10000) + (minutes * 100) + seconds
+        command = f'J+{angle}d'
+        bcc = _calculate_bcc(command)
+        _write('J074')
         if _wait_for_ack():
-            success = True
-    return {'success': success}
+            _write(command + bcc)
+            if _wait_for_ack():
+                result = {
+                    'success': True,
+                    'azimuth': f'{degrees}° {minutes}\' {seconds}"'
+                }
+            else:
+                result = {
+                    'success': False,
+                    'errors': [f'Failed to set azimuth to {angle}.']
+                }
+    return result
 
 
 
-def take_measurement() -> str:
+def take_measurement() -> dict:
     """Tells the total station to begin measuring a point"""
     data = b''
     _write('Z64088')
@@ -99,11 +135,11 @@ def take_measurement() -> str:
         else:
             result = {
                 'success': False,
-                'error': f'Unexpected data format: {measurement}.'
+                'errors': [f'Unexpected data format: {measurement}.']
             }
     except:
         result = {
             'success': False,
-            'error': 'Measurement failed.'
+            'errors': ['Measurement failed.']
         }
     return result
