@@ -27,51 +27,53 @@ _relative_offset = {
 }
 
 
-def get_prism_offset() -> dict:
-    offsets = []
+def get_prism_offset(readable: bool=True) -> dict:
     global _vertical_offset
     global _absolute_offset
     global _relative_offset
-    _ = {**_vertical_offset, **_absolute_offset, **_relative_offset}
-    for key, val in _.items():
-        if _[key]:
-            if key == 'vertical_distance':
-                if val > 0:
-                    offsets.append({'vertical_direction': 'U'})
-                else:
-                    offsets.append({'vertical_direction': 'D'})
-                    val = abs(val)
-            elif key == 'latitude_distance':
-                if val > 0:
-                    offsets.append({'latitude_direction': 'N'})
-                else:
-                    offsets.append({'latitude_direction': 'S'})
-                    val = abs(val)
-            elif key == 'longitude_distance':
-                if val > 0:
-                    offsets.append({'longitude_direction': 'E'})
-                else:
-                    offsets.append({'longitude_direction': 'W'})
-                    val = abs(val)
-            elif key == 'radial_distance':
-                if val > 0:
-                    offsets.append({'radial_direction': 'B'})
-                else:
-                    offsets.append({'radial_direction': 'F'})
-                    val = abs(val)
-            elif key == 'tangent_distance':
-                if val > 0:
-                    offsets.append({'tangent_direction': 'R'})
-                else:
-                    offsets.append({'tangent_direction': 'L'})
-                    val = abs(val)
-            offsets.append({key: val})
-    return {
-        'success': True,
-        'prism_offset': offsets
-    }
+    results = {'success': True}
+    all_offsets = {**_vertical_offset, **_absolute_offset, **_relative_offset}
+    if readable:
+        readable_offsets = {}
+        for key, val in all_offsets.items():
+            if all_offsets[key]:
+                if key == 'vertical_distance':
+                    if val > 0:
+                        readable_offsets['vertical_direction'] = 'U'
+                    else:
+                        readable_offsets['vertical_direction'] = 'D'
+                        val = abs(val)
+                elif key == 'latitude_distance':
+                    if val > 0:
+                        readable_offsets['latitude_direction'] = 'N'
+                    else:
+                        readable_offsets['latitude_direction'] = 'S'
+                        val = abs(val)
+                elif key == 'longitude_distance':
+                    if val > 0:
+                        readable_offsets['longitude_direction'] = 'E'
+                    else:
+                        readable_offsets['longitude_direction'] = 'W'
+                        val = abs(val)
+                elif key == 'radial_distance':
+                    if val > 0:
+                        readable_offsets['radial_direction'] = 'B'
+                    else:
+                        readable_offsets['radial_direction'] = 'F'
+                        val = abs(val)
+                elif key == 'tangent_distance':
+                    if val > 0:
+                        readable_offsets['tangent_direction'] = 'R'
+                    else:
+                        readable_offsets['tangent_direction'] = 'L'
+                        val = abs(val)
+                readable_offsets[key] = val
+        results['prism_offset'] = readable_offsets
+    else:
+        results['prism_offset'] = all_offsets
+    return results
 
-def set_prism_offset(**kwargs) -> dict:
+def set_prism_offset(**kwargs: dict) -> dict:
     # TODO: save the offsets to the DB for stability
     errors = []
     global _vertical_offset
