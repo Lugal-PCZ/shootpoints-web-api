@@ -1,5 +1,4 @@
 import math
-from decimal import Decimal
 
 from . import station
 
@@ -23,20 +22,21 @@ def calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
 def calculate_slope_distance(raw_measurement: dict) -> float:
     measurement = raw_measurement['measurement']
     horizontal_distance = math.hypot(measurement['delta_n'], measurement['delta_e'])
-    slope_distance = math.hypot(horizontal_distance, measurement['delta_z'])
-    return float(Decimal(slope_distance).quantize(Decimal('1.000')))
+    slope_distance = round(math.hypot(horizontal_distance, measurement['delta_z']), 3)
+    return slope_distance
 
 
 def calculate_radial_offset(raw_measurement: dict, offset: float) -> tuple:
     measurement = raw_measurement['measurement']
     horizontal_distance = math.hypot(measurement['delta_n'], measurement['delta_e'])
     proportion = offset/horizontal_distance
-    n_diff = float(Decimal(measurement['delta_n']*proportion).quantize(Decimal('1.000')))
-    e_diff = float(Decimal(measurement['delta_e']*proportion).quantize(Decimal('1.000')))
+    n_diff = round(measurement['delta_n']*proportion), 3)
+    e_diff = round(measurement['delta_e']*proportion), 3)
     return n_diff, e_diff
 
 
-def calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
+def calculate_tangent_offset(raw_measurement: dict, offset: float) -> tuple:
+    measurement = raw_measurement['measurement']
     # TODO: Test these with real-world measurements
     distance_to_prism = math.hypot(measurement['delta_n'], measurement['delta_e'])
     distance_to_point = math.hypot(distance_to_prism, offset)
@@ -56,6 +56,7 @@ def calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
     # Return the differences between the prism and the actual point, to match the pattern of other functions.
     n_diff = measurement['delta_n'] - point_n
     e_diff = measurement['delta_e'] - point_e
-    n_diff = float(Decimal(n_diff).quantize(Decimal('1.000')))
-    e_diff = float(Decimal(e_diff).quantize(Decimal('1.000')))
+    n_diff = round(n_diff, 3)
+    e_diff = round(e_diff, 3)
     return n_diff, e_diff
+    
