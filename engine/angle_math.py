@@ -19,13 +19,15 @@ def calculate_azimuth(point_a: tuple, point_b: tuple) -> tuple:
     return azimuth
 
 
-def calculate_slope_distance(measurement: dict) -> float:
+def calculate_slope_distance(raw_measurement: dict) -> float:
+    measurement = raw_measurement['measurement']
     horizontal_distance = math.hypot(measurement['delta_n'], measurement['delta_e'])
     slope_distance = math.hypot(horizontal_distance, measurement['delta_z'])
     return float(Decimal(slope_distance).quantize(Decimal('1.000')))
 
 
-def calculate_radial_offset(measurement: dict, offset: float) -> tuple:
+def calculate_radial_offset(raw_measurement: dict, offset: float) -> tuple:
+    measurement = raw_measurement['measurement']
     horizontal_distance = math.hypot(measurement['delta_n'], measurement['delta_e'])
     proportion = offset/horizontal_distance
     n_diff = float(Decimal(measurement['delta_n']*proportion).quantize(Decimal('1.000')))

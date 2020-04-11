@@ -20,10 +20,10 @@ def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
     measurement['n'] += prism_offsets['latitude_distance']
     measurement['e'] += prism_offsets['longitude_distance']
     # Apply the prism relative offsets
-    radial_n_diff, radial_e_diff = angle_math.calculate_radial_offset(measurement, prism_offsets['radial_distance'])
+    radial_n_diff, radial_e_diff = angle_math.calculate_radial_offset(raw_measurement, prism_offsets['radial_distance'])
     measurement['n'] += radial_n_diff
     measurement['e'] += radial_e_diff
-    tangent_n_diff, tangent_e_diff = angle_math.calculate_tangent_offset(measurement, prism_offsets['tangent_distance'])
+    tangent_n_diff, tangent_e_diff = angle_math.calculate_tangent_offset(raw_measurement, prism_offsets['tangent_distance'])
     measurement['n'] += tangent_n_diff
     measurement['e'] += tangent_e_diff
     # Round the calculated values to the nearest millimeter
