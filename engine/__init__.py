@@ -3,9 +3,10 @@ import glob
 import importlib
 import serial
 
-from . import angle_math
 from . import station
 from . import prism
+from . import angle_math
+from . import data
 
 
 # Load the configs.
