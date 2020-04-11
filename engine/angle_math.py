@@ -4,7 +4,8 @@ from decimal import Decimal
 from . import station
 
 
-def calculate_azimuth(point_a: tuple, point_b: tuple) -> tuple:
+def calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
+    """Returns the azimuth in decimal degrees between two points (aN, aE) and (bN, bE)."""
     delta_n = point_b[0] - point_a[0]
     delta_e = point_b[1] - point_a[1]
     bearing = math.atan2(delta_e, delta_n) * (180/math.pi)
