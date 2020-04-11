@@ -11,7 +11,7 @@ ACK = chr(6) + '006'
 
 port = None  # This property is set by engine/__init__.py once the serial port has been initialized.
 
-canceled = False
+_canceled = False
 
 def _read(timeout: float=0.2) -> bytes:
     """Reads all characters waiting in the serial port's buffer."""
@@ -47,10 +47,10 @@ def _calculate_bcc(data: str) -> str:
 
 def _wait_for_ack(count: int=10) -> bool:
     """Waits for the ACK returned from the total station."""
-    global canceled
+    global _canceled
     ack_received = False
     for _ in range(count):
-        if canceled:
+        if _canceled:
             break
         elif _read() == bytes(ACK + ETX, 'ascii'):
             ack_received = True
@@ -119,7 +119,7 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
 
 def take_measurement() -> dict:
     """Tells the total station to begin measuring a point."""
-    global canceled
+    global _canceled
     data = b''
     _write('Z64088')
     if _wait_for_ack():
@@ -145,7 +145,7 @@ def take_measurement() -> dict:
                 'errors': [f'Unexpected data format: {measurement}.']
             }
     except:
-        if canceled:
+        if _canceled:
             result = None
         else:
             result = {
@@ -157,12 +157,12 @@ def take_measurement() -> dict:
 
 def cancel_measurement() -> dict:
     """Cancels a measurement in progress."""
-    global canceled
-    canceled = True  # Flag to short circuit _wait_for_ack() and take_measurement().
+    global _canceled
+    _canceled = True  # Flag to short circuit _wait_for_ack() and take_measurement().
     set_mode_hr()  # Issue harmless command that interrupts the GTS.
-    canceled = False  # Reset flag.
+    _canceled = False  # Reset flag.
     return {
         'success': True,
-        'result': 'Measurement canceled.'
+        'result': 'Measurement canceled by user.'
     }
 

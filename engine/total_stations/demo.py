@@ -1,14 +1,14 @@
 # Faked data responses for an imaginary total station, when ShootPoints is run as a demo.
 
-from time import sleep
-from random import randint
+from time import sleep as _sleep
+from random import randint as _randint
 
-canceled = False
+_canceled = False
 
 
 def set_mode_hr() -> dict:
     """Sets the total station to V/H mode with Horizontal Right."""
-    sleep(1)
+    _sleep(1)
     return {'success': True, 'result': 'Mode set to Horizontal Right.'}
 
 
@@ -36,19 +36,19 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
     if errors:
         result = {'success': False, 'errors': errors}
     else:
-        sleep(1)
+        _sleep(1)
         result = {'success': True, 'azimuth': f'{degrees}° {minutes}\' {seconds}"'}
     return result
 
 
 def take_measurement() -> dict:
     """Tells the total station to begin measuring a point."""
-    global canceled
+    global _canceled
     delay = 5
     for _ in range(delay - 1):
-        sleep(_)
-        if canceled:
-            canceled = False
+        _sleep(_)
+        if _canceled:
+            _canceled = False
             return
     delta_n = (496337 + randint(-50000, 50000))/10000
     delta_e = (311930 + randint(-50000, 50000))/10000
@@ -61,9 +61,9 @@ def take_measurement() -> dict:
 
 def cancel_measurement() -> dict:
     """Cancels a measurement in progress."""
-    global canceled
-    canceled = True
+    global _canceled
+    _canceled = True
     return {
         'success': True,
-        'result': 'Measurement canceled.'
+        'result': 'Measurement canceled by user.'
     }
