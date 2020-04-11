@@ -50,9 +50,9 @@ def take_measurement() -> dict:
         if _canceled:
             _canceled = False
             return
-    delta_n = (496337 + randint(-50000, 50000))/10000
-    delta_e = (311930 + randint(-50000, 50000))/10000
-    delta_z = (95802 + randint(-10000, 10000))/10000
+    delta_n = round((496337 + _randint(-50000, 50000)) / 10000, 3)
+    delta_e = round((311930 + _randint(-50000, 50000)) / 10000, 3)
+    delta_z = round((95802 + _randint(-10000, 10000)) / 10000, 3)
     return {
         'success': True,
         'measurement': {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
