@@ -13,6 +13,7 @@ port = None  # This property is set by engine/__init__.py once the serial port h
 
 _canceled = False
 
+
 def _read(timeout: float=0.2) -> bytes:
     """Reads all characters waiting in the serial port's buffer."""
     global port
