@@ -27,13 +27,13 @@ _relative_offset = {
 }
 
 
-def get_prism_offset(readable: bool=True) -> dict:
+def get_prism_offset(full_output: bool=False) -> dict:
     global _vertical_offset
     global _absolute_offset
     global _relative_offset
     results = {'success': True}
     all_offsets = {**_vertical_offset, **_absolute_offset, **_relative_offset}
-    if readable:
+    if not full_output:  # Format the output to be more easily human-readable
         readable_offsets = {}
         for key, val in all_offsets.items():
             if all_offsets[key]:
@@ -72,6 +72,7 @@ def get_prism_offset(readable: bool=True) -> dict:
     else:
         results['prism_offset'] = all_offsets
     return results
+
 
 def set_prism_offset(**kwargs: dict) -> dict:
     # TODO: save the offsets to the DB for stability
