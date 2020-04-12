@@ -1,3 +1,5 @@
+import math
+
 from . import station
 from . import prism
 from . import angle_math
@@ -14,18 +16,22 @@ def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
     instrument_height = station.get_instrument_height()['instrument_height']
     measurement['z'] += instrument_height
     # Apply the prism vertical offset
-    prism_offsets = prism.get_prism_offset(False)['prism_offset']
+    prism_offsets = prism.get_prism_offset(True)['prism_offset']
     measurement['z'] += prism_offsets['vertical_distance']
     # Apply the prism absolute offsets
     measurement['n'] += prism_offsets['latitude_distance']
     measurement['e'] += prism_offsets['longitude_distance']
     # Apply the prism relative offsets
-    radial_n_diff, radial_e_diff = angle_math.calculate_radial_offset(raw_measurement, prism_offsets['radial_distance'])
+    radial_n_diff, radial_e_diff = _calculate_radial_offset(
+        measurement,
+        prism_offsets['radial_distance'],
+    )
     measurement['n'] += radial_n_diff
     measurement['e'] += radial_e_diff
-    tangent_n_diff, tangent_e_diff = angle_math.calculate_tangent_offset(raw_measurement, prism_offsets['tangent_distance'])
-    measurement['n'] += tangent_n_diff
-    measurement['e'] += tangent_e_diff
+    measurement['n'], measurement['e'] = _calculate_tangent_offset(
+        measurement,
+        prism_offsets['tangent_distance'],
+    )
     # Round the calculated values to the nearest millimeter
     measurement['n'] = round(measurement['n'], 3)
     measurement['e'] = round(measurement['e'], 3)
@@ -34,3 +40,34 @@ def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
         'success': raw_measurement['success'],
         'measurement': measurement,
     }
+
+
+def _calculate_radial_offset(measurement: dict, offset: float) -> tuple:
+    horizontal_distance = math.hypot(measurement['delta_n'], measurement['delta_e'])
+    proportion = offset / horizontal_distance
+    n_diff = measurement['delta_n'] * proportion
+    e_diff = measurement['delta_e'] * proportion
+    return n_diff, e_diff
+
+
+def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
+    # TODO: Test these with real-world measurements
+    distance_to_prism = math.hypot(measurement['delta_n'], measurement['delta_e'])
+    distance_to_point = math.hypot(distance_to_prism, offset)
+    offset_angle = math.degrees(math.acos((distance_to_prism**2 + distance_to_point**2 - offset**2) / (2 * distance_to_prism * distance_to_point)))
+    azimuth_to_prism = angle_math.calculate_azimuth(
+        (0, 0),
+        (measurement['delta_n'], measurement['delta_e']),
+    )
+    if offset < 0:
+        azimuth_to_point = azimuth_to_prism - offset_angle
+    else:
+        azimuth_to_point = azimuth_to_prism + offset_angle
+    # Correct azimuth when the offset moves it across due north
+    if azimuth_to_point < 0:
+        azimuth_to_point += 360
+    elif azimuth_to_point > 360:
+        azimuth_to_point -= 360
+    point_n = distance_to_point * math.cos(math.radians(azimuth_to_point))
+    point_e = distance_to_point * math.sin(math.radians(azimuth_to_point))
+    return point_n, point_e
