@@ -2,22 +2,21 @@
 # Direction is FROM the point TO the prism, as viewed from the occupied station.
 
 
-_vertical_offset = {
+_offsets = {
+    # Vertical Offset:
     # > 0 = Up
     # < 0 = Down
     'vertical_distance': 0.0,
-}
-
-_absolute_offset = {
+    #
+    # Absolute Offsets:
     # > 0 = North
     # < 0 = South
     'latitude_distance': 0.0,
     # > 0 = East
     # < 0 = West
     'longitude_distance': 0.0,
-}
-
-_relative_offset = {
+    #
+    # Relative Offsets:
     # > 0 = Away
     # < 0 = Toward
     'radial_distance': 0.0,
@@ -28,15 +27,12 @@ _relative_offset = {
 
 
 def get_prism_offset(full_output: bool=False) -> dict:
-    global _vertical_offset
-    global _absolute_offset
-    global _relative_offset
+    global _offsets
     results = {'success': True}
-    all_offsets = {**_vertical_offset, **_absolute_offset, **_relative_offset}
     if not full_output:  # Format the output to be more easily human-readable
         readable_offsets = {}
-        for key, val in all_offsets.items():
-            if all_offsets[key]:
+        for key, val in _offsets.items():
+            _offsets[key]:
                 if key == 'vertical_distance':
                     if val > 0:
                         readable_offsets['vertical_direction'] = 'Up'
@@ -70,27 +66,21 @@ def get_prism_offset(full_output: bool=False) -> dict:
                 readable_offsets[key] = val
         results['prism_offset'] = readable_offsets
     else:
-        results['prism_offset'] = all_offsets
+        results['prism_offset'] = _offsets
     return results
 
 
 def set_prism_offset(**kwargs: dict) -> dict:
     # TODO: save the offsets to the DB for stability
     errors = []
-    global _vertical_offset
-    global _absolute_offset
-    global _relative_offset
+    global _offsets
     # Save the current offsets
-    temp_vertical_offset = {
-        'vertical_distance': _vertical_offset['vertical_distance'],
-    }
-    temp_absolute_offset = {
-        'latitude_distance': _absolute_offset['latitude_distance'],
-        'longitude_distance': _absolute_offset['longitude_distance'],
-    }
-    temp_relative_offset = {
-        'radial_distance': _relative_offset['radial_distance'],
-        'tangent_distance': _relative_offset['tangent_distance'],
+    temp_offsets = {
+        'vertical_distance': _offsets['vertical_distance'],
+        'latitude_distance': _offsets['latitude_distance'],
+        'longitude_distance': _offsets['longitude_distance'],
+        'radial_distance': _offsets['radial_distance'],
+        'tangent_distance': _offsets['tangent_distance'],
     }
     for key, val in kwargs.items():
         if key == 'vertical_distance':
@@ -98,9 +88,9 @@ def set_prism_offset(**kwargs: dict) -> dict:
                 val = float(val)
                 try:
                     if kwargs['vertical_direction'].upper() == 'UP':
-                        temp_vertical_offset['vertical_distance'] = abs(val)
+                        temp_offsets['vertical_distance'] = abs(val)
                     elif kwargs['vertical_direction'].upper() == 'DOWN':
-                        temp_vertical_offset['vertical_distance'] = -abs(val)
+                        temp_offsets['vertical_distance'] = -abs(val)
                     else:
                         errors.append(f'The Vertical Offset direction entered ({kwargs["vertical_direction"]}) was invalid. It must be Up or Down.')
                 except KeyError:
@@ -112,9 +102,9 @@ def set_prism_offset(**kwargs: dict) -> dict:
                 val = float(val)
                 try:
                     if kwargs['latitude_direction'].upper() == 'NORTH':
-                        temp_absolute_offset['latitude_distance'] = abs(val)
+                        temp_offsets['latitude_distance'] = abs(val)
                     elif kwargs['latitude_direction'].upper() == 'SOUTH':
-                        temp_absolute_offset['latitude_distance'] = -abs(val)
+                        temp_offsets['latitude_distance'] = -abs(val)
                     else:
                         errors.append(f'The Latitude Offset direction entered ({kwargs["latitude_direction"]}) was invalid. It must be North or South.')
                 except KeyError:
@@ -126,9 +116,9 @@ def set_prism_offset(**kwargs: dict) -> dict:
                 val = float(val)
                 try:
                     if kwargs['longitude_direction'].upper() == 'EAST':
-                        temp_absolute_offset['longitude_distance'] = abs(val)
+                        temp_offsets['longitude_distance'] = abs(val)
                     elif kwargs['longitude_direction'].upper() == 'WEST':
-                        temp_absolute_offset['longitude_distance'] = -abs(val)
+                        temp_offsets['longitude_distance'] = -abs(val)
                     else:
                         errors.append(f'The Longitude Offset direction entered ({kwargs["longitude_direction"]}) was invalid. It must be East or West.')
                 except KeyError:
@@ -140,9 +130,9 @@ def set_prism_offset(**kwargs: dict) -> dict:
                 val = float(val)
                 try:
                     if kwargs['radial_direction'].upper() == 'AWAY':
-                        temp_relative_offset['radial_distance'] = abs(val)
+                        temp_offsets['radial_distance'] = abs(val)
                     elif kwargs['radial_direction'].upper() == 'TOWARD':
-                        temp_relative_offset['radial_distance'] = -abs(val)
+                        temp_offsets['radial_distance'] = -abs(val)
                     else:
                         errors.append(f'The Radial Offset direction entered ({kwargs["radial_direction"]}) was invalid. It must be Away or Toward.')
                 except KeyError:
@@ -154,9 +144,9 @@ def set_prism_offset(**kwargs: dict) -> dict:
                 val = float(val)
                 try:
                     if kwargs['tangent_direction'].upper() == 'RIGHT':
-                        temp_relative_offset['tangent_distance'] = abs(val)
+                        temp_offsets['tangent_distance'] = abs(val)
                     elif kwargs['tangent_direction'].upper() == 'LEFT':
-                        temp_relative_offset['tangent_distance'] = -abs(val)
+                        temp_offsets['tangent_distance'] = -abs(val)
                     else:
                         errors.append(f'The Tangent Offset direction entered ({kwargs["tangent_direction"]}) was invalid. It must be Right or Left.')
                 except KeyError:
@@ -167,8 +157,6 @@ def set_prism_offset(**kwargs: dict) -> dict:
     if errors:
         result = {'success': False, 'errors': errors}
     else:
-        _vertical_offset = temp_vertical_offset
-        _absolute_offset = temp_absolute_offset
-        _relative_offset = temp_relative_offset
+        _offsets = temp_offsets
         result = get_prism_offset()
     return result
