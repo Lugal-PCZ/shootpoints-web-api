@@ -10,8 +10,7 @@ def calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
         azimuth = 360 + bearing
     else:
         azimuth = bearing
-    # degrees, remainder = divmod(azimuth, 1)
-    # minutes, remainder = divmod(remainder * 60, 1)
-    # seconds = round(remainder * 60)
-    # return int(degrees), int(minutes), int(seconds)
     return azimuth
+
+
+# TODO: make conversions between UTM <-> Lat/Lon (use utm PyPI package)
