@@ -32,7 +32,7 @@ def get_prism_offset(full_output: bool=False) -> dict:
     if not full_output:  # Format the output to be more easily human-readable
         readable_offsets = {}
         for key, val in _offsets.items():
-            _offsets[key]:
+            if _offsets[key]:
                 if key == 'vertical_distance':
                     if val > 0:
                         readable_offsets['vertical_direction'] = 'Up'
