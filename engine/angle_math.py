@@ -1,4 +1,5 @@
 import math
+import utm
 
 
 def calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
@@ -13,4 +14,14 @@ def calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
     return azimuth
 
 
-# TODO: make conversions between UTM <-> Lat/Lon (use utm PyPI package)
+def convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
+    northing, easting, zonenumber, zoneletter = utm.from_latlon(latitude, longitude)
+    northing = round(northing, 3)
+    easting = round(easting, 3)
+    return (northing, easting, f'{zonenumber}{zoneletter}')
+
+
+def convert_utm_to_latlon(northing: float, easting: float, zonenumber: int, zoneletter: str) -> tuple:
+    latitude, longitude = utm.to_latlon(northing, easting, zonenumber, zoneletter)
+    return (latitude, longitude)
+
