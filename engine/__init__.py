@@ -90,3 +90,9 @@ def start_surveying_session(setup_type: str, occupied_point: dict, **kwargs):
         # TODO: warn the surveyor to set the prism height before shooting points
     # TODO: if any of the above commincations fail, then catch the error and don't set initialized to True
     initialized = True
+
+
+# Order of operations:
+# 0. Enter data for at least one station.
+# 1. Start surveying session.
+# 2. Set "initialized" flag and save session info.
