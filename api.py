@@ -1,85 +1,100 @@
-from flask import Flask, request, jsonify
-import json
+from fastapi import FastAPI, Response
 
-from . import engine
-
-app = Flask(__name__)
-
-@app.route('/')
-def index():
-    routes = [
-        f'{request.url}mode_hr/',  # POST
-        f'{request.url}azimuth/',  # POST
-        f'{request.url}measurement/',  # GET
-        f'{request.url}cancel/',  # GET
-        f'{request.url}occupied_point/',  # GET, POST
-        f'{request.url}instrument_height/',  # GET, POST
-        f'{request.url}prism_offset/',  # GET, POST
-    ]
-    return jsonify(routes)  
+import engine
 
 
-# Set the total station to horizontal right mode.
-@app.route('/mode_hr/', methods=['POST'])
-def mode_hr():
-    result = engine.total_station.set_mode_hr()
-    return jsonify(result)
+app = FastAPI()
 
 
-# Set the azimuth on the total station.
-@app.route('/azimuth/', methods=['GET'])
-def azimuth():
-    degrees = request.form.get('degrees', 0)
-    minutes = request.form.get('minutes', 0)
-    seconds = request.form.get('seconds', 0)
+@app.post('/azimuth/')
+def azimuth_set(response: Response, degrees: int=0, minutes: int=0, seconds: int=0):
+    """Sets the azimuth on the total station."""
     result = engine.total_station.set_azimuth(degrees, minutes, seconds)
-    return result
+    if result['success']:
+        return result['azimuth']
+    else:
+        response.status_code = 422
+        return result['errors']
 
 
-# Tell the total station to start measuring a point.
-@app.route('/measurement/', methods=['GET'])
-def measurement():
-    result = engine.total_station.take_measurement()
-    return jsonify(result)
+@app.get('/instrument_height/')
+def instrument_height_get():
+    """"Gets the instrument height above the occupied point."""
+    result = engine.station.get_instrument_height()
+    return result['instrument_height']
 
 
-# Stop a measurement in progress.
-@app.route('/cancel/', methods=['GET'])
-def cancel():
+@app.post('/instrument_height/')
+def instrument_height_set(response: Response, height: float):
+    """"Gets the instrument height above the occupied point."""
+    result = engine.station.set_instrument_height(height)
+    if result['success']:
+        return result['instrument_height']
+    else:
+        response.status_code = 422
+        return result['errors']
+
+
+@app.get('/cancel/')
+def measurement_cancel():
+    """Stops a measurement in progress."""
     result = engine.total_station.cancel_measurement()
-    return result
+    return result['result']
 
 
-# Get or set the coordinates of the occupied point.
-@app.route('/occupied_point/', methods=['GET', 'POST'])
-def occupied_point():
-    if request.method == 'GET':
-        result = engine.station.get_occupied_point()
-    elif request.method == 'POST':
-        northing = request.form.get('northing')
-        easting = request.form.get('easting')
-        elevation = request.form.get('elevation')
-        result = engine.station.set_occupied_point(northing, easting, elevation)
-    return jsonify(result)
+@app.get('/measurement/')
+def measurement_take(response: Response):
+    """Tells the total station to start measuring a point."""
+    result = engine.total_station.take_measurement()
+    if result['success']:
+        return engine.data.apply_offsets_to_measurement(result)['measurement']
+    else:
+        response.status_code = 422
+        return result['errors']
 
 
-# Get or set the instrument height above the occupied point.
-@app.route('/instrument_height/', methods=['GET', 'POST'])
-def instrument_height():
-    if request.method == 'GET':
-        result = engine.station.get_instrument_height()
-    elif request.method == 'POST':
-        height = request.form.get('height')
-        result = engine.station.set_instrument_height(height)
-    return jsonify(result)
+@app.post('/mode_hr/')
+def mode_hr_set(response: Response):
+    """Sets the total station to horizontal right mode."""
+    result = engine.total_station.set_mode_hr()
+    if result['success']:
+        return result['result']
+    else:
+        response.status_code = 422
+        return result['errors']
 
 
-# Get or set the prism offset.
-@app.route('/prism_offset/', methods=['GET', 'POST'])
-def prism_offset():
-    if request.method == 'GET':
-        result = engine.prism.get_prism_offset()
-    elif request.method == 'POST':
-        args = dict(request.form)
-        result = engine.prism.set_prism_offset(**args)
-    return result
+@app.get('/occupied_point/')
+def occupied_point_get():
+    """Gets the coordinates of the occupied point."""
+    result = engine.station.get_occupied_point()
+    return result['coordinates']
+
+
+@app.post('/occupied_point/')
+def occupied_point_set(response: Response, northing: float, easting: float, elevation: float):
+    """Sets the coordinates of the occupied point."""
+    result = engine.station.set_occupied_point(northing, easting, elevation)
+    if result['success']:
+        return result['coordinates']
+    else:
+        response.status_code = 422
+        return result['errors']
+
+
+@app.get('/prism_offset/')
+def prism_offset_get():
+    """Gets the prism offsets."""
+    result = engine.prism.get_prism_offset()
+    return result['prism_offset']
+
+
+@app.post('/prism_offset/')
+def prism_offset_set(response: Response, offsets: dict):
+    """Sets the prism offsets."""
+    result = engine.prism.set_prism_offset(**offsets)
+    if result['success']:
+        return result['prism_offset']
+    else:
+        response.status_code = 422
+        return result['errors']
