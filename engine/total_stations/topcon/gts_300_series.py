@@ -133,9 +133,9 @@ def take_measurement() -> dict:
         data_format = measurement[0]
         data_unit = measurement[34]
         if data_format == '/' and data_unit == 'm':
-            delta_e = float(measurement[12:23])/10000
-            delta_n = float(measurement[1:12])/10000
-            delta_z = float(measurement[23:34])/10000
+            delta_e = round(float(measurement[12:23])/10000, 3)
+            delta_n = round(float(measurement[1:12])/10000, 3)
+            delta_z = round(float(measurement[23:34])/10000, 3)
             result = {
                 'success': True,
                 'measurement': {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
