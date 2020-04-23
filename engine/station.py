@@ -82,7 +82,7 @@ def set_instrument_height(height: float=None) -> dict:
     return result
 
 
-def save_to_database(name: str, coordinatesystem: str, coordinates: dict) -> bool:
+def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
     """Saves the given station name and coordinates to the database"""
     errors = []
     # Latitude, longitude, and UTM zone are not needed or 
