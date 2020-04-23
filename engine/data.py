@@ -16,33 +16,33 @@ def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
     measurement = raw_measurement['measurement']
     # Apply the occupied point offsets
     occupied_point = station.get_occupied_point()['coordinates']
-    measurement['n'] = measurement['delta_n'] + occupied_point['n']
-    measurement['e'] = measurement['delta_e'] + occupied_point['e']
-    measurement['z'] = measurement['delta_z'] + occupied_point['z']
+    measurement['calculated_n'] = measurement['delta_n'] + occupied_point['n']
+    measurement['calculated_e'] = measurement['delta_e'] + occupied_point['e']
+    measurement['calculated_z'] = measurement['delta_z'] + occupied_point['z']
     # Apply the instrument height offset
     instrument_height = station.get_instrument_height()['instrument_height']
-    measurement['z'] += instrument_height
+    measurement['calculated_z'] += instrument_height
     # Apply the prism vertical offset
     prism_offsets = prism.get_prism_offset(True)['prism_offset']
-    measurement['z'] += prism_offsets['vertical_distance']
+    measurement['calculated_z'] += prism_offsets['vertical_distance']
     # Apply the prism absolute offsets
-    measurement['n'] += prism_offsets['latitude_distance']
-    measurement['e'] += prism_offsets['longitude_distance']
+    measurement['calculated_n'] += prism_offsets['latitude_distance']
+    measurement['calculated_e'] += prism_offsets['longitude_distance']
     # Apply the prism relative offsets
     radial_n_diff, radial_e_diff = _calculate_radial_offset(
         measurement,
         prism_offsets['radial_distance'],
     )
-    measurement['n'] += radial_n_diff
-    measurement['e'] += radial_e_diff
-    measurement['n'], measurement['e'] = _calculate_tangent_offset(
+    measurement['calculated_n'] += radial_n_diff
+    measurement['calculated_e'] += radial_e_diff
+    measurement['calculated_n'], measurement['calculated_e'] = _calculate_tangent_offset(
         measurement,
         prism_offsets['tangent_distance'],
     )
     # Round the calculated values to the nearest millimeter
-    measurement['n'] = round(measurement['n'], 3)
-    measurement['e'] = round(measurement['e'], 3)
-    measurement['z'] = round(measurement['z'], 3)
+    measurement['calculated_n'] = round(measurement['calculated_n'], 3)
+    measurement['calculated_e'] = round(measurement['calculated_e'], 3)
+    measurement['calculated_z'] = round(measurement['calculated_z'], 3)
     return {
         'success': raw_measurement['success'],
         'measurement': measurement,
