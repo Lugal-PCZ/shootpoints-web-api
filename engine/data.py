@@ -96,3 +96,12 @@ def save_to_database(sql: str, data: tuple) -> bool:
     except:
         success = False
     return success
+
+
+def read_from_database(sql: str) -> bool:
+    try:
+        cursor.execute(sql)
+        result = {'success': True, 'results': cursor.fetchall()}
+    except sqlite3.Error as err:
+        result = {'success': False, 'error_message': str(err)}
+    return result
