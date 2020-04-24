@@ -1,15 +1,23 @@
-import math
 import sqlite3
+import os
+import math
 
 from . import station
 from . import prism
 from . import angle_math
 
 
-# dbconn = None
-# cursor = None
 dbconn = sqlite3.connect('ShootPoints.db')
 cursor = dbconn.cursor()
+try:
+    cursor.execute('SELECT 1 FROM stations')
+except:
+    # The ShootPoints.db database is empty, so initialize it with the default schema.
+    with open('blank_database.sql', 'r') as f:
+        sql = f.read().split(';')
+        for each in sql:
+            cursor.execute(each)
+        dbconn.commit()
 
 
 def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
@@ -78,12 +86,6 @@ def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
     point_n = distance_to_point * math.cos(math.radians(azimuth_to_point))
     point_e = distance_to_point * math.sin(math.radians(azimuth_to_point))
     return point_n, point_e
-
-
-def initialize_database():
-    global dbconn
-    global cursor
-    # Initialize the db automatically if dbconn and cursor = None, but warn the user about data loss otherwise
 
 
 def save_to_database(sql: str, data: tuple) -> bool:
