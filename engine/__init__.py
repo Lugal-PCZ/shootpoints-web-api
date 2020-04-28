@@ -9,20 +9,20 @@ from . import angle_math
 from . import data
 
 
-# Load the configs.
-config = configparser.RawConfigParser()
-config.read('config.ini')
 
 
 # TODO: initialized will reset whenever the flask instance is restarted or the app is opened in a new browser/window--in which case you'll have to re-load prism and station from the DB
 initialized = False
+# Load the configs.
+configs = configparser.RawConfigParser()
+configs.read('configs.ini')
 
 
 # Initialize the serial port.
 total_station = None
-if config['SERIAL']['port'] == 'demo':
+if configs['SERIAL']['port'] == 'demo':
     from .total_stations import demo as total_station
-elif config['SERIAL']['port'] == 'auto':
+elif configs['SERIAL']['port'] == 'auto':
     if glob.glob('/dev/cu.ttyAMA*'):  # Linux with RS232 adapter
         PORT = glob.glob('/dev/cu.ttyAMA*')[0]
     elif glob.glob('/dev/ttyUSB*'):  # Linux with USB adapter
@@ -31,14 +31,15 @@ elif config['SERIAL']['port'] == 'auto':
         PORT = glob.glob('/dev/cu.usbserial*')[0]
     else:  # Serial port not found.
         exit('FATAL ERROR: No valid serial port found.')
-else:  # Port is specified explicitly in config.ini file.
-    PORT = config['SERIAL']['port']
+else:  # Port is specified explicitly in configs.ini file.
+    PORT = configs['SERIAL']['port']
+
 
 if not total_station:
-    make = config['TOTAL STATION']['make'].replace(' ', '_').lower()
-    make = config['TOTAL STATION']['make'].replace('-', '_').lower()
-    model = config['TOTAL STATION']['model'].replace(' ', '_').lower()
-    model = config['TOTAL STATION']['model'].replace('-', '_').lower()
+    make = configs['TOTAL STATION']['make'].replace(' ', '_').lower()
+    make = configs['TOTAL STATION']['make'].replace('-', '_').lower()
+    model = configs['TOTAL STATION']['model'].replace(' ', '_').lower()
+    model = configs['TOTAL STATION']['model'].replace('-', '_').lower()
     if make == 'topcon' and model[:6] == 'gts_30':
         model = 'gts_300_series'
     try:
