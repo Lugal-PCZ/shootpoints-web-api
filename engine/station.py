@@ -1,3 +1,4 @@
+# TODO: rename this file to tripod.py
 from . import angle_math
 from . import data
 
@@ -15,19 +16,12 @@ def get_occupied_point() -> dict:
     global _occupied_point
     return {
         'success': True,
-        'coordinates': _occupied_point
+        'result': _occupied_point
     }
 
 
-def set_occupied_point(n: float=None, e: float=None, z: float=None) -> dict:
-# TODO: save occupied point to DB for stability.
+def set_occupied_point(n: float, e: float, z: float) -> dict:
     global _occupied_point
-    if not n:
-        n = _occupied_point['n']
-    if not e:
-        e = _occupied_point['e']
-    if not z:
-        z = _occupied_point['z']
     errors = []
     try:
         n = float(n)
@@ -41,13 +35,14 @@ def set_occupied_point(n: float=None, e: float=None, z: float=None) -> dict:
         z = float(z)
     except ValueError:
         errors.append(f'Elevation entered ({z}) is not numeric.')
+    result = {'success': not errors}
     if errors:
-        result = {'success': False, 'errors': errors}
+        result['errors'] = errors
     else:
         _occupied_point['n'] = n
         _occupied_point['e'] = e
         _occupied_point['z'] = z
-        result = get_occupied_point()
+        result['result'] = f'Occupied Point set to {n}N, {e}E, {z}Z.'
     return result
 
 
@@ -55,121 +50,125 @@ def get_instrument_height() -> dict:
     global _instrument_height
     return {
         'success': True,
-        'instrument_height': _instrument_height
+        'result': _instrument_height
     }
 
 
-def set_instrument_height(height: float=None) -> dict:
-# TODO: save instrument height to DB for stability.
+def set_instrument_height(height: float) -> dict:
     global _instrument_height
-    if not height:
-        height = _instrument_height
     errors = []
     try:
         height = float(height)
-    except ValueError:
-        errors.append(f'Instrument height entered ({height}m) is not numeric.')
-    else:
         if height < 0:
             errors.append(f'Instrument height entered ({height}m) is negative.')
         elif height >= 2:
             errors.append(f'Instrument height entered ({height}m) is unrealistically high.')
+    except ValueError:
+        errors.append(f'Instrument height entered ({height}m) is not numeric.')
+    result = {'success': not errors}
     if errors:
-        result = {'success': False, 'errors': errors}
+        result['errors'] = errors
     else:
         _instrument_height = height
-        result = get_instrument_height()
+        result['result'] = f'Instrument height set to {height}m.'
     return result
 
 
 def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
     """Saves the given station name and coordinates to the database"""
     errors = []
-    # Latitude, longitude, and UTM zone are not needed or 
-    # calculated when the coordinate system is 'Site'.
-    latitude = None
-    longitude = None
-    utmzone = None
-    if coordinatesystem == 'Site' or coordinatesystem == 'UTM':
-        try:
-            northing = float(coordinates['northing'])
-            easting = float(coordinates['easting'])
-        except ValueError as badvalue:
-            badvalue = str(badvalue)[36:-1]
-            errors.append(f'Non-numeric northing or easting given ({badvalue}).')
-        else:
-            if coordinatesystem == 'UTM':
-                try:
-                    if 0 <= northing <= 10000000:
-                        raise InvalidUTMCoordinate
-                    if 0 <= easting <= 1000000:
-                        raise InvalidUTMCoordinate
-                    utmzone = coordinates['utmzone'].upper()
-                    utmzonenumber = int(utmzone[:-1])
-                    if not 1 <= utmzonenumber <= 60:
-                        raise InvalidUTMZoneNumber
-                    utmzoneletter = utmzone[-1]
-                    if utmzoneletter not in 'CDEFGHJKLMNPQRSTUVWX':
-                        raise InvalidUTMZoneLetter
-                except InvalidUTMCoordinate:
-                    errors.append(f'Northing or Easting given is out of range.')
-                except KeyError:
-                    errors.append(f'UTM Zone not given.')
-                except ValueError:
-                    errors.append(f'Non-numeric UTM Zone number given ({utmzonenumber}).')
-                except InvalidUTMZoneNumber:
-                    errors.append(f'Invalid UTM Zone number given ({utmzonenumber}).')
-                except InvalidUTMZoneLetter:
-                    errors.append(f'Invalid UTM Zone letter given ({utmzoneletter}).')
-                else:
-                    latitude, longitude = angle_math.convert_utm_to_latlon(northing, easting, utmzonenumber, utmzoneletter)
-    elif coordinatesystem == 'Lat/Lon':
-        try:
-            latitude = float(coordinates['latitude'])
-            longitude = float(coordinates['longitude'])
-        except KeyError as missingkey:
-            errors.append(f'Station {missingkey} not given.')
-        except ValueError as badvalue:
-            errors.append(f'Non-numeric latitude or longitude given ({badvalue}).')
-        else:
-            northing, easting, utmzone = angle_math.convert_latlon_to_utm(latitude, longitude)
-    else:
-        message = (
-            f'Invalid coordinate system given ({coordinatesystem}).'
-            f' Should be one of Site, UTM, or Lat/Lon.'
-        )
-        errors.append(message)
+    # Check that the given elevation is valid.
     try:
         elevation = float(coordinates['elevation'])
     except KeyError:
         errors.append(f'Station elevation not given.')
     except ValueError:
         errors.append(f'Non-numeric elevation given ({elevation}).')
+    if coordinatesystem == 'Site' or coordinatesystem == 'UTM':
+        # Check that the given northing is valid.
+        try:
+            northing = float(coordinates['northing'])
+        except KeyError:
+            errors.append(f'Station northing not given.')
+        except ValueError:
+            errors.append(f"Non-numeric northing given ({coordinates['northing']}).")
+        else:
+            if 0 <= northing <= 10000000:
+                errors.append('Northing given is out of range (0–10000000m).')
+        # Check that the given easting is valid.
+        try:
+            easting = float(coordinates['easting'])
+        except KeyError:
+            errors.append(f'Station easting not given.')
+        except ValueError:
+            errors.append(f"Non-numeric easting given ({coordinates['easting']}).")
+        else:
+            if 0 <= easting <= 1000000:
+                errors.append('Easting given is out of range (0–1000000m).')
+        if coordinatesystem == 'Site':
+            # Latitude, longitude, and UTM zone are not needed or 
+            # calculated when the coordinate system is 'Site'.
+            latitude = None
+            longitude = None
+            utmzone = None
+        elif coordinatesystem == 'UTM':
+            # Check that the given UTM zone is valid.
+            try:
+                utmzone = str(coordinates['utmzone']).upper()
+                utmzonenumber = int(utmzone[:-1])
+            except KeyError:
+                errors.append(f'UTM Zone not given.')
+            except ValueError:
+                errors.append(f'Non-numeric UTM Zone number given ({utmzonenumber}).')
+            else:
+                if not 1 <= utmzonenumber <= 60:
+                    errors.append(f'Invalid UTM Zone number given ({utmzonenumber}).')
+                else:
+                    utmzoneletter = utmzone[-1]
+                    if utmzoneletter not in 'CDEFGHJKLMNPQRSTUVWX':
+                        errors.append(f'Invalid UTM Zone letter given ({utmzoneletter}).')
+                    else:
+                        latitude, longitude = angle_math.convert_utm_to_latlon(northing, easting, utmzonenumber, utmzoneletter)
+    elif coordinatesystem == 'Lat/Lon':
+        # Check that the given latitude is valid.
+        try:
+            latitude = float(coordinates['latitude'])
+        except KeyError:
+            errors.append('Station latitude not given.')
+        except ValueError:
+            errors.append(f"Non-numeric latitude given ({coordinates['latitude']}).")
+        else:
+            if 0 <= latitude <= 90:
+                errors.append('Latitude given is out of range (0–90°).')
+        # Check that the given longitude is valid.
+        try:
+            longitude = float(coordinates['longitude'])
+        except KeyError:
+            errors.append('Station longitude not given.')
+        except ValueError:
+            errors.append(f"Non-numeric latitude given ({coordinates['longitude']}).")
+        else:
+            if -180 <= longitude <= 180:
+                errors.append('Longitude given is out of range (-180–180°).')
+            else:
+                northing, easting, utmzone = angle_math.convert_latlon_to_utm(latitude, longitude)
+    else:
+        errors.append(
+            f'Invalid coordinate system given ({coordinatesystem}).'
+            f' It should be one of Site, UTM, or Lat/Lon.'
+        )
     if not errors:
         sql = (
             f'INSERT INTO stations '
             f'(name, northing, easting, elevation, utmzone, latitude, longitude) '
             f'VALUES (?, ?, ?, ?, ?, ?, ?)'
         )
-        if not data.save_to_database(sql, (name, northing, easting, elevation, utmzone, latitude, longitude)):
+        newstation = (name, northing, easting, elevation, utmzone, latitude, longitude)
+        if not data.save_to_database(sql, newstation)['success']:
             errors.append(f'Station ({name}) not saved to the database.')
+    result = {'success': not errors}
     if errors:
-        result = {'success': False, 'errors': errors}
+        result['errors'] = errors
     else:
-        result = {'success': True, 'result': f'Station {name} saved to the database.'}
+        result['result'] = f'Station {name} saved to the database.'
     return result
-
-
-class InvalidUTMZoneNumber(Exception):
-    """Raised when the UTM Zone Number is not between 1 and 60 (inclusive)."""
-    pass
-
-
-class InvalidUTMZoneLetter(Exception):
-    """Raised when the UTM Zone Letter is not one of CDEFGHJKLMNPQRSTUVWX."""
-    pass
-
-
-class InvalidUTMCoordinate(Exception):
-    """Raised when a UTM coordinate is negative."""
-    pass

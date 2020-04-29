@@ -61,17 +61,15 @@ def _wait_for_ack(count: int=10) -> bool:
 
 def set_mode_hr() -> dict:
     """Sets the total station to V/H mode with Horizontal Right."""
+    errors = []
     _write('Z12089')
-    if _wait_for_ack():
-        result = {
-            'success': True,
-            'result': 'Mode set to Horizontal Right.'
-        }
+    if not _wait_for_ack():
+        errors.append('A communication error occurred.')
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
     else:
-        result = {
-            'success': False,
-            'errors': ['Failed to set mode to Horizontal Right.']
-        }
+        result['result'] = 'Mode set to Horizontal Right.'
     return result
 
 
@@ -80,79 +78,80 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
     errors = []
     try:
         degrees = int(degrees)
+        if not 0 <= degrees <= 359:
+            errors.append(f'Degrees entered ({degrees}) is out of range (0 to 359).')
     except ValueError:
         errors.append(f'A non-integer value ({degrees}) was entered for degrees.')
     try:
         minutes = int(minutes)
+        if not 0 <= minutes <= 59:
+            errors.append(f'Minutes entered ({minutes}) is out of range (0 to 59).')
     except ValueError:
         errors.append(f'A non-integer value ({minutes}) was entered for minutes.')
     try:
         seconds = int(seconds)
+        if not 0 <= seconds <= 59:
+            errors.append(f'Seconds entered ({seconds}) is out of range (0 to 59).')
     except ValueError:
         errors.append(f'A non-integer value ({seconds}) was entered for seconds.')
-    if not 0 <= degrees <= 359:
-        errors.append(f'Degrees entered ({degrees}) is out of range (0 to 359).')
-    elif not 0 <= minutes <= 59:
-        errors.append(f'Minutes entered ({minutes}) is out of range (0 to 59).')
-    elif not 0 <= seconds <= 59:
-        errors.append(f'Seconds entered ({seconds}) is out of range (0 to 59).')
-    if errors:
-        result = {'success': False, 'errors': errors}
-    else:
-        angle = (degrees * 10000) + (minutes * 100) + seconds
-        command = f'J+{angle}d'
-        bcc = _calculate_bcc(command)
-        _write('J074')
-        if _wait_for_ack():
-            _write(command + bcc)
+    if not errors:
+        setmodehr = set_mode_hr()
+        if setmodehr['success']:
+            angle = (degrees * 10000) + (minutes * 100) + seconds
+            command = f'J+{angle}d'
+            bcc = _calculate_bcc(command)
+            _write('J074')
             if _wait_for_ack():
-                result = {
-                    'success': True,
-                    'azimuth': f'{degrees}° {minutes}\' {seconds}"'
-                }
+                _write(command + bcc)
+                if not _wait_for_ack():
+                    errors.append('A communication error occurred.')
             else:
-                result = {
-                    'success': False,
-                    'errors': [f'Failed to set azimuth to {angle}.']
-                }
+                errors.append('A communication error occurred.')
+        else:
+            errors.append(setmodehr['errors'][0])
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        result['result'] = f'Azimuth set to {degrees}° {minutes}\' {seconds}.'
     return result
 
 
 def take_measurement() -> dict:
     """Tells the total station to begin measuring a point."""
     global _canceled
-    data = b''
+    errors = []
+    measurement = b''
     _write('Z64088')
     if _wait_for_ack():
         _write('C067')
         if _wait_for_ack():
-            data = _read(10)
+            measurement = _read(10).decode('utf-8')
             _write(ACK)
-    measurement = data.decode('utf-8')
-    try:
-        data_format = measurement[0]
-        data_unit = measurement[34]
-        if data_format == '/' and data_unit == 'm':
-            delta_e = round(float(measurement[12:23])/10000, 3)
-            delta_n = round(float(measurement[1:12])/10000, 3)
-            delta_z = round(float(measurement[23:34])/10000, 3)
-            result = {
-                'success': True,
-                'measurement': {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
-            }
         else:
-            result = {
-                'success': False,
-                'errors': [f'Unexpected data format: {measurement}.']
-            }
-    except:
-        if _canceled:
-            result = None
-        else:
-            result = {
-                'success': False,
-                'errors': ['Measurement failed.']
-            }
+            errors.append('A communication error occurred.')
+    else:
+        errors.append('A communication error occurred.')
+    if not errors:
+        try:
+            data_format = measurement[0]
+            data_unit = measurement[34]
+            if data_format == '/' and data_unit == 'm':
+                delta_e = round(float(measurement[12:23])/10000, 3)
+                delta_n = round(float(measurement[1:12])/10000, 3)
+                delta_z = round(float(measurement[23:34])/10000, 3)
+            else:
+                errors.append(f'Unexpected data format: {measurement}.')
+        except:
+            if _canceled:
+                result = None
+            else:
+                errors.append('Measurement failed.')
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        result['result'] = {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
     return result
 
 
@@ -164,6 +163,6 @@ def cancel_measurement() -> dict:
     _canceled = False  # Reset flag.
     return {
         'success': True,
-        'result': 'Measurement canceled by user.'
+        'result': 'Measurement canceled by user.',
     }
 

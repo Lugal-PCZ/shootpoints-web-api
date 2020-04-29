@@ -1,7 +1,7 @@
-# Set the default prism offset values.
-# Direction is FROM the point TO the prism, as viewed from the occupied station.
+from . import data
 
 
+# Offset direction is always FROM the point TO the prism, as viewed from the occupied station.
 _offsets = {
     # Vertical Offset:
     # > 0 = Up
@@ -64,17 +64,16 @@ def get_prism_offset(full_output: bool=False) -> dict:
                         readable_offsets['tangent_direction'] = 'Left'
                         val = abs(val)
                 readable_offsets[key] = val
-        results['prism_offset'] = readable_offsets
+        results['result'] = readable_offsets
     else:
-        results['prism_offset'] = _offsets
+        results['result'] = _offsets
     return results
 
 
 def set_prism_offset(**kwargs: dict) -> dict:
-    # TODO: save the offsets to the DB for stability
     errors = []
     global _offsets
-    # Save the current offsets
+    # Cache the current offsets
     temp_offsets = {
         'vertical_distance': _offsets['vertical_distance'],
         'latitude_distance': _offsets['latitude_distance'],
@@ -153,10 +152,11 @@ def set_prism_offset(**kwargs: dict) -> dict:
                     errors.append('No direction was given for the Tangent Offset.')
             except ValueError:
                 errors.append(f'The Tangent Offset distance entered ({val}) is not numerical.')
-
+    result = {'success': not errors}
     if errors:
-        result = {'success': False, 'errors': errors}
+        result['errors'] = errors
     else:
+        # TODO: save the offsets to the DB for stability
         _offsets = temp_offsets
-        result = get_prism_offset()
+        result['result'] = f"Prism offsets are now {str(_offsets)}."
     return result

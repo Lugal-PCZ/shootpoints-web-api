@@ -8,6 +8,7 @@ from . import angle_math
 
 
 dbconn = sqlite3.connect('ShootPoints.db')
+dbconn.row_factory = sqlite3.Row
 cursor = dbconn.cursor()
 try:
     cursor.execute('SELECT 1 FROM stations')
@@ -88,20 +89,50 @@ def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
     return point_n, point_e
 
 
-def save_to_database(sql: str, data: tuple) -> bool:
+def save_to_database(sql: str, data: tuple) -> dict:
+    errors = []
     try:
         cursor.execute(sql, data)
         dbconn.commit()
-        success = True
-    except:
-        success = False
-    return success
-
-
-def read_from_database(sql: str) -> bool:
-    try:
-        cursor.execute(sql)
-        result = {'success': True, 'results': cursor.fetchall()}
     except sqlite3.Error as err:
-        result = {'success': False, 'error_message': str(err)}
+        errors.append(str(err))
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        result['result'] = 'Data successfully saved to the database.'
+    return result
+
+
+def read_from_database(sql: str, data: tuple=()) -> dict:
+    errors = []
+    try:
+        cursor.execute(sql, data)
+        queryresults = [dict(row) for row in cursor.fetchall()]
+    except sqlite3.Error as err:
+        errors.append(str(err))
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        result['results'] = queryresults
+    return result
+
+
+def update_current_state(columns: tuple, data: tuple) -> dict:
+    errors = []
+    if len(columns) != len(data):
+        errors.append('Mismatched number of columns to data provided.')
+    else:
+        cols = []
+        for each in columns:
+            cols.append(f'{each}=?')
+        sql = f"UPDATE currentstate SET {', '.join(cols)}"
+        if not save_to_database(sql, data)['success']:
+            errors.append('An error occurred writing the changes to the database.')
+    result = {'status': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        result['result'] = 'Changes were successfully saved to the database.'
     return result

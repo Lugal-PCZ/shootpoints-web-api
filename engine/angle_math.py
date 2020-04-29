@@ -24,4 +24,3 @@ def convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
 def convert_utm_to_latlon(northing: float, easting: float, zonenumber: int, zoneletter: str) -> tuple:
     latitude, longitude = utm.to_latlon(northing, easting, zonenumber, zoneletter)
     return (latitude, longitude)
-

@@ -3,13 +3,16 @@
 from time import sleep as _sleep
 from random import randint as _randint
 
+
 _canceled = False
 
 
 def set_mode_hr() -> dict:
     """Sets the total station to V/H mode with Horizontal Right."""
-    _sleep(1)
-    return {'success': True, 'result': 'Mode set to Horizontal Right.'}
+    return {
+        'success': True,
+        'result': 'Mode set to Horizontal Right.',
+    }
 
 
 def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
@@ -17,27 +20,27 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
     errors = []
     try:
         degrees = int(degrees)
+        if not 0 <= degrees <= 359:
+            errors.append(f'Degrees entered ({degrees}) is out of range (0 to 359).')
     except ValueError:
         errors.append(f'A non-integer value ({degrees}) was entered for degrees.')
     try:
         minutes = int(minutes)
+        if not 0 <= minutes <= 59:
+            errors.append(f'Minutes entered ({minutes}) is out of range (0 to 59).')
     except ValueError:
         errors.append(f'A non-integer value ({minutes}) was entered for minutes.')
     try:
         seconds = int(seconds)
+        if not 0 <= seconds <= 59:
+            errors.append(f'Seconds entered ({seconds}) is out of range (0 to 59).')
     except ValueError:
         errors.append(f'A non-integer value ({seconds}) was entered for seconds.')
-    if not 0 <= degrees <= 359:
-        errors.append(f'Degrees entered ({degrees}) is out of range (0 to 359).')
-    elif not 0 <= minutes <= 59:
-        errors.append(f'Minutes entered ({minutes}) is out of range (0 to 59).')
-    elif not 0 <= seconds <= 59:
-        errors.append(f'Seconds entered ({seconds}) is out of range (0 to 59).')
+    result = {'success': not errors}
     if errors:
-        result = {'success': False, 'errors': errors}
+        result['errors'] = errors
     else:
-        _sleep(1)
-        result = {'success': True, 'azimuth': f'{degrees}° {minutes}\' {seconds}"'}
+        result['result'] = f'Azimuth set to {degrees}° {minutes}\' {seconds}"',
     return result
 
 
@@ -55,7 +58,7 @@ def take_measurement() -> dict:
     delta_z = round((95802 + _randint(-10000, 10000)) / 10000, 3)
     return {
         'success': True,
-        'measurement': {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
+        'result': {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z},
     }
 
 
@@ -65,5 +68,5 @@ def cancel_measurement() -> dict:
     _canceled = True
     return {
         'success': True,
-        'result': 'Measurement canceled by user.'
+        'result': 'Measurement canceled by user.',
     }
