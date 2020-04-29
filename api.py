@@ -18,14 +18,14 @@ def azimuth_set(response: Response, degrees: int=0, minutes: int=0, seconds: int
 @app.get('/instrument_height/')
 def instrument_height_get():
     """"Gets the instrument height above the occupied point."""
-    result = engine.station.get_instrument_height()
+    result = engine.tripod.get_instrument_height()
     return result
 
 
 @app.post('/instrument_height/')
 def instrument_height_set(response: Response, height: float):
     """"Gets the instrument height above the occupied point."""
-    result = engine.station.set_instrument_height(height)
+    result = engine.tripod.set_instrument_height(height)
     if 'errors' in result:
         response.status_code = 422
     return result
@@ -41,6 +41,7 @@ def measurement_cancel():
 @app.get('/measurement/')
 def measurement_take(response: Response):
     """Tells the total station to start measuring a point."""
+    # TODO: warn the user if prism offsets are all zero
     result = engine.total_station.take_measurement()
     if 'errors' in result:
         response.status_code = 422
@@ -61,14 +62,14 @@ def mode_hr_set(response: Response):
 @app.get('/occupied_point/')
 def occupied_point_get():
     """Gets the coordinates of the occupied point."""
-    result = engine.station.get_occupied_point()
+    result = engine.tripod.get_occupied_point()
     return result
 
 
 @app.post('/occupied_point/')
 def occupied_point_set(response: Response, northing: float, easting: float, elevation: float):
     """Sets the coordinates of the occupied point."""
-    result = engine.station.set_occupied_point(northing, easting, elevation)
+    result = engine.tripod.set_occupied_point(northing, easting, elevation)
     if 'errors' in result:
         response.status_code = 422
     return result
@@ -85,6 +86,23 @@ def prism_offset_get():
 def prism_offset_set(response: Response, offsets: dict):
     """Sets the prism offsets."""
     result = engine.prism.set_prism_offset(**offsets)
-    if result['success']:
+    if 'errors' in result:
+        response.status_code = 422
+    return result
+
+
+@app.post('/session/')
+def session_start(response: Response, label: str, surveyor: str, occupied_point: int, backsight_station: int=0, instrument_height: float=0, prism_height: int=0, azimuth: dict={}):
+    """Starts a new surveying session."""
+    result = engine.start_surveying_session(
+        label,
+        surveyor,
+        occupied_point,
+        backsight_station,
+        instrument_height,
+        prism_height,
+        azimuth,
+    )
+    if 'errors' in result:
         response.status_code = 422
     return result

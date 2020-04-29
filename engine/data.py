@@ -2,7 +2,7 @@ import sqlite3
 import os
 import math
 
-from . import station
+from . import tripod
 from . import prism
 from . import angle_math
 
@@ -24,12 +24,12 @@ except:
 def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
     measurement = raw_measurement['measurement']
     # Apply the occupied point offsets
-    occupied_point = station.get_occupied_point()['coordinates']
+    occupied_point = tripod.get_occupied_point()['coordinates']
     measurement['calculated_n'] = measurement['delta_n'] + occupied_point['n']
     measurement['calculated_e'] = measurement['delta_e'] + occupied_point['e']
     measurement['calculated_z'] = measurement['delta_z'] + occupied_point['z']
     # Apply the instrument height offset
-    instrument_height = station.get_instrument_height()['instrument_height']
+    instrument_height = tripod.get_instrument_height()['instrument_height']
     measurement['calculated_z'] += instrument_height
     # Apply the prism vertical offset
     prism_offsets = prism.get_prism_offset(True)['prism_offset']
