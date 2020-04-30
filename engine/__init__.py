@@ -1,41 +1,47 @@
+# TODO: Write proper docstrings for each of the functions in this package.
 import configparser
 import glob
 import importlib
 import serial
 
-from . import station
+from . import tripod
 from . import prism
 from . import angle_math
 from . import data
 
 
+configs = None
+def _load_configs():
+    global configs
+    configs = configparser.RawConfigParser()
+    configfile = 'configs.ini'
+    try:
+        configs.read(configfile)
+    except:
+        exit(f'FATAL ERROR: The config file ({configfile}) was not found.')
 
 
-# TODO: initialized will reset whenever the flask instance is restarted or the app is opened in a new browser/window--in which case you'll have to re-load prism and station from the DB
-initialized = False
-# Load the configs.
-configs = configparser.RawConfigParser()
-configs.read('configs.ini')
+serialport = None
+def _initialize_serial_port():
+    global serialport
+    if configs['SERIAL']['port'] == 'demo':
+        from .total_stations import demo as total_station
+    elif configs['SERIAL']['port'] == 'auto':
+        if glob.glob('/dev/cu.ttyAMA*'):  # Linux with RS232 adapter
+            serialport = glob.glob('/dev/cu.ttyAMA*')[0]
+        elif glob.glob('/dev/ttyUSB*'):  # Linux with USB adapter
+            serialport = glob.glob('/dev/cu.ttyUSB*')[0]
+        elif glob.glob('/dev/cu.usbserial*'):  # Mac with USB adapter
+            serialport = glob.glob('/dev/cu.usbserial*')[0]
+        else:  # Serial port not found.
+            exit('FATAL ERROR: No valid serial port found.')
+    else:  # Port is specified explicitly in configs.ini file.
+        serialport = configs['SERIAL']['port']
 
 
-# Initialize the serial port.
 total_station = None
-if configs['SERIAL']['port'] == 'demo':
-    from .total_stations import demo as total_station
-elif configs['SERIAL']['port'] == 'auto':
-    if glob.glob('/dev/cu.ttyAMA*'):  # Linux with RS232 adapter
-        PORT = glob.glob('/dev/cu.ttyAMA*')[0]
-    elif glob.glob('/dev/ttyUSB*'):  # Linux with USB adapter
-        PORT = glob.glob('/dev/cu.ttyUSB*')[0]
-    elif glob.glob('/dev/cu.usbserial*'):  # Mac with USB adapter
-        PORT = glob.glob('/dev/cu.usbserial*')[0]
-    else:  # Serial port not found.
-        exit('FATAL ERROR: No valid serial port found.')
-else:  # Port is specified explicitly in configs.ini file.
-    PORT = configs['SERIAL']['port']
-
-
-if not total_station:
+def _load_total_station_model():
+    global total_station
     make = configs['TOTAL STATION']['make'].replace(' ', '_').lower()
     make = configs['TOTAL STATION']['make'].replace('-', '_').lower()
     model = configs['TOTAL STATION']['model'].replace(' ', '_').lower()
@@ -48,7 +54,7 @@ if not total_station:
         exit(f'FATAL ERROR: File total_stations/{make}/{model}.py does not exist.')
     try:
         port = serial.Serial(
-            port=PORT,
+            port=serialport,
             baudrate=total_station.BAUDRATE,
             parity=total_station.PARITY,
             bytesize=total_station.BYTESIZE,
@@ -57,43 +63,189 @@ if not total_station:
         )
         total_station.port = port
     except:
-        exit(f'FATAL ERROR: Serial port {PORT} could not be opened.')
+        exit(f'FATAL ERROR: Serial port {serialport} could not be opened.')
 
 
-def start_surveying_session(setup_type: str, occupied_point: dict, **kwargs):
-    global initialized
-    station.set_occupied_point(occupied_point['n'], occupied_point['e'], occupied_point['z'])
-    if setup_type == 'Backsight':
-        # TODO: check that all the necessary data has been entered properly before proceeding
-        prism_height = kwargs['prism_height']
-        prism.set_prism_offset({'vertical_distance': prism_height, 'vertical_direction': 'Down'})
-        azimuth = angle_math.calculate_azimuth(
-            (occupied_point['n'], occupied_point['e']),
-            (kwargs['backsight_n'], kwargs['backsight_e'])
+sessionid = None
+def _load_session():
+    global sessionid
+    sql = "SELECT * FROM stations"
+    result = data.read_from_database(sql)
+    if result['success']:
+        if result['results']:
+            sql = "SELECT id FROM sessions WHERE ended IS NULL ORDER BY started DESC LIMIT 1"
+            result = data.read_from_database(sql)
+            if result['success']:
+                if result['results']:
+                    sessions_id = result['results'][0]['id']
+                    sql = (
+                        "SELECT\n"
+                        "   curr.sessions_id,\n"
+                        "   sess.stations_id_occupied,\n"
+                        "   sta.northing,\n"
+                        "   sta.easting,\n"
+                        "   sta.elevation,\n"
+                        "   sess.instrumentheight,\n"
+                        "   curr.prism_vertical_distance,\n"
+                        "   curr.prism_latitude_distance,\n"
+                        "   curr.prism_longitude_distance,\n"
+                        "   curr.prism_radial_distance,\n"
+                        "   curr.prism_tangent_distance\n"
+                        "FROM currentstate curr\n"
+                        "JOIN sessions sess ON curr.sessions_id = sess.id\n"
+                        "JOIN stations sta ON sess.stations_id_occupied = sta.id\n"
+                        f"WHERE curr.sessions_id = {sessions_id}"
+                    )
+                    result = data.read_from_database(sql)
+                    if result['success']:
+                        sessionid =  sessions_id
+                        # Because these data are being read directly from the database,
+                        # they are presumed to be clean, and don't need to go through the
+                        # normal setters.
+                        tripod._occupied_point['n'] = result['results'][0]['northing']
+                        tripod._occupied_point['e'] = result['results'][0]['easting']
+                        tripod._occupied_point['z'] = result['results'][0]['elevation']
+                        tripod._instrument_height = result['results'][0]['instrumentheight']
+                        prism._offsets['vertical_distance'] = result['results'][0]['prism_vertical_distance']
+                        prism._offsets['latitude_distance'] = result['results'][0]['prism_latitude_distance']
+                        prism._offsets['longitude_distance'] = result['results'][0]['prism_longitude_distance']
+                        prism._offsets['radial_distance'] = result['results'][0]['prism_radial_distance']
+                        prism._offsets['tangent_distance'] = result['results'][0]['prism_tangent_distance']
+                    else:
+                        exit(f'FATAL ERROR: An error occurred reading the ShootPoints database.')
+                else:
+                    # TODO: There is no active session, so prompt the user to start a new session.
+                    # start_surveying_session()
+                    pass
+            else:
+                exit(f'FATAL ERROR: An error occurred reading the ShootPoints database.')
+        else:
+            # TODO: No stations have been created (i.e., this is a new DB), so prompt the user to create the first station.
+            # tripod.save_station()
+            pass
+    else:
+        exit(f'FATAL ERROR: An error occurred reading the ShootPoints database.')
+
+
+def start_surveying_session(label: str, surveyor: str, occupied_point: int, backsight_station: int=0, instrument_height: float=0, prism_height: int=0, azimuth: dict={}) -> dict:
+    global sessionid
+    errors = []
+    sql = f"SELECT northing, easting, elevation FROM stations WHERE id = ?"
+    result = data.read_from_database(sql, (occupied_point,))
+    if result['success']:
+        occupied_northing = result['results']['northing']
+        occupied_easting = result['results']['easting']
+        occupied_elevation = result['results']['elevation']
+        tripod.set_occupied_point(occupied_northing, occupied_easting, occupied_elevation)
+        if backsight_station:
+            # Azimuth and instrument height are being set up with a backsight shot.
+            sql = f"SELECT northing, easting, elevation FROM stations WHERE id = ?"
+            result = data.read_from_database(sql, (backsight_station,))
+            if result['success']:
+                if prism_height > 0:
+                    prism.set_prism_offset(**{'vertical_distance': prism_height, 'vertical_direction': 'Down'})
+                    backsight_northing = result['results']['northing']
+                    backsight_easting = result['results']['easting']
+                    backsight_elevation = result['results']['elevation']
+                    azimuth = angle_math.calculate_azimuth(
+                        (occupied_northing, occupied_easting),
+                        (backsight_northing, backsight_easting)
+                    )
+                    degrees, remainder = divmod(azimuth, 1)
+                    minutes, remainder = divmod(remainder * 60, 1)
+                    seconds = round(remainder * 60)
+                    setazimuth = total_station.set_azimuth(degrees, minutes, seconds)
+                    if result['success']:
+                        measurement = total_station.take_measurement()
+                        if measurement['success']:
+                            elev_diff_of_points = occupied_elevation - backsight_elevation
+                            delta_z_to_point = measurement['measurement']['delta_z'] - prism_height
+                            instrument_height = elev_diff_of_points + delta_z_to_point
+                            tripod.set_instrument_height(instrument_height)
+                        else:
+                            for each in measurement['errors']:
+                                errors.append(each)
+                    else:
+                        for each in setazimuth['errors']:
+                            errors.append(each)
+                else:
+                    errors.append(f'An invalid prism height ({prism_height}m) was entered.')
+            else:
+                errors.append(result['errors'])
+        else:
+            # Azimuth and instrument height are being set manually.
+            setinstrumentheight = tripod.set_instrument_height(instrument_height)
+            if setinstrumentheight['success']:
+                degrees = azimuth['degrees']
+                minutes = azimuth['minutes']
+                seconds = azimuth['seconds']
+                setazimuth = total_station.set_azimuth(degrees, minutes, seconds)
+                if not setazimuth['success']:
+                    for each in setazimuth['errors']:
+                        errors.append(each)
+            else:
+                for each in setinstrumentheight['errors']:
+                    errors.append(each)
+    else:
+        errors.append(f'A problem occurred reading station id {occupied_point} from the database.')
+    if not errors:
+        if not backsight_station:
+            backsight_station = None
+        sql = (
+            "INSERT INTO sessions SET\n"
+            "   label=?,\n"
+            "   started=CURRENT_TIMESTAMP,\n"
+            "   surveyor=?,\n"
+            "   stations_id_occupied=?,\n"
+            "   stations_id_backsight=?,\n"
+            "   azimuth=?,\n"
+            "   instrumentheight=?\n"
         )
-        degrees, remainder = divmod(azimuth, 1)
-        minutes, remainder = divmod(remainder * 60, 1)
-        seconds = round(remainder * 60)
-        # TODO: abort if any of the next three commands fail
-        total_station.set_mode_hr()
-        total_station.set_azimuth(degrees, minutes, seconds)
-        measurement = total_station.take_measurement()
-        elev_diff_of_points = occupied_point['z'] - kwargs['backsight_z']
-        delta_z_to_point = measurement['measurement']['delta_z'] - prism_height
-        instrument_height = elev_diff_of_points + delta_z_to_point
-        station.set_instrument_height(instrument_height)
-    elif setup_type == 'Backsight':
-        degrees = kwargs['azimuth_degrees']
-        minutes = kwargs['azimuth_minutes']
-        seconds = kwargs['azimuth_seconds']
-        total_station.set_mode_hr()
-        total_station.set_azimuth(degrees, minutes, seconds)
-        # TODO: warn the surveyor to set the prism height before shooting points
-    # TODO: if any of the above commincations fail, then catch the error and don't set initialized to True
-    initialized = True
+        sessiondata = (
+            label,
+            surveyor,
+            occupied_point,
+            backsight_station,
+            f'{degrees}° {minutes}\' {seconds}"',
+            instrument_height,
+        )
+        if data.save_to_database(sql, sessiondata)['success']:
+            sessionid = data.read_from_database("SELECT last_insert_rowid()", ())['results'][0]['last_insert_rowid()']
+        else:
+            errors.append(f'A problem occurred while saving the new session to the database.')
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        sessionid = 0
+        result['result'] = f'Session {sessionid} started.'
+    return result
 
 
-# Order of operations:
-# 0. Enter data for at least one station.
-# 1. Start surveying session.
-# 2. Set "initialized" flag and save session info.
+def end_surveying_session() -> dict:
+    global sessionid
+    errors = []
+    sql = "UPDATE sessions SET ended = CURRENT_TIMESTAMP WHERE id = ?"
+    if not data.save_to_database(sql, (sessionid,))['success']:
+        errors.append(f'An error occurred closing the session. Session {sessionid} is still active.')
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        sessionid = 0
+        result['result'] = f'Session {sessionid} ended.'
+    return result
+
+
+# The following need to happen every time that the program is run or restarted.
+if not configs:
+    _load_configs()
+
+if not serialport:
+    _initialize_serial_port()
+
+if not total_station:
+    _load_total_station_model()
+
+if not sessionid:
+    _load_session()
