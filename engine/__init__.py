@@ -164,15 +164,13 @@ def start_surveying_session(label: str, surveyor: str, occupied_point: int, back
                             instrument_height = elev_diff_of_points + delta_z_to_point
                             tripod.set_instrument_height(instrument_height)
                         else:
-                            for each in measurement['errors']:
-                                errors.append(each)
+                            errors.extend(measurement['errors'])
                     else:
-                        for each in setazimuth['errors']:
-                            errors.append(each)
+                        errors.extend(setazimuth['errors'])
                 else:
                     errors.append(f'An invalid prism height ({prism_height}m) was entered.')
             else:
-                errors.append(result['errors'])
+                errors.extend(result['errors'])
         else:
             # Azimuth and instrument height are being set manually.
             setinstrumentheight = tripod.set_instrument_height(instrument_height)
@@ -182,11 +180,9 @@ def start_surveying_session(label: str, surveyor: str, occupied_point: int, back
                 seconds = azimuth['seconds']
                 setazimuth = total_station.set_azimuth(degrees, minutes, seconds)
                 if not setazimuth['success']:
-                    for each in setazimuth['errors']:
-                        errors.append(each)
+                    errors.extend(setazimuth['errors'])
             else:
-                for each in setinstrumentheight['errors']:
-                    errors.append(each)
+                errors.extend(setinstrumentheight['errors'])
     else:
         errors.append(f'A problem occurred reading station id {occupied_point} from the database.')
     if not errors:

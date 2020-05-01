@@ -108,7 +108,7 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
             else:
                 errors.append('A communication error occurred.')
         else:
-            errors.append(setmodehr['errors'][0])
+            errors.extend(setmodehr['errors'])
     result = {'success': not errors}
     if errors:
         result['errors'] = errors
