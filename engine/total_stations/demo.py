@@ -11,7 +11,7 @@ _canceled = False
 
 
 def set_mode_hr() -> dict:
-    """Sets the total station to V/H mode with Horizontal Right."""
+    """This function sets the total station to V/H mode with Horizontal Right."""
     return {
         'success': True,
         'result': 'Mode set to Horizontal Right.',
@@ -19,7 +19,7 @@ def set_mode_hr() -> dict:
 
 
 def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
-    """Sets the azimuth reading on the total station."""
+    """This function sets the azimuth reading on the total station."""
     errors = []
     try:
         degrees = int(degrees)
@@ -48,7 +48,7 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
 
 
 def take_measurement() -> dict:
-    """Tells the total station to begin measuring a point."""
+    """This function tells the total station to begin measuring a point."""
     global _canceled
     delay = 5
     for _ in range(delay - 1):
@@ -66,7 +66,7 @@ def take_measurement() -> dict:
 
 
 def cancel_measurement() -> dict:
-    """Cancels a measurement in progress."""
+    """This function cancels a measurement in progress."""
     global _canceled
     _canceled = True
     return {

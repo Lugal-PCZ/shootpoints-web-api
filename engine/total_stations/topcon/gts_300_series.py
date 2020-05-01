@@ -15,7 +15,7 @@ _canceled = False
 
 
 def _read(timeout: float=0.2) -> bytes:
-    """Reads all characters waiting in the serial port's buffer."""
+    """This function reads all characters waiting in the serial port's buffer."""
     global port
     port.timeout = timeout
     buffer = port.read_until(bytes(ETX, 'ascii'))
@@ -23,7 +23,7 @@ def _read(timeout: float=0.2) -> bytes:
 
 
 def _write(command: str) -> None:
-    """Blindly writes the command to the serial port."""
+    """This function blindly writes the command to the serial port."""
     global port
     command = bytes(command + ETX, 'ascii')
     port.write(command)
@@ -31,14 +31,14 @@ def _write(command: str) -> None:
 
 
 def _clear_buffers() -> None:
-    """Clears the serial port buffers."""
+    """This function clears the serial port buffers."""
     global port
     port.reset_input_buffer()
     port.reset_output_buffer()
 
 
 def _calculate_bcc(data: str) -> str:
-    """Calculates BCC values for commands that require it."""
+    """This function calculates BCC values for commands that require it."""
     bcc = 0
     for each_character in data:
         bcc ^= ord(each_character)
@@ -46,7 +46,7 @@ def _calculate_bcc(data: str) -> str:
 
 
 def _wait_for_ack(count: int=10) -> bool:
-    """Waits for the ACK returned from the total station."""
+    """This function listens for the ACK returned from the total station."""
     global _canceled
     ack_received = False
     for _ in range(count):
@@ -59,7 +59,7 @@ def _wait_for_ack(count: int=10) -> bool:
 
 
 def set_mode_hr() -> dict:
-    """Sets the total station to V/H mode with Horizontal Right."""
+    """This function sets the total station to V/H mode with Horizontal Right."""
     errors = []
     _write('Z12089')
     if not _wait_for_ack():
@@ -73,7 +73,7 @@ def set_mode_hr() -> dict:
 
 
 def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
-    """Sets the azimuth reading on the total station."""
+    """This function sets the azimuth reading on the total station."""
     errors = []
     try:
         degrees = int(degrees)
@@ -117,7 +117,7 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
 
 
 def take_measurement() -> dict:
-    """Tells the total station to begin measuring a point."""
+    """This function tells the total station to begin measuring a point."""
     global _canceled
     errors = []
     measurement = b''
@@ -155,7 +155,7 @@ def take_measurement() -> dict:
 
 
 def cancel_measurement() -> dict:
-    """Cancels a measurement in progress."""
+    """This function cancels a measurement in progress."""
     global _canceled
     _canceled = True  # Flag to short circuit _wait_for_ack() and take_measurement().
     set_mode_hr()  # Issue harmless command that interrupts the GTS.

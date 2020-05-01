@@ -23,6 +23,11 @@ except:
 
 
 def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
+    """
+    This function applies the occupied station coordinates, instrument height,
+    and prism offsets to the measurement returned from the total station (which
+    assumes that its coordinates are 0, 0, 0).
+    """
     measurement = raw_measurement['measurement']
     # Apply the occupied point offsets
     occupied_point = tripod.get_occupied_point()['coordinates']
@@ -45,6 +50,7 @@ def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
     )
     measurement['calculated_n'] += radial_n_diff
     measurement['calculated_e'] += radial_e_diff
+    # TODO: rethink the following, since it appears to stomp on previous offset calculations
     measurement['calculated_n'], measurement['calculated_e'] = _calculate_tangent_offset(
         measurement,
         prism_offsets['tangent_distance'],
@@ -60,6 +66,7 @@ def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
 
 
 def _calculate_radial_offset(measurement: dict, offset: float) -> tuple:
+    """This function calculates the northing and easting change due to toward/away radial prism offsets."""
     horizontal_distance = math.hypot(measurement['delta_n'], measurement['delta_e'])
     proportion = offset / horizontal_distance
     n_diff = measurement['delta_n'] * proportion
@@ -68,6 +75,7 @@ def _calculate_radial_offset(measurement: dict, offset: float) -> tuple:
 
 
 def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
+    """This function calculates the northing and easting change due to left/right tangential prism offsets."""
     # TODO: Test these with real-world measurements
     distance_to_prism = math.hypot(measurement['delta_n'], measurement['delta_e'])
     distance_to_point = math.hypot(distance_to_prism, offset)
@@ -91,12 +99,16 @@ def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
 
 
 def save_to_database(sql: str, data: tuple) -> dict:
+    """This function performs an INSERT of the given data using the provided query string."""
     errors = []
-    try:
-        cursor.execute(sql, data)
-        dbconn.commit()
-    except sqlite3.Error as err:
-        errors.append(str(err))
+    if sql[:11].upper().find('SELECT INTO') == 0:
+        try:
+            cursor.execute(sql, data)
+            dbconn.commit()
+        except sqlite3.Error as err:
+            errors.append(str(err))
+    else:
+        errors.append('The given sql does not appear to be an INSERT query.')
     result = {'success': not errors}
     if errors:
         result['errors'] = errors
@@ -105,13 +117,17 @@ def save_to_database(sql: str, data: tuple) -> dict:
     return result
 
 
-def read_from_database(sql: str, data: tuple=()) -> dict:
+def read_from_database(sql: str, params: tuple=()) -> dict:
+    """This function performs a SELECT query on the database, with optional parameters."""
     errors = []
-    try:
-        cursor.execute(sql, data)
-        queryresults = [dict(row) for row in cursor.fetchall()]
-    except sqlite3.Error as err:
-        errors.append(str(err))
+    if sql[:6].upper().find('SELECT') == 0:
+        try:
+            cursor.execute(sql, params)
+            queryresults = [dict(row) for row in cursor.fetchall()]
+        except sqlite3.Error as err:
+            errors.append(str(err))
+    else:
+        errors.append('The given sql does not appear to be a SELECT query.')
     result = {'success': not errors}
     if errors:
         result['errors'] = errors
@@ -121,6 +137,7 @@ def read_from_database(sql: str, data: tuple=()) -> dict:
 
 
 def update_current_state(data: dict) -> dict:
+    """This function writes session id and prism offsets to the currrentstate database table."""
     errors = []
     sql = f"UPDATE currentstate SET {', '.join([f'{key}=?' for key in data])}"
     if not save_to_database(sql, tuple(data.values()))['success']:

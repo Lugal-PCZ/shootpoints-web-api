@@ -29,6 +29,7 @@ _offsets = {
 
 
 def get_prism_offset(full_output: bool=False) -> dict:
+    """This function returns the prism offsets, in raw or human-readable form."""
     global _offsets
     results = {'success': True}
     if not full_output:  # Format the output to be more easily human-readable
@@ -73,6 +74,7 @@ def get_prism_offset(full_output: bool=False) -> dict:
 
 
 def set_prism_offset(**kwargs: dict) -> dict:
+    """This function sets the prism offsets."""
     errors = []
     global _offsets
     # Cache the current offsets

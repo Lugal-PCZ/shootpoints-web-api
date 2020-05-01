@@ -13,6 +13,7 @@ from . import data
 
 configs = None
 def _load_configs():
+    """This function loads the configurations from the configs.ini file."""
     global configs
     configs = configparser.RawConfigParser()
     configfile = 'configs.ini'
@@ -24,6 +25,7 @@ def _load_configs():
 
 serialport = None
 def _initialize_serial_port():
+    """This function finds the name of the serial port."""
     global serialport
     if configs['SERIAL']['port'] == 'demo':
         from .total_stations import demo as total_station
@@ -42,6 +44,7 @@ def _initialize_serial_port():
 
 total_station = None
 def _load_total_station_model():
+    """This function loads the given total station and opens the serial port."""
     global total_station
     make = configs['TOTAL STATION']['make'].replace(' ', '_').lower()
     make = configs['TOTAL STATION']['make'].replace('-', '_').lower()
@@ -69,6 +72,10 @@ def _load_total_station_model():
 
 sessionid = None
 def _load_session():
+    """
+    This function loads the active surveying session from the database, prompting 
+    the surveyor to start a new session or create a new station record if necessary.
+    """
     global sessionid
     sql = "SELECT * FROM stations"
     result = data.read_from_database(sql)
@@ -129,6 +136,7 @@ def _load_session():
 
 
 def start_surveying_session(label: str, surveyor: str, occupied_point: int, backsight_station: int=0, instrument_height: float=0, prism_height: int=0, azimuth: dict={}) -> dict:
+    """This function starts a new surveying session and saves it to the database."""
     global sessionid
     errors = []
     sql = f"SELECT northing, easting, elevation FROM stations WHERE id = ?"
@@ -220,6 +228,7 @@ def start_surveying_session(label: str, surveyor: str, occupied_point: int, back
 
 
 def end_surveying_session() -> dict:
+    """This function ends a surveying session."""
     global sessionid
     errors = []
     sql = "UPDATE sessions SET ended = CURRENT_TIMESTAMP WHERE id = ?"

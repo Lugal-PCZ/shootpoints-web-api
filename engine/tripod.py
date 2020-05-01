@@ -14,6 +14,7 @@ _instrument_height = 0.0
 
 
 def get_occupied_point() -> dict:
+    """This function returns the coordinates of the occupied point."""
     global _occupied_point
     return {
         'success': True,
@@ -22,6 +23,7 @@ def get_occupied_point() -> dict:
 
 
 def set_occupied_point(n: float, e: float, z: float) -> dict:
+    """This function sets the coordinates of the occupied point."""
     global _occupied_point
     errors = []
     try:
@@ -48,6 +50,7 @@ def set_occupied_point(n: float, e: float, z: float) -> dict:
 
 
 def get_instrument_height() -> dict:
+    """This function returns the instrument height above the occupied point."""
     global _instrument_height
     return {
         'success': True,
@@ -56,6 +59,7 @@ def get_instrument_height() -> dict:
 
 
 def set_instrument_height(height: float) -> dict:
+    """This function set the instrument height above the occupied point."""
     global _instrument_height
     errors = []
     try:
@@ -76,7 +80,7 @@ def set_instrument_height(height: float) -> dict:
 
 
 def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
-    """Saves the given station name and coordinates to the database"""
+    """This functino creates a new record in the database with the given station name and coordinates."""
     errors = []
     # Check that the given elevation is valid.
     try:
