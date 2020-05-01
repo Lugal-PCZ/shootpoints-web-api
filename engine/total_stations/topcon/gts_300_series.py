@@ -1,4 +1,4 @@
-# Communications constants and methods for interfacing with Topcon GTS-300 Series total stations.
+"""This module contains constants and methods for communicating with Topcon GTS-300 Series total stations."""
 
 # Communications constants:
 BAUDRATE=1200

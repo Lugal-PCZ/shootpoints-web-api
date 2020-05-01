@@ -1,3 +1,5 @@
+"""This module contains the API for ShootPoints."""
+
 from fastapi import FastAPI, Response
 
 import engine

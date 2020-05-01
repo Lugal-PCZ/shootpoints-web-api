@@ -1,4 +1,5 @@
-# TODO: rename this file to tripod.py
+"""This module handles the coordinates of the occupied point and the instrument height."""
+
 from . import angle_math
 from . import data
 

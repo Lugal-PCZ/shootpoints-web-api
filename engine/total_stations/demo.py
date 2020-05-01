@@ -1,4 +1,7 @@
-# Faked data responses for an imaginary total station, when ShootPoints is run as a demo.
+"""
+This module contains faked data responses for an imaginary total station,
+for when ShootPoints is run in demo mode.
+"""
 
 from time import sleep as _sleep
 from random import randint as _randint

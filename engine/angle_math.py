@@ -1,3 +1,5 @@
+"""This module contains utilities to simplify calculations and conversions of surveying data."""
+
 import math
 import utm
 

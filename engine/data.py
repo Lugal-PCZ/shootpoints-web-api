@@ -1,3 +1,5 @@
+"""This module handles reading from and writing to the ShootPoints database."""
+
 import sqlite3
 import os
 import math

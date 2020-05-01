@@ -1,4 +1,5 @@
-# TODO: Write proper docstrings for each of the functions in this package.
+"""This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
+
 import configparser
 import glob
 import importlib

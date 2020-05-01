@@ -1,3 +1,5 @@
+"""This module handles the vertical and horizontal prism offsets."""
+
 from . import data
 
 
