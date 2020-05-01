@@ -18,8 +18,7 @@ except:
     # The ShootPoints.db database is empty, so initialize it with the default schema.
     with open('blank_database.sql', 'r') as f:
         sql = f.read().split(';')
-        for each in sql:
-            cursor.execute(each)
+        _ = [cursor.execute(query) for query in sql]
         dbconn.commit()
 
 
@@ -121,20 +120,14 @@ def read_from_database(sql: str, data: tuple=()) -> dict:
     return result
 
 
-def update_current_state(columns: tuple, data: tuple) -> dict:
+def update_current_state(data: dict) -> dict:
     errors = []
-    if len(columns) != len(data):
-        errors.append('Mismatched number of columns to data provided.')
-    else:
-        cols = []
-        for each in columns:
-            cols.append(f'{each}=?')
-        sql = f"UPDATE currentstate SET {', '.join(cols)}"
-        if not save_to_database(sql, data)['success']:
-            errors.append('An error occurred writing the changes to the database.')
+    sql = f"UPDATE currentstate SET {', '.join([f'{key}=?' for key in data])}"
+    if not save_to_database(sql, tuple(data.values()))['success']:
+            errors.append('An error occurred writing the current state to the database.')
     result = {'status': not errors}
     if errors:
         result['errors'] = errors
     else:
-        result['result'] = 'Changes were successfully saved to the database.'
+        result['result'] = 'The current state was successfully saved to the database.'
     return result
