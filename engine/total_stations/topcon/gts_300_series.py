@@ -41,8 +41,7 @@ def _calculate_bcc(data: str) -> str:
     """Calculates BCC values for commands that require it."""
     bcc = 0
     for each_character in data:
-        q = ord(each_character)
-        bcc ^= q
+        bcc ^= ord(each_character)
     return '{:03d}'.format(bcc)
 
 
