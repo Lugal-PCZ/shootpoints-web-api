@@ -16,8 +16,8 @@ CREATE TABLE `currentstate` (
 ,  `prism_radial_distance` float NOT NULL DEFAULT '0'
 ,  `prism_tangent_distance` float NOT NULL DEFAULT '0'
 ,  PRIMARY KEY (`sessions_id`)
-,  CONSTRAINT `currentstate_ibfk_1` FOREIGN KEY (`sessions_id`) REFERENCES `sessions` (`id`)
 );
+INSERT INTO currentstate VALUES(0,0.0,0.0,0.0,0.0,0.0);
 CREATE TABLE `geometry` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) NOT NULL DEFAULT ''
@@ -42,10 +42,10 @@ CREATE TABLE `sessions` (
 ,  `started` timestamp NOT NULL DEFAULT current_timestamp
 ,  `ended` timestamp NULL DEFAULT NULL
 ,  `surveyor` varchar(100) NOT NULL DEFAULT ''
-,  `instrumentheight` float NOT NULL
 ,  `stations_id_occupied` integer  NOT NULL
 ,  `stations_id_backsight` integer  DEFAULT NULL
-,  `azimuth` float  NOT NULL
+,  `azimuth` varchar(12) NOT NULL DEFAULT '0°0''0"'
+,  `instrumentheight` float  NOT NULL
 ,  CONSTRAINT `sessions_ibfk_1` FOREIGN KEY (`stations_id_occupied`) REFERENCES `stations` (`id`)
 ,  CONSTRAINT `sessions_ibfk_2` FOREIGN KEY (`stations_id_backsight`) REFERENCES `stations` (`id`)
 );
