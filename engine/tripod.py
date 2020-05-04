@@ -1,6 +1,6 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
 
-from . import angle_math
+from . import calculations
 from . import database
 
 
@@ -134,7 +134,7 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
                     if utmzoneletter not in 'CDEFGHJKLMNPQRSTUVWX':
                         errors.append(f'Invalid UTM Zone letter given ({utmzoneletter}).')
                     else:
-                        latitude, longitude = angle_math.convert_utm_to_latlon(northing, easting, utmzonenumber, utmzoneletter)
+                        latitude, longitude = calculations.convert_utm_to_latlon(northing, easting, utmzonenumber, utmzoneletter)
     elif coordinatesystem == 'Lat/Lon':
         # Check that the given latitude is valid.
         try:
@@ -157,7 +157,7 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
             if -180 <= longitude <= 180:
                 errors.append('Longitude given is out of range (-180–180°).')
             else:
-                northing, easting, utmzone = angle_math.convert_latlon_to_utm(latitude, longitude)
+                northing, easting, utmzone = calculations.convert_latlon_to_utm(latitude, longitude)
     else:
         errors.append(
             f'Invalid coordinate system given ({coordinatesystem}).'

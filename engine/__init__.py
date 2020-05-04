@@ -7,7 +7,7 @@ import serial
 
 from . import tripod
 from . import prism
-from . import angle_math
+from . import calculations
 from . import database
 
 
@@ -156,7 +156,7 @@ def start_surveying_session(label: str, surveyor: str, occupied_point: int, back
                     backsight_northing = result['results']['northing']
                     backsight_easting = result['results']['easting']
                     backsight_elevation = result['results']['elevation']
-                    azimuth = angle_math.calculate_azimuth(
+                    azimuth = calculations.calculate_azimuth(
                         (occupied_northing, occupied_easting),
                         (backsight_northing, backsight_easting)
                     )

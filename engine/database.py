@@ -2,7 +2,6 @@
 
 import sqlite3
 import os
-import math
 
 
 dbconn = sqlite3.connect('ShootPoints.db')
