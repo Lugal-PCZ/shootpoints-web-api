@@ -59,7 +59,7 @@ def get_instrument_height() -> dict:
 
 
 def set_instrument_height(height: float) -> dict:
-    """This function set the instrument height above the occupied point."""
+    """This function set the instrument height above the occupied point and saves it to the database."""
     global _instrument_height
     errors = []
     try:
@@ -80,7 +80,8 @@ def set_instrument_height(height: float) -> dict:
 
 
 def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
-    """This functino creates a new record in the database with the given station name and coordinates."""
+    # TODO: Move this function into __init__.py?
+    """This function creates a new station record in the database with the given name and coordinates."""
     errors = []
     # Check that the given elevation is valid.
     try:

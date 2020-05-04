@@ -74,7 +74,7 @@ def get_prism_offset(full_output: bool=False) -> dict:
 
 
 def set_prism_offset(**kwargs: dict) -> dict:
-    """This function sets the prism offsets."""
+    """This function sets the prism offsets and saves them to the database."""
     errors = []
     global _offsets
     # Cache the current offsets
