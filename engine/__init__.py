@@ -8,7 +8,7 @@ import serial
 from . import tripod
 from . import prism
 from . import angle_math
-from . import data
+from . import database
 
 
 configs = None
@@ -78,11 +78,11 @@ def _load_session():
     """
     global sessionid
     sql = "SELECT * FROM stations"
-    result = data.read_from_database(sql)
+    result = database.read_from_database(sql)
     if result['success']:
         if result['results']:
             sql = "SELECT id FROM sessions WHERE ended IS NULL ORDER BY started DESC LIMIT 1"
-            result = data.read_from_database(sql)
+            result = database.read_from_database(sql)
             if result['success']:
                 if result['results']:
                     sessions_id = result['results'][0]['id']
@@ -104,7 +104,7 @@ def _load_session():
                         "JOIN stations sta ON sess.stations_id_occupied = sta.id\n"
                         f"WHERE curr.sessions_id = {sessions_id}"
                     )
-                    result = data.read_from_database(sql)
+                    result = database.read_from_database(sql)
                     if result['success']:
                         sessionid =  sessions_id
                         # Because these data are being read directly from the database,
@@ -140,7 +140,7 @@ def start_surveying_session(label: str, surveyor: str, occupied_point: int, back
     global sessionid
     errors = []
     sql = f"SELECT northing, easting, elevation FROM stations WHERE id = ?"
-    result = data.read_from_database(sql, (occupied_point,))
+    result = database.read_from_database(sql, (occupied_point,))
     if result['success']:
         occupied_northing = result['results']['northing']
         occupied_easting = result['results']['easting']
@@ -149,7 +149,7 @@ def start_surveying_session(label: str, surveyor: str, occupied_point: int, back
         if backsight_station:
             # Azimuth and instrument height are being set up with a backsight shot.
             sql = f"SELECT northing, easting, elevation FROM stations WHERE id = ?"
-            result = data.read_from_database(sql, (backsight_station,))
+            result = database.read_from_database(sql, (backsight_station,))
             if result['success']:
                 if prism_height > 0:
                     prism.set_prism_offset(**{'vertical_distance': prism_height, 'vertical_direction': 'Down'})
@@ -214,8 +214,8 @@ def start_surveying_session(label: str, surveyor: str, occupied_point: int, back
             f'{degrees}° {minutes}\' {seconds}"',
             instrument_height,
         )
-        if data.save_to_database(sql, sessiondata)['success']:
-            sessionid = data.read_from_database("SELECT last_insert_rowid()", ())['results'][0]['last_insert_rowid()']
+        if database.save_to_database(sql, sessiondata)['success']:
+            sessionid = database.read_from_database("SELECT last_insert_rowid()", ())['results'][0]['last_insert_rowid()']
         else:
             errors.append(f'A problem occurred while saving the new session to the database.')
     result = {'success': not errors}
@@ -232,7 +232,7 @@ def end_surveying_session() -> dict:
     global sessionid
     errors = []
     sql = "UPDATE sessions SET ended = CURRENT_TIMESTAMP WHERE id = ?"
-    if not data.save_to_database(sql, (sessionid,))['success']:
+    if not database.save_to_database(sql, (sessionid,))['success']:
         errors.append(f'An error occurred closing the session. Session {sessionid} is still active.')
     result = {'success': not errors}
     if errors:

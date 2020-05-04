@@ -1,6 +1,6 @@
 """This module handles the vertical and horizontal prism offsets."""
 
-from . import data
+from . import database
 
 
 # Offset direction is always FROM the point TO the prism, as viewed from the occupied station.
