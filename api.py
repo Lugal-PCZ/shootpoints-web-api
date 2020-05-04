@@ -48,7 +48,7 @@ def measurement_take(response: Response):
     if 'errors' in result:
         response.status_code = 422
     else:
-        result = engine.data.apply_offsets_to_measurement(result)
+        result = engine.angle_math.apply_offsets_to_measurement(result)
     return result
 
 
