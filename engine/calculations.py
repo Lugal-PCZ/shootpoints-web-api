@@ -61,11 +61,12 @@ def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
     )
     measurement['calculated_n'] += radial_n_diff
     measurement['calculated_e'] += radial_e_diff
-    # TODO: rethink the following, since it appears to stomp on previous offset calculations
-    measurement['calculated_n'], measurement['calculated_e'] = _calculate_tangent_offset(
+    tangent_n_diff, tangent_e_diff = _calculate_tangent_offset(
         measurement,
         prism_offsets['tangent_distance'],
     )
+    measurement['calculated_n'] += tangent_n_diff
+    measurement['calculated_e'] += tangent_e_diff
     # Round the calculated values to the nearest millimeter
     measurement['calculated_n'] = round(measurement['calculated_n'], 3)
     measurement['calculated_e'] = round(measurement['calculated_e'], 3)
@@ -104,6 +105,6 @@ def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
         azimuth_to_point += 360
     elif azimuth_to_point > 360:
         azimuth_to_point -= 360
-    point_n = distance_to_point * math.cos(math.radians(azimuth_to_point))
-    point_e = distance_to_point * math.sin(math.radians(azimuth_to_point))
-    return point_n, point_e
+    n_diff = measurement['delta_n'] - (distance_to_point * math.cos(math.radians(azimuth_to_point)))
+    e_diff = measurement['delta_e'] - (distance_to_point * math.sin(math.radians(azimuth_to_point)))
+    return n_diff, e_diff
