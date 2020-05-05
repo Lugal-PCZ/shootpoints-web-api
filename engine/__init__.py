@@ -142,9 +142,9 @@ def start_surveying_session(label: str, surveyor: str, occupied_point: int, back
     sql = f"SELECT northing, easting, elevation FROM stations WHERE id = ?"
     result = database.read_from_database(sql, (occupied_point,))
     if result['success']:
-        occupied_northing = result['results']['northing']
-        occupied_easting = result['results']['easting']
-        occupied_elevation = result['results']['elevation']
+        occupied_northing = result['results'][0]['northing']
+        occupied_easting = result['results'][0]['easting']
+        occupied_elevation = result['results'][0]['elevation']
         tripod.set_occupied_point(occupied_northing, occupied_easting, occupied_elevation)
         if backsight_station:
             # Azimuth and instrument height are being set up with a backsight shot.
@@ -262,8 +262,8 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
         except ValueError:
             errors.append(f"Non-numeric northing given ({coordinates['northing']}).")
         else:
-            if 0 <= northing <= 10000000:
-                errors.append('Northing given is out of range (0–10000000m).')
+            if not 0 <= northing <= 10000000:
+                errors.append(f'Northing given ({northing}) is out of range (0–10000000m).')
         # Check that the given easting is valid.
         try:
             easting = float(coordinates['easting'])
@@ -272,8 +272,8 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
         except ValueError:
             errors.append(f"Non-numeric easting given ({coordinates['easting']}).")
         else:
-            if 0 <= easting <= 1000000:
-                errors.append('Easting given is out of range (0–1000000m).')
+            if not 100000 <= easting <= 999999:
+                errors.append(f'Easting given ({easting}) is out of range (100000–999999m).')
         if coordinatesystem == 'Site':
             # Latitude, longitude, and UTM zone are not needed or 
             # calculated when the coordinate system is 'Site'.
