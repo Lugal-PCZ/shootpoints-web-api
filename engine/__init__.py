@@ -12,6 +12,11 @@ from . import database
 
 
 configs = None
+serialport = None
+total_station = None
+sessionid = None
+
+
 def _load_configs():
     """This function loads the configurations from the configs.ini file."""
     global configs
@@ -23,13 +28,35 @@ def _load_configs():
         exit(f'FATAL ERROR: The config file ({configfile}) was not found.')
 
 
-serialport = None
-def _initialize_serial_port():
-    """This function finds the name of the serial port."""
-    global serialport
+def _load_total_station_model():
+    """This function loads the indicated total station."""
+    global total_station
     if configs['SERIAL']['port'] == 'demo':
         from .total_stations import demo as total_station
-    elif configs['SERIAL']['port'] == 'auto':
+    else:
+        make = configs['TOTAL STATION']['make'].replace(' ', '_').lower()
+        make = configs['TOTAL STATION']['make'].replace('-', '_').lower()
+        model = configs['TOTAL STATION']['model'].replace(' ', '_').lower()
+        model = configs['TOTAL STATION']['model'].replace('-', '_').lower()
+        if make == 'topcon' and model[:6] == 'gts_30':
+            model = 'gts_300_series'
+        try:
+            total_station = importlib.import_module(f'{__name__}.total_stations.{make}.{model}', package='engine')
+        except ModuleNotFoundError:
+            exit(f'FATAL ERROR: File total_stations/{make}/{model}.py does not exist.')
+
+
+def _initialize_serial_port():
+    """
+    This function finds the appropriate serial port and initializes it
+    with the communication parameters for the total station model.
+    """
+    global serialport
+    if configs['SERIAL']['port'] == 'demo':
+        return
+    if total_station == 'demo':
+        return
+    if configs['SERIAL']['port'] == 'auto':
         if glob.glob('/dev/cu.ttyAMA*'):  # Linux with RS232 adapter
             serialport = glob.glob('/dev/cu.ttyAMA*')[0]
         elif glob.glob('/dev/ttyUSB*'):  # Linux with USB adapter
@@ -40,22 +67,6 @@ def _initialize_serial_port():
             exit('FATAL ERROR: No valid serial port found.')
     else:  # Port is specified explicitly in configs.ini file.
         serialport = configs['SERIAL']['port']
-
-
-total_station = None
-def _load_total_station_model():
-    """This function loads the given total station and opens the serial port."""
-    global total_station
-    make = configs['TOTAL STATION']['make'].replace(' ', '_').lower()
-    make = configs['TOTAL STATION']['make'].replace('-', '_').lower()
-    model = configs['TOTAL STATION']['model'].replace(' ', '_').lower()
-    model = configs['TOTAL STATION']['model'].replace('-', '_').lower()
-    if make == 'topcon' and model[:6] == 'gts_30':
-        model = 'gts_300_series'
-    try:
-        total_station = importlib.import_module(f'{__name__}.total_stations.{make}.{model}', package='engine')
-    except ModuleNotFoundError:
-        exit(f'FATAL ERROR: File total_stations/{make}/{model}.py does not exist.')
     try:
         port = serial.Serial(
             port=serialport,
@@ -70,7 +81,6 @@ def _load_total_station_model():
         exit(f'FATAL ERROR: Serial port {serialport} could not be opened.')
 
 
-sessionid = None
 def _load_session():
     """
     This function loads the active surveying session from the database, prompting 
@@ -181,6 +191,8 @@ def start_surveying_session(label: str, surveyor: str, occupied_point: int, back
                 errors.extend(result['errors'])
         else:
             # Azimuth and instrument height are being set manually.
+            # TODO: fix the logic error here when a backsight is not being used but azimuth is also not entered
+            # TODO: throw an error if instrument height is zero
             setinstrumentheight = tripod.set_instrument_height(instrument_height)
             if setinstrumentheight['success']:
                 degrees = azimuth['degrees']
@@ -347,11 +359,11 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
 if not configs:
     _load_configs()
 
-if not serialport:
-    _initialize_serial_port()
-
 if not total_station:
     _load_total_station_model()
+
+if not serialport:
+    _initialize_serial_port()
 
 if not sessionid:
     _load_session()
