@@ -21,7 +21,7 @@ def calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
 
 def convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
     """This function converts latitude/longitude coordinates to UTM."""
-    northing, easting, zonenumber, zoneletter = utm.from_latlon(latitude, longitude)
+    easting, northing, zonenumber, zoneletter = utm.from_latlon(latitude, longitude)
     northing = round(northing, 3)
     easting = round(easting, 3)
     return (northing, easting, f'{zonenumber}{zoneletter}')
@@ -29,7 +29,7 @@ def convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
 
 def convert_utm_to_latlon(northing: float, easting: float, zonenumber: int, zoneletter: str) -> tuple:
     """This function converts UTM coordinates to latitude/longitude."""
-    latitude, longitude = utm.to_latlon(northing, easting, zonenumber, zoneletter)
+    latitude, longitude = utm.to_latlon(easting, northing, zonenumber, zoneletter)
     return (latitude, longitude)
 
 
