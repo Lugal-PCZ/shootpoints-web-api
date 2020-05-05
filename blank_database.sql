@@ -10,11 +10,11 @@ INSERT INTO classes VALUES(3,'Artifact');
 INSERT INTO classes VALUES(4,'Feature');
 CREATE TABLE `currentstate` (
   `sessions_id` integer  NOT NULL
-,  `prism_vertical_distance` float NOT NULL DEFAULT '0'
-,  `prism_latitude_distance` float NOT NULL DEFAULT '0'
-,  `prism_longitude_distance` float NOT NULL DEFAULT '0'
-,  `prism_radial_distance` float NOT NULL DEFAULT '0'
-,  `prism_tangent_distance` float NOT NULL DEFAULT '0'
+,  `vertical_distance` float NOT NULL DEFAULT '0'
+,  `latitude_distance` float NOT NULL DEFAULT '0'
+,  `longitude_distance` float NOT NULL DEFAULT '0'
+,  `radial_distance` float NOT NULL DEFAULT '0'
+,  `tangent_distance` float NOT NULL DEFAULT '0'
 ,  PRIMARY KEY (`sessions_id`)
 );
 INSERT INTO currentstate VALUES(0,0.0,0.0,0.0,0.0,0.0);
