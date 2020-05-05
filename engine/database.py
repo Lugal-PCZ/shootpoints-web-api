@@ -20,7 +20,7 @@ except:
 def save_to_database(sql: str, data: tuple) -> dict:
     """This function performs an INSERT of the given data using the provided query string."""
     errors = []
-    if sql[:11].upper().find('SELECT INTO') == 0:
+    if sql[:11].upper().find('INSERT INTO') == 0:
         try:
             cursor.execute(sql, data)
             dbconn.commit()
@@ -58,10 +58,14 @@ def read_from_database(sql: str, params: tuple=()) -> dict:
 def update_current_state(data: dict) -> dict:
     """This function writes session id and prism offsets to the currrentstate database table."""
     errors = []
-    sql = f"UPDATE currentstate SET {', '.join([f'{key}=?' for key in data])}"
-    if not save_to_database(sql, tuple(data.values()))['success']:
-            errors.append('An error occurred writing the current state to the database.')
-    result = {'status': not errors}
+    data = list(data.items())
+    sql = f"UPDATE currentstate SET {', '.join([f'{_[0]}=?' for _ in data])}"
+    try:
+        cursor.execute(sql, tuple(_[1] for _ in data))
+        dbconn.commit()
+    except sqlite3.Error as err:
+        errors.append(str(err))
+    result = {'success': not errors}
     if errors:
         result['errors'] = errors
     else:
