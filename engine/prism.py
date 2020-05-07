@@ -73,7 +73,7 @@ def get_prism_offset(full_output: bool=False) -> dict:
     return results
 
 
-def set_prism_offset(**kwargs: dict) -> dict:
+def set_prism_offset(**kwargs) -> dict:
     """This function sets the prism offsets and saves them to the database."""
     errors = []
     global _offsets
@@ -156,9 +156,9 @@ def set_prism_offset(**kwargs: dict) -> dict:
                     errors.append('No direction was given for the Tangent Offset.')
             except ValueError:
                 errors.append(f'The Tangent Offset distance entered ({val}) is not numerical.')
-    savetodb = database.update_current_state(temp_offsets)
-    if not savetodb['success']:
-        errors.append(savetodb['errors'])
+    update = database.update_current_state(temp_offsets)
+    if not update['success']:
+        errors.append(update['errors'])
     result = {'success': not errors}
     if errors:
         result['errors'] = errors
