@@ -319,7 +319,7 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
         except ValueError:
             errors.append(f"Non-numeric latitude given ({coordinates['latitude']}).")
         else:
-            if 0 <= latitude <= 90:
+            if not 0 <= latitude <= 90:
                 errors.append('Latitude given is out of range (0–90°).')
         # Check that the given longitude is valid.
         try:
@@ -329,7 +329,7 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
         except ValueError:
             errors.append(f"Non-numeric latitude given ({coordinates['longitude']}).")
         else:
-            if -180 <= longitude <= 180:
+            if not -180 <= longitude <= 180:
                 errors.append('Longitude given is out of range (-180–180°).')
             else:
                 northing, easting, utmzone = calculations.convert_latlon_to_utm(latitude, longitude)
