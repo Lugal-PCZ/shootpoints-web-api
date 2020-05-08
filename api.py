@@ -43,8 +43,10 @@ def measurement_cancel():
 @app.get('/measurement/')
 def measurement_take(response: Response):
     """This function tells the total station to start measuring a point."""
-    # TODO: warn the user if prism offsets are all zero
-    result = engine.total_station.take_measurement()
+    if engine.prism.get_prism_offset()['result']:
+        result = engine.total_station.take_measurement()
+    else:
+        result = {'success': False, 'errors': ['Set a prism offset before proceeding.']}
     if 'errors' in result:
         response.status_code = 422
     else:
