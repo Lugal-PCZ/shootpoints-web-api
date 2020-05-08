@@ -1,5 +1,6 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
 # TODO: Create a module in this package for taking shots and handling metadata.
+# TODO: Create an interface for setting the configurations.
 
 import configparser
 import glob
