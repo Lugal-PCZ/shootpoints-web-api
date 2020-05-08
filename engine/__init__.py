@@ -4,6 +4,7 @@ import configparser
 import glob
 import importlib
 import serial
+import math
 
 from . import tripod
 from . import prism
@@ -213,6 +214,7 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
             measurement = total_station.take_measurement()
             if measurement['success']:
                 # TODO: check that the distance measured is what was expected, within a given error range
+                measured_distance = math.hypot(measurement['delta_n'], measurement['delta_e'])
                 elev_diff_of_points = occupied_elevation - backsight_elevation
                 delta_z_to_point = measurement['measurement']['delta_z'] - prism_height
                 instrument_height = elev_diff_of_points + delta_z_to_point
