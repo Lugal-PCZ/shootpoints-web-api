@@ -213,8 +213,12 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
         if setazimuth['success']:
             measurement = total_station.take_measurement()
             if measurement['success']:
-                # TODO: check that the distance measured is what was expected, within a given error range
+                expected_distance = math.hypot(occupied_northing - backsight_northing, occupied_easting - backsight_easting)
                 measured_distance = math.hypot(measurement['delta_n'], measurement['delta_e'])
+                variance = abs(expected_distance - measured_distance) * 100
+                limit = configs['BACKSIGHT ERROR']['limit']
+                if variance >= limit:
+                    errors.append(f'The measured distance between the Occupied Point and the Backsight Station ({variance}cm) exceeds the limit set in configs.ini ({limit}cm).')
                 elev_diff_of_points = occupied_elevation - backsight_elevation
                 delta_z_to_point = measurement['measurement']['delta_z'] - prism_height
                 instrument_height = elev_diff_of_points + delta_z_to_point
