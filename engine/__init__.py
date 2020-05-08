@@ -1,4 +1,5 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
+# TODO: Create a module in this package for taking shots and handling metadata.
 
 import configparser
 import glob
@@ -82,12 +83,14 @@ def _initialize_serial_port():
         exit(f'FATAL ERROR: Serial port {serialport} could not be opened.')
 
 
-def _load_session():
+def _load_session() -> dict:
     """
     This function loads the active surveying session from the database, prompting 
     the surveyor to start a new session or create a new station record if necessary.
     """
     global sessionid
+    errors = []
+    fatalerror = ''
     sql = "SELECT count(*) AS numstations FROM stations"
     numstations = database.read_from_database(sql)
     if numstations['success']:
@@ -96,55 +99,61 @@ def _load_session():
             currentsession = database.read_from_database(sql)
             if currentsession['success']:
                 if len(currentsession['results']) > 0:
-                    sessions_id = currentsession['results'][0]['id']
-                    database.update_current_state({'sessions_id': sessions_id})
-                    sql = (
-                        'SELECT '
-                            'curr.sessions_id, '
-                            'sess.stations_id_occupied, '
-                            'sta.northing, '
-                            'sta.easting, '
-                            'sta.elevation, '
-                            'sess.instrumentheight, '
-                            'curr.vertical_distance, '
-                            'curr.latitude_distance, '
-                            'curr.longitude_distance, '
-                            'curr.radial_distance, '
-                            'curr.tangent_distance '
-                        'FROM currentstate curr '
-                        'JOIN sessions sess ON curr.sessions_id = sess.id '
-                        'JOIN stations sta ON sess.stations_id_occupied = sta.id '
-                        'WHERE curr.sessions_id = ?'
-                    )
-                    sessioninfo = database.read_from_database(sql, (sessions_id,))
-                    if sessioninfo['success']:
-                        sessionid =  sessions_id
-                        # Because these data are being read directly from the database,
-                        # they are presumed to be clean, and don't need to go through the
-                        # normal setters.
-                        tripod._occupied_point['n'] = sessioninfo['results'][0]['northing']
-                        tripod._occupied_point['e'] = sessioninfo['results'][0]['easting']
-                        tripod._occupied_point['z'] = sessioninfo['results'][0]['elevation']
-                        tripod._instrument_height = sessioninfo['results'][0]['instrumentheight']
-                        prism._offsets['vertical_distance'] = sessioninfo['results'][0]['vertical_distance']
-                        prism._offsets['latitude_distance'] = sessioninfo['results'][0]['latitude_distance']
-                        prism._offsets['longitude_distance'] = sessioninfo['results'][0]['longitude_distance']
-                        prism._offsets['radial_distance'] = sessioninfo['results'][0]['radial_distance']
-                        prism._offsets['tangent_distance'] = sessioninfo['results'][0]['tangent_distance']
-# TODO: Replace the following exits with proper dictionary errors, so that the front end can display the error for the user to fix.
+                    sessionid = currentsession['results'][0]['id']
+                    if database.update_current_state({'sessions_id': sessionid})['success']:
+                        sql = (
+                            'SELECT '
+                                'curr.sessions_id, '
+                                'sess.stations_id_occupied, '
+                                'sta.northing, '
+                                'sta.easting, '
+                                'sta.elevation, '
+                                'sess.instrumentheight, '
+                                'curr.vertical_distance, '
+                                'curr.latitude_distance, '
+                                'curr.longitude_distance, '
+                                'curr.radial_distance, '
+                                'curr.tangent_distance '
+                            'FROM currentstate curr '
+                            'JOIN sessions sess ON curr.sessions_id = sess.id '
+                            'JOIN stations sta ON sess.stations_id_occupied = sta.id '
+                            'WHERE curr.sessions_id = ?'
+                        )
+                        sessioninfo = database.read_from_database(sql, (sessionid,))
+                        if sessioninfo['success']:
+                            # Because these data are being read directly from the database,
+                            # they are presumed to be clean, and don't need to go through the
+                            # normal setters.
+                            tripod._occupied_point['n'] = sessioninfo['results'][0]['northing']
+                            tripod._occupied_point['e'] = sessioninfo['results'][0]['easting']
+                            tripod._occupied_point['z'] = sessioninfo['results'][0]['elevation']
+                            tripod._instrument_height = sessioninfo['results'][0]['instrumentheight']
+                            prism._offsets['vertical_distance'] = sessioninfo['results'][0]['vertical_distance']
+                            prism._offsets['latitude_distance'] = sessioninfo['results'][0]['latitude_distance']
+                            prism._offsets['longitude_distance'] = sessioninfo['results'][0]['longitude_distance']
+                            prism._offsets['radial_distance'] = sessioninfo['results'][0]['radial_distance']
+                            prism._offsets['tangent_distance'] = sessioninfo['results'][0]['tangent_distance']
+                        else:
+                            fatalerror = 'Because of problems reading the ShootPoints database, we could not retrieve any session information.'
                     else:
-                        exit(f'FATAL ERROR: An error occurred reading the ShootPoints database.')
+                        fatalerror = 'Because of problems writing to the ShootPoints database, the current session could not be saved.'
+                        sessionid = 0
                 else:
-                    # TODO: There is no active session, so prompt the user to start a new session.
-                    print('There is no active surveying session.')
+                    errors.append('There is no active surveying session.')
             else:
-                exit(f'FATAL ERROR: An error occurred reading the ShootPoints database.')
+                fatalerror = 'Because of problems reading the ShootPoints database, we could not determine the current session id.'
         else:
-            # TODO: No stations have been created (i.e., this is a new DB), so prompt the user to create the first station.
-            # tripod.save_station()
-            print('There are no stations in the database.')
+            errors.append('There are no stations in the database.')
     else:
-        exit(f'FATAL ERROR: An error occurred reading the ShootPoints database.')
+        fatalerror = 'Because of problems reading the ShootPoints database, we could not determine the number of previously saved stations.'
+    if fatalerror:
+        exit(f'FATAL ERROR: {fatalerror}')
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        result['result'] = sessioninfo
+    return result
 
 
 def _load_station(id: int) -> dict:
@@ -153,8 +162,11 @@ def _load_station(id: int) -> dict:
     sql = 'SELECT name, northing, easting, elevation FROM stations WHERE id = ?'
     query = database.read_from_database(sql, (id,))
     if query['success']:
-        coords = query['results'][0]
-        tripod.set_occupied_point(coords['northing'], coords['easting'], coords['elevation'])
+        if len(query['results']):
+            coords = query['results'][0]
+            tripod.set_occupied_point(coords['northing'], coords['easting'], coords['elevation'])
+        else:
+            errors.append('There are no saved stations in the database.')
     else:
         errors.append(f'A problem occurred reading station id {id} from the database.')
     result = {'success': not errors}
@@ -184,7 +196,9 @@ def _save_new_session(data: tuple) -> bool:
 
 def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_point_id: int, backsight_station_id: int, prism_height: int) -> dict:
     """This function starts a new surveying session with a backsight to a known point."""
+    global configs
     errors = []
+    end_surveying_session()  # End the current session, if it's still open.
     occupied_point_coordinates = _load_station(occupied_point_id)
     if occupied_point_coordinates['success']:
         occupied_name, occupied_northing, occupied_easting, occupied_elevation = occupied_point_coordinates['result']
@@ -250,10 +264,10 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
 
 def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_point_id: int, instrument_height: float, degrees: int, minutes: int, seconds: int) -> dict:
     """This function starts a new surveying session with an azimuth to a landmark."""
-    # There is no backsight station in this setup, so set its ID to None.
-    backsight_station_id = None
+    backsight_station_id = None  # There is no backsight station in this setup, so the database expects a NULL.
     global sessionid
     errors = []
+    end_surveying_session()  # End the current session, if it's still open.
     occupied_point_coordinates = _load_station(occupied_point_id)
     if not occupied_point_coordinates['success']:
         errors.extend(occupied_point_coordinates['errors'])
