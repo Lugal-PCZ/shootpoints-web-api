@@ -1,6 +1,5 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
 # TODO: Create a module in this package for taking shots and handling metadata.
-# TODO: Create an interface for setting the configurations.
 
 import configparser
 import glob
@@ -20,15 +19,21 @@ total_station = None
 sessionid = None
 
 
-def _load_configs():
+def _load_configs() -> dict:
     """This function loads the configurations from the configs.ini file."""
     global configs
-    configs = configparser.RawConfigParser()
-    configfile = 'configs.ini'
+    errors = []
+    configs = configparser.ConfigParser()
     try:
-        configs.read(configfile)
+        configs.read('configs.ini')
     except:
-        exit(f'FATAL ERROR: The config file ({configfile}) was not found.')
+        errors.append('The config.ini file was not found. Create one before proceeding.')
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        result['result'] = 'Configurations loaded successfully.'
+    return result
 
 
 def _load_total_station_model():
@@ -193,6 +198,28 @@ def _save_new_session(data: tuple) -> bool:
     if not database.save_to_database('UPDATE currentstate SET sessions_id = ?', (sessionid,))['success']:
         sessionid = 0
     return bool(sessionid)
+
+
+def create_config_file(port: str='', make: str='', model: str='', limit: int=0) -> dict:
+    """This function creates the configs.ini and sets its values."""
+    configs = configparser.ConfigParser()
+    # If any of the parameters aren't set when this function is called, then defaul to those in the example file.
+    configs.read('configs.ini.example')
+    if port:
+        configs['SERIAL'] = {'port': port}
+    if make:
+        configs['TOTAL STATION'] = {'make': make}
+    if model:
+        configs['TOTAL STATION'] = {'model': model}
+    if limit:
+        configs['BACKSIGHT ERROR'] = {'limit': limit}
+    with open('configs.ini', 'w') as f:
+        configs.write(f)
+    result = {
+        'success': True,
+        'result': 'Configurations file created.',
+    }
+    return result
 
 
 def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_point_id: int, backsight_station_id: int, prism_height: int) -> dict:
@@ -412,13 +439,11 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
 
 # The following need to happen every time that the program is run or restarted.
 if not configs:
-    _load_configs()
-
-if not total_station:
-    _load_total_station_model()
-
-if not serialport:
-    _initialize_serial_port()
-
-if not sessionid:
-    _load_session()
+    loadconfigs = _load_configs()
+    if loadconfigs['success']:
+        if not total_station:
+            _load_total_station_model()
+        if not serialport:
+            _initialize_serial_port()
+        if not sessionid:
+            _load_session()
