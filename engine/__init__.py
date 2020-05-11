@@ -52,6 +52,11 @@ def _load_total_station_model():
             total_station = importlib.import_module(f'{__name__}.total_stations.{make}.{model}', package='engine')
         except ModuleNotFoundError:
             exit(f'FATAL ERROR: File total_stations/{make}/{model}.py does not exist.')
+    result = {
+        'success': True,
+        'result': 'Total station loaded.'
+    }
+    return result
 
 
 def _initialize_serial_port():
@@ -87,6 +92,11 @@ def _initialize_serial_port():
         total_station.port = port
     except:
         exit(f'FATAL ERROR: Serial port {serialport} could not be opened.')
+    result = {
+        'success': True,
+        'result': f'Serial port {serialport} opened.'
+    }
+    return result
 
 
 def _load_session() -> dict:
