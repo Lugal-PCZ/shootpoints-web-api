@@ -113,68 +113,64 @@ def _load_session() -> dict:
     """
     global sessionid
     errors = []
-    fatalerror = ''
-    # TODO: refactor this so that it looks for missing sessions BEFORE missing stations?
-    sql = "SELECT count(*) AS numstations FROM stations"
-    numstations = database.read_from_database(sql)
-    if numstations['success']:
-        if numstations['results'][0]['numstations']:
-            sql = "SELECT id FROM sessions WHERE ended IS NULL ORDER BY started DESC LIMIT 1"
-            currentsession = database.read_from_database(sql)
-            if currentsession['success']:
-                if len(currentsession['results']) > 0:
-                    sessionid = currentsession['results'][0]['id']
-                    if database.update_current_state({'sessions_id': sessionid})['success']:
-                        sql = (
-                            'SELECT '
-                                'curr.sessions_id, '
-                                'sess.stations_id_occupied, '
-                                'sta.northing, '
-                                'sta.easting, '
-                                'sta.elevation, '
-                                'sess.instrumentheight, '
-                                'curr.vertical_distance, '
-                                'curr.latitude_distance, '
-                                'curr.longitude_distance, '
-                                'curr.radial_distance, '
-                                'curr.tangent_distance '
-                            'FROM currentstate curr '
-                            'JOIN sessions sess ON curr.sessions_id = sess.id '
-                            'JOIN stations sta ON sess.stations_id_occupied = sta.id '
-                            'WHERE curr.sessions_id = ?'
-                        )
-                        sessioninfo = database.read_from_database(sql, (sessionid,))
-                        if sessioninfo['success']:
-                            # Because these data are being read directly from the database,
-                            # they are presumed to be clean, and don't need to go through the
-                            # normal setters.
-                            tripod._occupied_point['n'] = sessioninfo['results'][0]['northing']
-                            tripod._occupied_point['e'] = sessioninfo['results'][0]['easting']
-                            tripod._occupied_point['z'] = sessioninfo['results'][0]['elevation']
-                            tripod._instrument_height = sessioninfo['results'][0]['instrumentheight']
-                            prism._offsets['vertical_distance'] = sessioninfo['results'][0]['vertical_distance']
-                            prism._offsets['latitude_distance'] = sessioninfo['results'][0]['latitude_distance']
-                            prism._offsets['longitude_distance'] = sessioninfo['results'][0]['longitude_distance']
-                            prism._offsets['radial_distance'] = sessioninfo['results'][0]['radial_distance']
-                            prism._offsets['tangent_distance'] = sessioninfo['results'][0]['tangent_distance']
-                        else:
-                            fatalerror = 'Because of problems reading the ShootPoints database, we could not retrieve any session information.'
-                    else:
-                        fatalerror = 'Because of problems writing to the ShootPoints database, the current session could not be saved.'
-                        sessionid = 0
+    sql = "SELECT id FROM sessions WHERE ended IS NULL ORDER BY started DESC LIMIT 1"
+    currentsession = database.read_from_database(sql)
+    if currentsession['success']:
+        if len(currentsession['results']) > 0:
+            sessionid = currentsession['results'][0]['id']
+            if database.update_current_state({'sessions_id': sessionid})['success']:
+                sql = (
+                    'SELECT '
+                        'curr.sessions_id, '
+                        'sess.stations_id_occupied, '
+                        'sta.northing, '
+                        'sta.easting, '
+                        'sta.elevation, '
+                        'sess.instrumentheight, '
+                        'curr.vertical_distance, '
+                        'curr.latitude_distance, '
+                        'curr.longitude_distance, '
+                        'curr.radial_distance, '
+                        'curr.tangent_distance '
+                    'FROM currentstate curr '
+                    'JOIN sessions sess ON curr.sessions_id = sess.id '
+                    'JOIN stations sta ON sess.stations_id_occupied = sta.id '
+                    'WHERE curr.sessions_id = ?'
+                )
+                sessioninfo = database.read_from_database(sql, (sessionid,))
+                if sessioninfo['success']:
+                    # Because these data are being read directly from the database,
+                    # they are presumed to be clean, and don't need to go through the
+                    # normal setters.
+                    tripod._occupied_point['n'] = sessioninfo['results'][0]['northing']
+                    tripod._occupied_point['e'] = sessioninfo['results'][0]['easting']
+                    tripod._occupied_point['z'] = sessioninfo['results'][0]['elevation']
+                    tripod._instrument_height = sessioninfo['results'][0]['instrumentheight']
+                    prism._offsets['vertical_distance'] = sessioninfo['results'][0]['vertical_distance']
+                    prism._offsets['latitude_distance'] = sessioninfo['results'][0]['latitude_distance']
+                    prism._offsets['longitude_distance'] = sessioninfo['results'][0]['longitude_distance']
+                    prism._offsets['radial_distance'] = sessioninfo['results'][0]['radial_distance']
+                    prism._offsets['tangent_distance'] = sessioninfo['results'][0]['tangent_distance']
                 else:
-                    errors.append('There is no active surveying session.')
+                    errors.append('FATAL ERROR: Because of problems reading the ShootPoints database, we could not retrieve any session information.')
             else:
-                fatalerror = 'Because of problems reading the ShootPoints database, we could not determine the current session id.'
+                errors.append('FATAL ERROR: Because of problems writing to the ShootPoints database, the current session could not be saved.')
         else:
-            errors.append('There are no stations in the database. Please enter at least one before proceeding.')
+            errors.append('There is no active surveying session.')
     else:
-        fatalerror = 'Because of problems reading the ShootPoints database, we could not determine the number of previously saved stations.'
-    if fatalerror:
-        errors.append(f'FATAL ERROR: {fatalerror}')
+        errors.append('FATAL ERROR: Because of problems reading the ShootPoints database, we could not determine the current session id.')
+    if not errors:
+        sql = "SELECT count(*) AS numstations FROM stations"
+        numstations = database.read_from_database(sql)
+        if numstations['success']:
+            if numstations['results'][0]['numstations'] == 0:
+                errors.append('There are no stations in the database. Please enter at least one before proceeding.')
+        else:
+            errors.append('FATAL ERROR: Because of problems reading the ShootPoints database, we could not determine the number of previously saved stations.')
     result = {'success': not errors}
     if errors:
         result['errors'] = errors
+        sessionid = 0
     else:
         result['result'] = sessioninfo
     return result
