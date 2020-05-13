@@ -11,7 +11,17 @@ app = FastAPI()
 @app.post('/azimuth/')
 def azimuth_set(response: Response, degrees: int=0, minutes: int=0, seconds: int=0):
     """This function sets the azimuth on the total station."""
-    result = engine.total_station.set_azimuth(degrees, minutes, seconds)
+    result = engine.check_application_state()
+    if result['success']:
+        result = engine.total_station.set_azimuth(degrees, minutes, seconds)
+    if 'errors' in result:
+        response.status_code = 422
+    return result
+
+
+@app.post('/configs/')
+def configs_set(response: Response, port: str='', make: str='', model: str='', limit: int=0):
+    result = engine.create_config_file(port, make, model, limit)
     if 'errors' in result:
         response.status_code = 422
     return result
@@ -20,14 +30,18 @@ def azimuth_set(response: Response, degrees: int=0, minutes: int=0, seconds: int
 @app.get('/instrument_height/')
 def instrument_height_get():
     """"This function gets the instrument height above the occupied point."""
-    result = engine.tripod.get_instrument_height()
+    result = engine.check_application_state()
+    if result['success']:
+        result = engine.tripod.get_instrument_height()
     return result
 
 
 @app.post('/instrument_height/')
 def instrument_height_set(response: Response, height: float):
     """"This function gets the instrument height above the occupied point."""
-    result = engine.tripod.set_instrument_height(height)
+    result = engine.check_application_state()
+    if result['success']:
+        result = engine.tripod.set_instrument_height(height)
     if 'errors' in result:
         response.status_code = 422
     return result
