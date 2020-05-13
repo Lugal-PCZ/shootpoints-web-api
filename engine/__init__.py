@@ -14,8 +14,8 @@ from . import database
 
 
 configs = None
-serialport = None
 total_station = None
+serialport = None
 sessionid = None
 
 
@@ -23,12 +23,12 @@ def _load_configs() -> dict:
     """This function loads the configurations from the configs.ini file."""
     global configs
     errors = []
-    configs = configparser.ConfigParser()
-    try:
-        configs.read('configs.ini')
-    except:
-        errors.append('The config.ini file was not found. Create one before proceeding.')
-    result = {'success': not errors}
+    if not configs:
+        configs = configparser.ConfigParser()
+        if not configs.read('configs.ini'):
+            configs = None
+            errors.append('The config.ini file was not found. Create one before proceeding.')
+        result = {'success': not errors}
     if errors:
         result['errors'] = errors
     else:
@@ -38,24 +38,28 @@ def _load_configs() -> dict:
 
 def _load_total_station_model():
     """This function loads the indicated total station."""
+    global configs
     global total_station
-    if configs['SERIAL']['port'] == 'demo':
-        from .total_stations import demo as total_station
+    errors = []
+    if not total_station:
+        if configs['SERIAL']['port'] == 'demo':
+            from .total_stations import demo as total_station
+        else:
+            make = configs['TOTAL STATION']['make'].replace(' ', '_').lower()
+            make = make.replace('-', '_').lower()
+            model = configs['TOTAL STATION']['model'].replace(' ', '_').lower()
+            model = model.replace('-', '_').lower()
+            if make == 'topcon' and model[:6] == 'gts_30':
+                model = 'gts_300_series'
+            try:
+                total_station = importlib.import_module(f'{__name__}.total_stations.{make}.{model}', package='engine')
+            except ModuleNotFoundError:
+                errors.append(f'File total_stations/{make}/{model}.py does not exist. Specify the correct total station make and model in configs.ini before proceeding.')
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
     else:
-        make = configs['TOTAL STATION']['make'].replace(' ', '_').lower()
-        make = configs['TOTAL STATION']['make'].replace('-', '_').lower()
-        model = configs['TOTAL STATION']['model'].replace(' ', '_').lower()
-        model = configs['TOTAL STATION']['model'].replace('-', '_').lower()
-        if make == 'topcon' and model[:6] == 'gts_30':
-            model = 'gts_300_series'
-        try:
-            total_station = importlib.import_module(f'{__name__}.total_stations.{make}.{model}', package='engine')
-        except ModuleNotFoundError:
-            exit(f'FATAL ERROR: File total_stations/{make}/{model}.py does not exist.')
-    result = {
-        'success': True,
-        'result': 'Total station loaded.'
-    }
+        result['result'] = 'Total station loaded.'
     return result
 
 
@@ -64,38 +68,41 @@ def _initialize_serial_port():
     This function finds the appropriate serial port and initializes it
     with the communication parameters for the total station model.
     """
+    global configs
     global serialport
-    if configs['SERIAL']['port'] == 'demo':
-        return
-    if total_station == 'demo':
-        return
-    if configs['SERIAL']['port'] == 'auto':
-        if glob.glob('/dev/cu.ttyAMA*'):  # Linux with RS232 adapter
-            serialport = glob.glob('/dev/cu.ttyAMA*')[0]
-        elif glob.glob('/dev/ttyUSB*'):  # Linux with USB adapter
-            serialport = glob.glob('/dev/cu.ttyUSB*')[0]
-        elif glob.glob('/dev/cu.usbserial*'):  # Mac with USB adapter
-            serialport = glob.glob('/dev/cu.usbserial*')[0]
-        else:  # Serial port not found.
-            exit('FATAL ERROR: No valid serial port found.')
-    else:  # Port is specified explicitly in configs.ini file.
-        serialport = configs['SERIAL']['port']
-    try:
-        port = serial.Serial(
-            port=serialport,
-            baudrate=total_station.BAUDRATE,
-            parity=total_station.PARITY,
-            bytesize=total_station.BYTESIZE,
-            stopbits=total_station.STOPBITS,
-            timeout=total_station.TIMEOUT,
-        )
-        total_station.port = port
-    except:
-        exit(f'FATAL ERROR: Serial port {serialport} could not be opened.')
-    result = {
-        'success': True,
-        'result': f'Serial port {serialport} opened.'
-    }
+    errors = []
+    if not serialport:
+        if configs['SERIAL']['port'] == 'demo':
+            pass
+        elif configs['SERIAL']['port'] == 'auto':
+            if glob.glob('/dev/cu.ttyAMA*'):  # Linux with RS232 adapter
+                serialport = glob.glob('/dev/cu.ttyAMA*')[0]
+            elif glob.glob('/dev/ttyUSB*'):  # Linux with USB adapter
+                serialport = glob.glob('/dev/cu.ttyUSB*')[0]
+            elif glob.glob('/dev/cu.usbserial*'):  # Mac with USB adapter
+                serialport = glob.glob('/dev/cu.usbserial*')[0]
+            else:  # Serial port not found.
+                errors.append('FATAL ERROR: No valid serial port found.')
+        else:  # Port is specified explicitly in configs.ini file.
+            serialport = configs['SERIAL']['port']
+        if configs['SERIAL']['port'] != 'demo' and not errors:
+            try:
+                port = serial.Serial(
+                    port=serialport,
+                    baudrate=total_station.BAUDRATE,
+                    parity=total_station.PARITY,
+                    bytesize=total_station.BYTESIZE,
+                    stopbits=total_station.STOPBITS,
+                    timeout=total_station.TIMEOUT,
+                )
+                total_station.port = port
+            except:
+                errors.append(f'FATAL ERROR: Serial port {serialport} could not be opened.')
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        result['result'] = f'Serial port {serialport} opened.'
     return result
 
 
@@ -107,6 +114,7 @@ def _load_session() -> dict:
     global sessionid
     errors = []
     fatalerror = ''
+    # TODO: refactor this so that it looks for missing sessions BEFORE missing stations?
     sql = "SELECT count(*) AS numstations FROM stations"
     numstations = database.read_from_database(sql)
     if numstations['success']:
@@ -159,11 +167,11 @@ def _load_session() -> dict:
             else:
                 fatalerror = 'Because of problems reading the ShootPoints database, we could not determine the current session id.'
         else:
-            errors.append('There are no stations in the database.')
+            errors.append('There are no stations in the database. Please enter at least one before proceeding.')
     else:
         fatalerror = 'Because of problems reading the ShootPoints database, we could not determine the number of previously saved stations.'
     if fatalerror:
-        exit(f'FATAL ERROR: {fatalerror}')
+        errors.append(f'FATAL ERROR: {fatalerror}')
     result = {'success': not errors}
     if errors:
         result['errors'] = errors
@@ -447,13 +455,30 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
     return result
 
 
-# The following need to happen every time that the program is run or restarted.
-if not configs:
+def check_application_state():
+    """
+    This function checks the state of the global variables, and reloads them from
+    the ShootPoints database, if necessary.
+    """
+    global configs
+    errors = []
     loadconfigs = _load_configs()
-    if loadconfigs['success']:
-        if not total_station:
-            _load_total_station_model()
-        if not serialport:
-            _initialize_serial_port()
-        if not sessionid:
-            _load_session()
+    if not loadconfigs['success']:
+        errors.extend(loadconfigs['errors'])
+    else:
+        loadtotalstation = _load_total_station_model()
+        if not loadtotalstation['success']:
+            errors.extend(loadtotalstation['errors'])
+        initializeserialport = _initialize_serial_port()
+        if not initializeserialport['success']:
+            errors.extend(initializeserialport['errors'])
+        if not errors:
+            loadsession = _load_session()
+            if not loadsession['success']:
+                errors.extend(loadsession['errors'])
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        result['result'] = 'Configs and state (re)loaded successfully.'
+    return result
