@@ -4,7 +4,7 @@ import sqlite3
 import os
 
 
-dbconn = sqlite3.connect('ShootPoints.db')
+dbconn = sqlite3.connect('ShootPoints.db', check_same_thread=False)
 dbconn.row_factory = sqlite3.Row
 cursor = dbconn.cursor()
 try:
