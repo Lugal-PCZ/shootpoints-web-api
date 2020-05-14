@@ -28,7 +28,7 @@ def _load_configs() -> dict:
         if not configs.read('configs.ini'):
             configs = None
             errors.append('The config.ini file was not found. Create one before proceeding.')
-        result = {'success': not errors}
+    result = {'success': not errors}
     if errors:
         result['errors'] = errors
     else:
@@ -236,7 +236,7 @@ def create_config_file(port: str='', make: str='', model: str='', limit: int=0) 
     return result
 
 
-def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_point_id: int, backsight_station_id: int, prism_height: int) -> dict:
+def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_point_id: int, backsight_station_id: int, prism_height: float) -> dict:
     """This function starts a new surveying session with a backsight to a known point."""
     global configs
     errors = []
