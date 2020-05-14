@@ -229,10 +229,9 @@ def create_config_file(port: str='', make: str='', model: str='', limit: int=0) 
         configs['BACKSIGHT ERROR'] = {'limit': limit}
     with open('configs.ini', 'w') as f:
         configs.write(f)
-    result = {
-        'success': True,
-        'result': 'Configurations file created.',
-    }
+    result = _load_configs()
+    if result['success']:
+        result['result'] = 'Configurations file created and loaded.'
     return result
 
 
