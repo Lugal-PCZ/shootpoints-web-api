@@ -116,17 +116,28 @@ def prism_offset_set(response: Response, offsets: dict):
 
 
 @app.post('/session/')
-def session_start(response: Response, label: str, surveyor: str, occupied_point: int, backsight_station: int=0, instrument_height: float=0, prism_height: int=0, azimuth: dict={}):
+def session_start(response: Response, label: str, surveyor: str, occupied_point_id: int, backsight_station_id: int=0, instrument_height: float=0.0, prism_height: float=0.0, degrees: int=0, minutes: int=0, seconds: int=0):
     """This funciton starts a new surveying session."""
-    result = engine.start_surveying_session(
-        label,
-        surveyor,
-        occupied_point,
-        backsight_station,
-        instrument_height,
-        prism_height,
-        azimuth,
-    )
+    result = engine.check_application_state()
+    if result['success']:
+        if backsight_station_id:
+            result = engine.start_surveying_session_with_backsight(
+                label,
+                surveyor,
+                occupied_point_id,
+                backsight_station_id,
+                prism_height,
+            )
+        else:
+            result = engine.start_surveying_session_with_azimuth(
+                label,
+                surveyor,
+                occupied_point_id,
+                instrument_height,
+                degrees,
+                minutes,
+                seconds,
+            )
     if 'errors' in result:
         response.status_code = 422
     return result
