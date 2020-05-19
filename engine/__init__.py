@@ -1,4 +1,6 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
+# TODO: Move all the sanity checking into this file, simplifying the prism, tripod, and totalstation interfaces, and name all their functions with underscores so that they're not called directly.
+# TODO: Once the previous is done, add the _load_application_state() to each function here that needs it (perhaps as a decorator).
 # TODO: Create a module in this package for taking shots and handling metadata.
 
 import configparser
@@ -173,6 +175,35 @@ def _load_session_from_database() -> dict:
         sessionid = 0
     else:
         result['result'] = sessioninfo
+    return result
+
+
+def _load_application_state() -> dict:
+    """
+    This function checks the state of the global variables, and reloads them from
+    the ShootPoints database, if necessary.
+    """
+    global configs
+    errors = []
+    loadconfigs = _load_configs_from_file()
+    if not loadconfigs['success']:
+        errors.extend(loadconfigs['errors'])
+    else:
+        loadtotalstation = _load_total_station_model()
+        if not loadtotalstation['success']:
+            errors.extend(loadtotalstation['errors'])
+        initializeserialport = _initialize_serial_port()
+        if not initializeserialport['success']:
+            errors.extend(initializeserialport['errors'])
+        if not errors:
+            loadsession = _load_session_from_database()
+            if not loadsession['success']:
+                errors.extend(loadsession['errors'])
+    result = {'success': not errors}
+    if errors:
+        result['errors'] = errors
+    else:
+        result['result'] = 'Configs and state (re)loaded successfully.'
     return result
 
 

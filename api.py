@@ -17,7 +17,7 @@ def show_summary():
 @app.post('/azimuth/')
 def azimuth_set(response: Response, degrees: int=0, minutes: int=0, seconds: int=0):
     """This function sets the azimuth on the total station."""
-    result = engine.check_application_state()
+    result = engine._load_application_state()
     if result['success']:
         result = engine.totalstation.set_azimuth(degrees, minutes, seconds)
     if 'errors' in result:
@@ -43,7 +43,7 @@ def instrument_height_get():
 @app.post('/instrument_height/')
 def instrument_height_set(response: Response, height: float):
     """"This function gets the instrument height above the occupied point."""
-    result = engine.check_application_state()
+    result = engine._load_application_state()
     if result['success']:
         result = engine.tripod.set_instrument_height(height)
     if 'errors' in result:
@@ -61,7 +61,7 @@ def measurement_cancel():
 @app.get('/measurement/')
 def measurement_take(response: Response):
     """This function tells the total station to start measuring a point."""
-    result = engine.check_application_state()
+    result = engine._load_application_state()
     if result['success']:
         if engine.prism.get_prism_offset()['result']:
             result = engine.totalstation.take_measurement()
@@ -77,7 +77,7 @@ def measurement_take(response: Response):
 @app.post('/mode_hr/')
 def mode_hr_set(response: Response):
     """This function sets the total station to horizontal right mode."""
-    result = engine.check_application_state()
+    result = engine._load_application_state()
     if result['success']:
         result = engine.totalstation.set_mode_hr()
     if 'errors' in result:
@@ -95,7 +95,7 @@ def occupied_point_get():
 @app.post('/occupied_point/')
 def occupied_point_set(response: Response, northing: float, easting: float, elevation: float):
     """This function sets the coordinates of the occupied point."""
-    result = engine.check_application_state()
+    result = engine._load_application_state()
     if result['success']:
         result = engine.tripod.set_occupied_point(northing, easting, elevation)
     if 'errors' in result:
@@ -113,7 +113,7 @@ def prism_offset_get():
 @app.post('/prism_offset/')
 def prism_offset_set(response: Response, offsets: dict):
     """This function sets the prism offsets."""
-    result = engine.check_application_state()
+    result = engine._load_application_state()
     if result['success']:
         result = engine.prism.set_prism_offset(**offsets)
     if 'errors' in result:
@@ -123,8 +123,8 @@ def prism_offset_set(response: Response, offsets: dict):
 
 @app.post('/session/')
 def session_start(response: Response, label: str, surveyor: str, occupied_point_id: int, backsight_station_id: int=0, instrument_height: float=0.0, prism_height: float=0.0, degrees: int=0, minutes: int=0, seconds: int=0):
-    """This funciton starts a new surveying session."""
-    result = engine.check_application_state()
+    """This function starts a new surveying session."""
+    result = engine._load_application_state()
     if result['success']:
         if backsight_station_id:
             result = engine.start_surveying_session_with_backsight(
