@@ -19,7 +19,7 @@ serialport = None
 sessionid = None
 
 
-def _load_configs() -> dict:
+def _load_configs_from_file() -> dict:
     """This function loads the configurations from the configs.ini file."""
     global configs
     errors = []
@@ -106,7 +106,7 @@ def _initialize_serial_port():
     return result
 
 
-def _load_session() -> dict:
+def _load_session_from_database() -> dict:
     """
     This function loads the active surveying session from the database, prompting 
     the surveyor to start a new session or create a new station record if necessary.
@@ -176,7 +176,7 @@ def _load_session() -> dict:
     return result
 
 
-def _load_station(id: int) -> dict:
+def _load_station_from_database(id: int) -> dict:
     """"This function returns the name and coordinates of the indicated station from the database."""
     errors = []
     sql = 'SELECT name, northing, easting, elevation FROM stations WHERE id = ?'
@@ -229,7 +229,7 @@ def create_config_file(port: str='', make: str='', model: str='', limit: int=0) 
         configs['BACKSIGHT ERROR'] = {'limit': limit}
     with open('configs.ini', 'w') as f:
         configs.write(f)
-    result = _load_configs()
+    result = _load_configs_from_file()
     if result['success']:
         result['result'] = 'Configurations file created and loaded.'
     return result
@@ -240,12 +240,12 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
     global configs
     errors = []
     end_surveying_session()  # End the current session, if it's still open.
-    occupied_point_coordinates = _load_station(occupied_point_id)
+    occupied_point_coordinates = _load_station_from_database(occupied_point_id)
     if occupied_point_coordinates['success']:
         occupied_name, occupied_northing, occupied_easting, occupied_elevation = occupied_point_coordinates['result']
     else:
         errors.extend(occupied_point_coordinates['errors'])
-    backsight_station_coordinates = _load_station(backsight_station_id)
+    backsight_station_coordinates = _load_station_from_database(backsight_station_id)
     if backsight_station_coordinates['success']:
         backsight_name, backsight_northing, backsight_easting, backsight_elevation = backsight_station_coordinates['result']
     else:
@@ -309,7 +309,7 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_poi
     global sessionid
     errors = []
     end_surveying_session()  # End the current session, if it's still open.
-    occupied_point_coordinates = _load_station(occupied_point_id)
+    occupied_point_coordinates = _load_station_from_database(occupied_point_id)
     if not occupied_point_coordinates['success']:
         errors.extend(occupied_point_coordinates['errors'])
     setinstrumentheight = tripod.set_instrument_height(instrument_height)
