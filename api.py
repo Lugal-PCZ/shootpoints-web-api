@@ -70,7 +70,7 @@ def measurement_take(response: Response):
         if 'errors' in result:
             response.status_code = 422
         else:
-            result = engine.calculations.apply_offsets_to_measurement(result)
+            result = engine.calculations._apply_offsets_to_measurement(result)
     return result
 
 

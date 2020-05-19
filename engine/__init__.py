@@ -288,7 +288,7 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
     if prism_height < 0:
         errors.append(f'An invalid prism height ({prism_height}m) was entered.')
     if not errors:
-        azimuth = calculations.calculate_azimuth(
+        azimuth = calculations._calculate_azimuth(
             (occupied_northing, occupied_easting),
             (backsight_northing, backsight_easting)
         )
@@ -438,7 +438,7 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
                     if utmzoneletter not in 'CDEFGHJKLMNPQRSTUVWX':
                         errors.append(f'Invalid UTM Zone letter given ({utmzoneletter}).')
                     else:
-                        latitude, longitude = calculations.convert_utm_to_latlon(northing, easting, utmzonenumber, utmzoneletter)
+                        latitude, longitude = calculations._convert_utm_to_latlon(northing, easting, utmzonenumber, utmzoneletter)
     elif coordinatesystem == 'Lat/Lon':
         # Check that the given latitude is valid.
         try:
@@ -461,7 +461,7 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
             if not -180 <= longitude <= 180:
                 errors.append('Longitude given is out of range (-180–180°).')
         if not errors:
-            northing, easting, utmzone = calculations.convert_latlon_to_utm(latitude, longitude)
+            northing, easting, utmzone = calculations._convert_latlon_to_utm(latitude, longitude)
     else:
         errors.append(f'Invalid coordinate system given ({coordinatesystem}) It should be one of Site, UTM, or Lat/Lon.')
     if not errors:
