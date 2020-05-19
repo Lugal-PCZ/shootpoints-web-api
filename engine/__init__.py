@@ -14,7 +14,7 @@ from . import database
 
 
 configs = None
-total_station = None
+totalstation = None
 serialport = None
 sessionid = None
 
@@ -39,11 +39,11 @@ def _load_configs() -> dict:
 def _load_total_station_model():
     """This function loads the indicated total station."""
     global configs
-    global total_station
+    global totalstation
     errors = []
-    if not total_station:
+    if not totalstation:
         if configs['SERIAL']['port'] == 'demo':
-            from .total_stations import demo as total_station
+            from .total_stations import demo as totalstation
         else:
             make = configs['TOTAL STATION']['make'].replace(' ', '_').lower()
             make = make.replace('-', '_').lower()
@@ -52,7 +52,7 @@ def _load_total_station_model():
             if make == 'topcon' and model[:6] == 'gts_30':
                 model = 'gts_300_series'
             try:
-                total_station = importlib.import_module(f'{__name__}.total_stations.{make}.{model}', package='engine')
+                totalstation = importlib.import_module(f'{__name__}.total_stations.{make}.{model}', package='engine')
             except ModuleNotFoundError:
                 errors.append(f'File total_stations/{make}/{model}.py does not exist. Specify the correct total station make and model in configs.ini before proceeding.')
     result = {'success': not errors}
@@ -89,13 +89,13 @@ def _initialize_serial_port():
             try:
                 port = serial.Serial(
                     port=serialport,
-                    baudrate=total_station.BAUDRATE,
-                    parity=total_station.PARITY,
-                    bytesize=total_station.BYTESIZE,
-                    stopbits=total_station.STOPBITS,
-                    timeout=total_station.TIMEOUT,
+                    baudrate=totalstation.BAUDRATE,
+                    parity=totalstation.PARITY,
+                    bytesize=totalstation.BYTESIZE,
+                    stopbits=totalstation.STOPBITS,
+                    timeout=totalstation.TIMEOUT,
                 )
-                total_station.port = port
+                totalstation.port = port
             except:
                 errors.append(f'FATAL ERROR: Serial port {serialport} could not be opened.')
     result = {'success': not errors}
@@ -264,9 +264,9 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
         degrees, remainder = divmod(azimuth, 1)
         minutes, remainder = divmod(remainder * 60, 1)
         seconds = round(remainder * 60)
-        setazimuth = total_station.set_azimuth(degrees, minutes, seconds)
+        setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
         if setazimuth['success']:
-            measurement = total_station.take_measurement()
+            measurement = totalstation.take_measurement()
             if measurement['success']:
                 expected_distance = math.hypot(occupied_northing - backsight_northing, occupied_easting - backsight_easting)
                 measured_distance = math.hypot(measurement['delta_n'], measurement['delta_e'])
@@ -315,7 +315,7 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_poi
     setinstrumentheight = tripod.set_instrument_height(instrument_height)
     if not setinstrumentheight['success']:
         errors.extend(setinstrumentheight['errors'])
-    setazimuth = total_station.set_azimuth(degrees, minutes, seconds)
+    setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
     if not setazimuth['success']:
         errors.extend(setazimuth['errors'])
     if not errors:

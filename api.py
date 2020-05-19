@@ -19,7 +19,7 @@ def azimuth_set(response: Response, degrees: int=0, minutes: int=0, seconds: int
     """This function sets the azimuth on the total station."""
     result = engine.check_application_state()
     if result['success']:
-        result = engine.total_station.set_azimuth(degrees, minutes, seconds)
+        result = engine.totalstation.set_azimuth(degrees, minutes, seconds)
     if 'errors' in result:
         response.status_code = 422
     return result
@@ -54,7 +54,7 @@ def instrument_height_set(response: Response, height: float):
 @app.get('/cancel/')
 def measurement_cancel():
     """This function stops a measurement in progress."""
-    result = engine.total_station.cancel_measurement()
+    result = engine.totalstation.cancel_measurement()
     return result
 
 
@@ -64,7 +64,7 @@ def measurement_take(response: Response):
     result = engine.check_application_state()
     if result['success']:
         if engine.prism.get_prism_offset()['result']:
-            result = engine.total_station.take_measurement()
+            result = engine.totalstation.take_measurement()
         else:
             result = {'success': False, 'errors': ['Set a prism offset before proceeding.']}
         if 'errors' in result:
@@ -79,7 +79,7 @@ def mode_hr_set(response: Response):
     """This function sets the total station to horizontal right mode."""
     result = engine.check_application_state()
     if result['success']:
-        result = engine.total_station.set_mode_hr()
+        result = engine.totalstation.set_mode_hr()
     if 'errors' in result:
         response.status_code = 422
     return result
