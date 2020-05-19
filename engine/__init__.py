@@ -372,7 +372,7 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
         except ValueError:
             errors.append(f"Non-numeric northing given ({coordinates['northing']}).")
         else:
-            if not 0 <= northing <= 10000000:
+            if coordinatesystem != 'Site' and not 0 <= northing <= 10000000:
                 errors.append(f'Northing given ({northing}) is out of range (0–10000000m).')
         # Check that the given easting is valid.
         try:
@@ -382,7 +382,7 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
         except ValueError:
             errors.append(f"Non-numeric easting given ({coordinates['easting']}).")
         else:
-            if not 100000 <= easting <= 999999:
+            if coordinatesystem != 'Site' and not 100000 <= easting <= 999999:
                 errors.append(f'Easting given ({easting}) is out of range (100000–999999m).')
         if coordinatesystem == 'Site':
             # Latitude, longitude, and UTM zone are not needed or 
