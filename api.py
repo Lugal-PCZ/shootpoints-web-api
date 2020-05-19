@@ -8,6 +8,12 @@ import engine
 app = FastAPI()
 
 
+@app.get('/')
+def show_summary():
+    """This function gives summary data about the active """
+    return engine.summarize_application_state()
+
+
 @app.post('/azimuth/')
 def azimuth_set(response: Response, degrees: int=0, minutes: int=0, seconds: int=0):
     """This function sets the azimuth on the total station."""

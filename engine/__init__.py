@@ -450,30 +450,57 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
     return result
 
 
-def check_application_state():
+def summarize_application_state() -> dict:
     """
     This function checks the state of the global variables, and reloads them from
     the ShootPoints database, if necessary.
     """
     global configs
-    errors = []
-    loadconfigs = _load_configs()
-    if not loadconfigs['success']:
-        errors.extend(loadconfigs['errors'])
-    else:
-        loadtotalstation = _load_total_station_model()
-        if not loadtotalstation['success']:
-            errors.extend(loadtotalstation['errors'])
-        initializeserialport = _initialize_serial_port()
-        if not initializeserialport['success']:
-            errors.extend(initializeserialport['errors'])
-        if not errors:
-            loadsession = _load_session()
-            if not loadsession['success']:
-                errors.extend(loadsession['errors'])
-    result = {'success': not errors}
-    if errors:
-        result['errors'] = errors
-    else:
-        result['result'] = 'Configs and state (re)loaded successfully.'
-    return result
+    global totalstation
+    global serialport
+    global sessionid
+    summary = {
+        'valid_config': False,
+        'serial_port': 'N/A',
+        'total_station': 'N/A',
+        'num_stations_in_db': 0,
+        'num_sessions_in_db': 0,
+        'current_session': {}, #id, occupied point, IH, POs...
+        'num_points_in_db': 0,
+        'num_points_in_current_session': 0,
+    }
+    _load_application_state()
+    if _load_configs_from_file()['success']:
+        summary['valid_config'] = True
+        if serialport:
+            summary['serial_port'] = serialport
+        if configs['SERIAL']['port'] == 'demo':
+            summary['total_station'] = 'demo'
+        elif totalstation:
+            summary['total_station'] = f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']}"
+        summary['num_stations_in_db'] = database.read_from_database('SELECT count(*) FROM stations')['results'][0]['count(*)']
+        summary['num_sessions_in_db'] = database.read_from_database('SELECT count(*) FROM sessions')['results'][0]['count(*)']
+        if sessionid:
+            sql = (
+                'SELECT '
+                    'curr.sessions_id, '
+                    'sess.stations_id_occupied, '
+                    'sta.northing, '
+                    'sta.easting, '
+                    'sta.elevation, '
+                    'sess.instrumentheight, '
+                    'curr.vertical_distance, '
+                    'curr.latitude_distance, '
+                    'curr.longitude_distance, '
+                    'curr.radial_distance, '
+                    'curr.tangent_distance '
+                'FROM currentstate curr '
+                'JOIN sessions sess ON curr.sessions_id = sess.id '
+                'JOIN stations sta ON sess.stations_id_occupied = sta.id '
+                'WHERE curr.sessions_id = ?'
+            )
+            summary['current_session'] = database.read_from_database(sql, (sessionid,))['results'][0]
+        summary['num_points_in_db'] = database.read_from_database('SELECT count(*) FROM shots')['results'][0]['count(*)']
+        if sessionid:
+            summary['num_points_in_current_session'] = database.read_from_database('SELECT count(*) FROM shots WHERE sessions_id = ?', (sessionid,))['results'][0]['count(*)']
+        return summary
