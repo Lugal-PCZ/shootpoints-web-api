@@ -116,11 +116,11 @@ def _load_session_from_database() -> dict:
     global sessionid
     errors = []
     sql = "SELECT id FROM sessions WHERE ended IS NULL ORDER BY started DESC LIMIT 1"
-    currentsession = database.read_from_database(sql)
+    currentsession = database._read_from_database(sql)
     if currentsession['success']:
         if len(currentsession['results']) > 0:
             sessionid = currentsession['results'][0]['id']
-            if database.update_current_state({'sessions_id': sessionid})['success']:
+            if database._update_current_state({'sessions_id': sessionid})['success']:
                 sql = (
                     'SELECT '
                         'curr.sessions_id, '
@@ -139,7 +139,7 @@ def _load_session_from_database() -> dict:
                     'JOIN stations sta ON sess.stations_id_occupied = sta.id '
                     'WHERE curr.sessions_id = ?'
                 )
-                sessioninfo = database.read_from_database(sql, (sessionid,))
+                sessioninfo = database._read_from_database(sql, (sessionid,))
                 if sessioninfo['success']:
                     # Because these data are being read directly from the database,
                     # they are presumed to be clean, and don't need to go through the
@@ -163,7 +163,7 @@ def _load_session_from_database() -> dict:
         errors.append('FATAL ERROR: Because of problems reading the ShootPoints database, we could not determine the current session id.')
     if not errors:
         sql = "SELECT count(*) AS numstations FROM stations"
-        numstations = database.read_from_database(sql)
+        numstations = database._read_from_database(sql)
         if numstations['success']:
             if numstations['results'][0]['numstations'] == 0:
                 errors.append('There are no stations in the database. Please enter at least one before proceeding.')
@@ -211,7 +211,7 @@ def _load_station_from_database(id: int) -> dict:
     """"This function returns the name and coordinates of the indicated station from the database."""
     errors = []
     sql = 'SELECT name, northing, easting, elevation FROM stations WHERE id = ?'
-    query = database.read_from_database(sql, (id,))
+    query = database._read_from_database(sql, (id,))
     if query['success']:
         if len(query['results']):
             coords = query['results'][0]
@@ -236,11 +236,11 @@ def _save_new_session(data: tuple) -> bool:
         '(label, started, surveyor, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight) '
         'VALUES(?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)'
     )
-    if database.save_to_database(sql, data)['success']:
-        sessionid = database.read_from_database('SELECT last_insert_rowid()', ())['results'][0]['last_insert_rowid()']
+    if database._save_to_database(sql, data)['success']:
+        sessionid = database._read_from_database('SELECT last_insert_rowid()', ())['results'][0]['last_insert_rowid()']
     else:
         sessionid = 0
-    if not database.save_to_database('UPDATE currentstate SET sessions_id = ?', (sessionid,))['success']:
+    if not database._save_to_database('UPDATE currentstate SET sessions_id = ?', (sessionid,))['success']:
         sessionid = 0
     return bool(sessionid)
 
@@ -373,7 +373,7 @@ def end_surveying_session() -> dict:
     global sessionid
     errors = []
     sql = "UPDATE sessions SET ended = CURRENT_TIMESTAMP WHERE id = ?"
-    if not database.save_to_database(sql, (sessionid,))['success']:
+    if not database._save_to_database(sql, (sessionid,))['success']:
         errors.append(f'An error occurred closing the session. Session {sessionid} is still active.')
     result = {'success': not errors}
     if errors:
@@ -471,7 +471,7 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
             f'VALUES (?, ?, ?, ?, ?, ?, ?)'
         )
         newstation = (name, northing, easting, elevation, utmzone, latitude, longitude)
-        if not database.save_to_database(sql, newstation)['success']:
+        if not database._save_to_database(sql, newstation)['success']:
             errors.append(f'Station ({name}) not saved to the database.')
     result = {'success': not errors}
     if errors:
@@ -509,8 +509,8 @@ def summarize_application_state() -> dict:
             summary['total_station'] = 'demo'
         elif totalstation:
             summary['total_station'] = f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']}"
-        summary['num_stations_in_db'] = database.read_from_database('SELECT count(*) FROM stations')['results'][0]['count(*)']
-        summary['num_sessions_in_db'] = database.read_from_database('SELECT count(*) FROM sessions')['results'][0]['count(*)']
+        summary['num_stations_in_db'] = database._read_from_database('SELECT count(*) FROM stations')['results'][0]['count(*)']
+        summary['num_sessions_in_db'] = database._read_from_database('SELECT count(*) FROM sessions')['results'][0]['count(*)']
         if sessionid:
             sql = (
                 'SELECT '
@@ -530,8 +530,8 @@ def summarize_application_state() -> dict:
                 'JOIN stations sta ON sess.stations_id_occupied = sta.id '
                 'WHERE curr.sessions_id = ?'
             )
-            summary['current_session'] = database.read_from_database(sql, (sessionid,))['results'][0]
-        summary['num_points_in_db'] = database.read_from_database('SELECT count(*) FROM shots')['results'][0]['count(*)']
+            summary['current_session'] = database._read_from_database(sql, (sessionid,))['results'][0]
+        summary['num_points_in_db'] = database._read_from_database('SELECT count(*) FROM shots')['results'][0]['count(*)']
         if sessionid:
-            summary['num_points_in_current_session'] = database.read_from_database('SELECT count(*) FROM shots WHERE sessions_id = ?', (sessionid,))['results'][0]['count(*)']
+            summary['num_points_in_current_session'] = database._read_from_database('SELECT count(*) FROM shots WHERE sessions_id = ?', (sessionid,))['results'][0]['count(*)']
         return summary

@@ -17,7 +17,7 @@ except:
         dbconn.commit()
 
 
-def save_to_database(sql: str, data: tuple) -> dict:
+def _save_to_database(sql: str, data: tuple) -> dict:
     """This function performs an INSERT of the given data using the provided query string."""
     errors = []
     if sql[:11].upper().find('INSERT INTO') == 0:
@@ -36,7 +36,7 @@ def save_to_database(sql: str, data: tuple) -> dict:
     return result
 
 
-def read_from_database(sql: str, params: tuple=()) -> dict:
+def _read_from_database(sql: str, params: tuple=()) -> dict:
     """This function performs a SELECT query on the database, with optional parameters."""
     errors = []
     if sql[:6].upper().find('SELECT') == 0:
@@ -55,7 +55,7 @@ def read_from_database(sql: str, params: tuple=()) -> dict:
     return result
 
 
-def update_current_state(data: dict) -> dict:
+def _update_current_state(data: dict) -> dict:
     """This function writes session id and prism offsets to the currrentstate database table."""
     errors = []
     data = list(data.items())
