@@ -156,7 +156,7 @@ def _load_session_from_database() -> dict:
             else:
                 errors.append('FATAL ERROR: Because of problems writing to the ShootPoints database, the current session could not be saved.')
         else:
-            errors.append('There is no active surveying session.')
+            sessioninfo = 'There is no active surveying session.'
     else:
         errors.append('FATAL ERROR: Because of problems reading the ShootPoints database, we could not determine the current session id.')
     if not errors:
