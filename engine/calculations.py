@@ -7,7 +7,7 @@ from . import tripod
 from . import prism
 
 
-def _calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
+def calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
     """This function returns the azimuth in decimal degrees between two points (aN, aE) and (bN, bE)."""
     delta_n = point_b[0] - point_a[0]
     delta_e = point_b[1] - point_a[1]
@@ -19,7 +19,7 @@ def _calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
     return azimuth
 
 
-def _convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
+def convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
     """This function converts latitude/longitude coordinates to UTM."""
     easting, northing, zonenumber, zoneletter = utm.from_latlon(latitude, longitude)
     northing = round(northing, 3)
@@ -27,13 +27,13 @@ def _convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
     return (northing, easting, f'{zonenumber}{zoneletter}')
 
 
-def _convert_utm_to_latlon(northing: float, easting: float, zonenumber: int, zoneletter: str) -> tuple:
+def convert_utm_to_latlon(northing: float, easting: float, zonenumber: int, zoneletter: str) -> tuple:
     """This function converts UTM coordinates to latitude/longitude."""
     latitude, longitude = utm.to_latlon(easting, northing, zonenumber, zoneletter)
     return (latitude, longitude)
 
 
-def _apply_offsets_to_measurement(raw_measurement: dict) -> dict:
+def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
     """
     This function applies the occupied station coordinates, instrument height,
     and prism offsets to the measurement returned from the total station (which
@@ -92,7 +92,7 @@ def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
     distance_to_prism = math.hypot(measurement['delta_n'], measurement['delta_e'])
     distance_to_point = math.hypot(distance_to_prism, offset)
     offset_angle = math.degrees(math.acos((distance_to_prism**2 + distance_to_point**2 - offset**2) / (2 * distance_to_prism * distance_to_point)))
-    azimuth_to_prism = _calculate_azimuth(
+    azimuth_to_prism = calculate_azimuth(
         (0, 0),
         (measurement['delta_n'], measurement['delta_e']),
     )
