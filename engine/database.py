@@ -28,12 +28,12 @@ def save_to_database(sql: str, data: tuple) -> dict:
             errors.append(str(err))
     else:
         errors.append('The given sql does not appear to be an INSERT query.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
-        result['result'] = 'Data successfully saved to the database.'
-    return result
+        outcome['results'] = 'Data successfully saved to the database.'
+    return outcome
 
 
 def read_from_database(sql: str, params: tuple=()) -> dict:
@@ -47,12 +47,12 @@ def read_from_database(sql: str, params: tuple=()) -> dict:
             errors.append(str(err))
     else:
         errors.append('The given sql does not appear to be a SELECT query.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
-        result['results'] = queryresults
-    return result
+        outcome['results'] = queryresults
+    return outcome
 
 
 def update_current_state(data: dict) -> dict:
@@ -65,9 +65,31 @@ def update_current_state(data: dict) -> dict:
         dbconn.commit()
     except sqlite3.Error as err:
         errors.append(str(err))
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
-        result['result'] = 'The current state was successfully saved to the database.'
-    return result
+        outcome['results'] = 'The current state was successfully saved to the database.'
+    return outcome
+
+
+def _record_setup_error(error: str) -> None:
+    sql = 'INSERT INTO setuperrors (error) VALUES (?)'
+    try:
+        cursor.execute(sql, (error,))
+        dbconn.commit()
+    except sqlite3.IntegrityError:
+        pass
+
+
+def get_setup_errors() -> list:
+    outcome = read_from_database('SELECT * FROM setuperrors')
+    return outcome['results']
+
+
+def _clear_setup_errors() -> None:
+    try:
+        cursor.execute('DELETE FROM setuperrors')
+        dbconn.commit()
+    except:
+        pass

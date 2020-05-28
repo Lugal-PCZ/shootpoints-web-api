@@ -10,11 +10,11 @@ INSERT INTO classes VALUES(3,'Artifact');
 INSERT INTO classes VALUES(4,'Feature');
 CREATE TABLE `currentstate` (
   `sessions_id` integer  NOT NULL
-,  `vertical_distance` float NOT NULL DEFAULT '0'
-,  `latitude_distance` float NOT NULL DEFAULT '0'
-,  `longitude_distance` float NOT NULL DEFAULT '0'
-,  `radial_distance` float NOT NULL DEFAULT '0'
-,  `tangent_distance` float NOT NULL DEFAULT '0'
+,  `prism_vertical_distance` float NOT NULL DEFAULT '0'
+,  `prism_latitude_distance` float NOT NULL DEFAULT '0'
+,  `prism_longitude_distance` float NOT NULL DEFAULT '0'
+,  `prism_radial_distance` float NOT NULL DEFAULT '0'
+,  `prism_tangent_distance` float NOT NULL DEFAULT '0'
 ,  PRIMARY KEY (`sessions_id`)
 );
 INSERT INTO currentstate VALUES(0,0.0,0.0,0.0,0.0,0.0);
@@ -48,6 +48,10 @@ CREATE TABLE `sessions` (
 ,  `instrumentheight` float  NOT NULL
 ,  CONSTRAINT `sessions_ibfk_1` FOREIGN KEY (`stations_id_occupied`) REFERENCES `stations` (`id`)
 ,  CONSTRAINT `sessions_ibfk_2` FOREIGN KEY (`stations_id_backsight`) REFERENCES `stations` (`id`)
+);
+CREATE TABLE `setuperrors` (
+  `error` varchar(100) NOT NULL DEFAULT ''
+,  PRIMARY KEY (`error`)
 );
 CREATE TABLE `shots` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT

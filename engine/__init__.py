@@ -1,6 +1,4 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
-# TODO: Move all the sanity checking into this file, simplifying the prism, tripod, and totalstation interfaces, and name all their functions with underscores so that they're not called directly.
-# TODO: Once the previous is done, add the _load_application_state() to each function here that needs it (perhaps as a decorator).
 # TODO: Create a module in this package for taking shots and handling metadata.
 
 import configparser
@@ -25,17 +23,19 @@ def _load_configs_from_file() -> dict:
     """This function loads the configurations from the configs.ini file."""
     global configs
     errors = []
-    if not configs:
+    try:
         configs = configparser.ConfigParser()
-        if not configs.read('configs.ini'):
+        configs.read('configs.ini')
+    except:
             configs = None
             errors.append('The config.ini file was not found. Create one before proceeding.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
+        database._record_setup_error(errors[0])
     else:
-        result['result'] = 'Configurations loaded successfully.'
-    return result
+        outcome['results'] = 'Configurations loaded successfully.'
+    return outcome
 
 
 def _load_total_station_model():
@@ -57,12 +57,13 @@ def _load_total_station_model():
                 totalstation = importlib.import_module(f'{__name__}.total_stations.{make}.{model}', package='engine')
             except ModuleNotFoundError:
                 errors.append(f'File total_stations/{make}/{model}.py does not exist. Specify the correct total station make and model in configs.ini before proceeding.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
+        database._record_setup_error(errors[0])
     else:
-        result['result'] = 'Total station loaded.'
-    return result
+        outcome['results'] = 'Total station loaded.'
+    return outcome
 
 
 def _initialize_serial_port():
@@ -100,12 +101,13 @@ def _initialize_serial_port():
                 totalstation.port = port
             except:
                 errors.append(f'FATAL ERROR: Serial port {serialport} could not be opened.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
+        database._record_setup_error(errors[0])
     else:
-        result['result'] = f'Serial port {serialport} opened.'
-    return result
+        outcome['results'] = f'Serial port {serialport} opened.'
+    return outcome
 
 
 def _load_session_from_database() -> dict:
@@ -169,13 +171,14 @@ def _load_session_from_database() -> dict:
                 errors.append('There are no stations in the database. Please enter at least one before proceeding.')
         else:
             errors.append('FATAL ERROR: Because of problems reading the ShootPoints database, we could not determine the number of previously saved stations.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
+        database._record_setup_error(errors[0])
         sessionid = 0
     else:
-        result['result'] = sessioninfo
-    return result
+        outcome['results'] = sessioninfo
+    return outcome
 
 
 def _load_application_state() -> dict:
@@ -183,7 +186,6 @@ def _load_application_state() -> dict:
     This function checks the state of the global variables, and reloads them from
     the ShootPoints database, if necessary.
     """
-    global configs
     errors = []
     loadconfigs = _load_configs_from_file()
     if not loadconfigs['success']:
@@ -199,12 +201,13 @@ def _load_application_state() -> dict:
             loadsession = _load_session_from_database()
             if not loadsession['success']:
                 errors.extend(loadsession['errors'])
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
-        result['result'] = 'Configs and state (re)loaded successfully.'
-    return result
+        outcome['results'] = 'Configs and state loaded successfully.'
+        database._clear_setup_errors()
+    return outcome
 
 
 def _load_station_from_database(id: int) -> dict:
@@ -220,12 +223,12 @@ def _load_station_from_database(id: int) -> dict:
             errors.append('There are no saved stations in the database.')
     else:
         errors.append(f'A problem occurred reading station id {id} from the database.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
-        result['result'] = (coords['name'], coords['northing'], coords['easting'], coords['elevation'])
-    return result
+        outcome['results'] = (coords['name'], coords['northing'], coords['easting'], coords['elevation'])
+    return outcome
 
 
 def _save_new_session(data: tuple) -> bool:
@@ -245,7 +248,7 @@ def _save_new_session(data: tuple) -> bool:
     return bool(sessionid)
 
 
-def create_config_file(port: str='', make: str='', model: str='', limit: int=0) -> dict:
+def save_config_file(port: str='', make: str='', model: str='', limit: int=0) -> dict:
     """This function creates the configs.ini and sets its values."""
     configs = configparser.ConfigParser()
     # If any of the parameters aren't set when this function is called, then defaul to those in the example file.
@@ -260,10 +263,11 @@ def create_config_file(port: str='', make: str='', model: str='', limit: int=0) 
         configs['BACKSIGHT ERROR'] = {'limit': limit}
     with open('configs.ini', 'w') as f:
         configs.write(f)
-    result = _load_configs_from_file()
-    if result['success']:
-        result['result'] = 'Configurations file created and loaded.'
-    return result
+    outcome = {
+        'success': True,
+        'results': 'Configurations saved. Be sure to re-load the application state.'
+    }
+    return outcome
 
 
 def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_point_id: int, backsight_station_id: int, prism_height: float) -> dict:
@@ -273,12 +277,12 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
     end_surveying_session()  # End the current session, if it's still open.
     occupied_point_coordinates = _load_station_from_database(occupied_point_id)
     if occupied_point_coordinates['success']:
-        occupied_name, occupied_northing, occupied_easting, occupied_elevation = occupied_point_coordinates['result']
+        occupied_name, occupied_northing, occupied_easting, occupied_elevation = occupied_point_coordinates['results']
     else:
         errors.extend(occupied_point_coordinates['errors'])
     backsight_station_coordinates = _load_station_from_database(backsight_station_id)
     if backsight_station_coordinates['success']:
-        backsight_name, backsight_northing, backsight_easting, backsight_elevation = backsight_station_coordinates['result']
+        backsight_name, backsight_northing, backsight_easting, backsight_elevation = backsight_station_coordinates['results']
     else:
         errors.extend(backsight_station_coordinates['errors'])
     if occupied_point_id == backsight_station_id:
@@ -326,12 +330,12 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
         )
         if not _save_new_session(data):
             errors.append('A problem occurred while saving the new session to the database.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
-        result['result'] = f'Session {sessionid} started.'
-    return result
+        outcome['results'] = f'Session {sessionid} started.'
+    return outcome
 
 
 def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_point_id: int, instrument_height: float, degrees: int, minutes: int, seconds: int) -> dict:
@@ -360,12 +364,12 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_poi
         )
         if not _save_new_session(data):
             errors.append(f'A problem occurred while saving the new session to the database.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
-        result['result'] = f'Session {sessionid} started.'
-    return result
+        outcome['results'] = f'Session {sessionid} started.'
+    return outcome
 
 
 def end_surveying_session() -> dict:
@@ -375,13 +379,13 @@ def end_surveying_session() -> dict:
     sql = "UPDATE sessions SET ended = CURRENT_TIMESTAMP WHERE id = ?"
     if not database.save_to_database(sql, (sessionid,))['success']:
         errors.append(f'An error occurred closing the session. Session {sessionid} is still active.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
         sessionid = 0
-        result['result'] = f'Session {sessionid} ended.'
-    return result
+        outcome['results'] = f'Session {sessionid} ended.'
+    return outcome
 
 
 def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
@@ -473,12 +477,12 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
         newstation = (name, northing, easting, elevation, utmzone, latitude, longitude)
         if not database.save_to_database(sql, newstation)['success']:
             errors.append(f'Station ({name}) not saved to the database.')
-    result = {'success': not errors}
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
-        result['result'] = f'Station {name} saved to the database.'
-    return result
+        outcome['results'] = f'Station {name} saved to the database.'
+    return outcome
 
 
 def summarize_application_state() -> dict:
@@ -512,6 +516,7 @@ def summarize_application_state() -> dict:
         summary['num_stations_in_db'] = database.read_from_database('SELECT count(*) FROM stations')['results'][0]['count(*)']
         summary['num_sessions_in_db'] = database.read_from_database('SELECT count(*) FROM sessions')['results'][0]['count(*)']
         if sessionid:
+            # TODO: Get some of the following with the getters, instead of just from the DB, for increased readability.
             sql = (
                 'SELECT '
                     'curr.sessions_id, '
@@ -532,6 +537,5 @@ def summarize_application_state() -> dict:
             )
             summary['current_session'] = database.read_from_database(sql, (sessionid,))['results'][0]
         summary['num_points_in_db'] = database.read_from_database('SELECT count(*) FROM shots')['results'][0]['count(*)']
-        if sessionid:
-            summary['num_points_in_current_session'] = database.read_from_database('SELECT count(*) FROM shots WHERE sessions_id = ?', (sessionid,))['results'][0]['count(*)']
-        return summary
+        summary['num_points_in_current_session'] = database.read_from_database('SELECT count(*) FROM shots WHERE sessions_id = ?', (sessionid,))['results'][0]['count(*)']
+    return summary

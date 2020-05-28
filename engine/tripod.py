@@ -17,35 +17,36 @@ def get_occupied_point() -> dict:
     global _occupied_point
     return {
         'success': True,
-        'result': _occupied_point
+        'results': _occupied_point
     }
 
 
 def set_occupied_point(n: float, e: float, z: float) -> dict:
     """This function sets the coordinates of the occupied point."""
     global _occupied_point
-    errors = []
-    try:
-        n = float(n)
-    except ValueError:
-        errors.append(f'Northing entered ({n}) is not numeric.')
-    try:
-        e = float(e)
-    except ValueError:
-        errors.append(f'Easting entered ({e}) is not numeric.')
-    try:
-        z = float(z)
-    except ValueError:
-        errors.append(f'Elevation entered ({z}) is not numeric.')
-    result = {'success': not errors}
+    errors = database.get_setup_errors()
+    if not errors:
+        try:
+            n = float(n)
+        except ValueError:
+            errors.append(f'Northing entered ({n}) is not numeric.')
+        try:
+            e = float(e)
+        except ValueError:
+            errors.append(f'Easting entered ({e}) is not numeric.')
+        try:
+            z = float(z)
+        except ValueError:
+            errors.append(f'Elevation entered ({z}) is not numeric.')
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
         _occupied_point['n'] = n
         _occupied_point['e'] = e
         _occupied_point['z'] = z
-        result['result'] = f'Occupied Point set to {n}N, {e}E, {z}Z.'
-    return result
+        outcome['results'] = f'Occupied Point set to {n}N, {e}E, {z}Z.'
+    return outcome
 
 
 def get_instrument_height() -> dict:
@@ -53,26 +54,27 @@ def get_instrument_height() -> dict:
     global _instrument_height
     return {
         'success': True,
-        'result': _instrument_height
+        'results': _instrument_height
     }
 
 
 def set_instrument_height(height: float) -> dict:
     """This function set the instrument height above the occupied point and saves it to the database."""
     global _instrument_height
-    errors = []
-    try:
-        height = float(height)
-        if height < 0:
-            errors.append(f'Instrument height entered ({height}m) is negative.')
-        elif height >= 2:
-            errors.append(f'Instrument height entered ({height}m) is unrealistically high.')
-    except ValueError:
-        errors.append(f'Instrument height entered ({height}m) is not numeric.')
-    result = {'success': not errors}
+    errors = database.get_setup_errors()
+    if not errors:
+        try:
+            height = float(height)
+            if height < 0:
+                errors.append(f'Instrument height entered ({height}m) is negative.')
+            elif height >= 2:
+                errors.append(f'Instrument height entered ({height}m) is unrealistically high.')
+        except ValueError:
+            errors.append(f'Instrument height entered ({height}m) is not numeric.')
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
         _instrument_height = height
-        result['result'] = f'Instrument height set to {height}m.'
-    return result
+        outcome['results'] = f'Instrument height set to {height}m.'
+    return outcome

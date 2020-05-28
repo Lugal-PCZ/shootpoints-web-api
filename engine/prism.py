@@ -67,102 +67,103 @@ def get_prism_offset(full_output: bool=False) -> dict:
                         readable_offsets['tangent_direction'] = 'Left'
                         val = abs(val)
                 readable_offsets[key] = val
-        results['result'] = readable_offsets
+        outcome['results'] = readable_offsets
     else:
-        results['result'] = _offsets
+        outcome['results'] = _offsets
     return results
 
 
 def set_prism_offset(**kwargs) -> dict:
     """This function sets the prism offsets and saves them to the database."""
-    errors = []
     global _offsets
-    # Cache the current offsets
-    temp_offsets = {
-        'vertical_distance': _offsets['vertical_distance'],
-        'latitude_distance': _offsets['latitude_distance'],
-        'longitude_distance': _offsets['longitude_distance'],
-        'radial_distance': _offsets['radial_distance'],
-        'tangent_distance': _offsets['tangent_distance'],
-    }
-    for key, val in kwargs.items():
-        if key == 'vertical_distance':
-            try:
-                val = float(val)
+    errors = database.get_setup_errors()
+    if not errors:
+        # Cache the current offsets
+        temp_offsets = {
+            'vertical_distance': _offsets['vertical_distance'],
+            'latitude_distance': _offsets['latitude_distance'],
+            'longitude_distance': _offsets['longitude_distance'],
+            'radial_distance': _offsets['radial_distance'],
+            'tangent_distance': _offsets['tangent_distance'],
+        }
+        for key, val in kwargs.items():
+            if key == 'vertical_distance':
                 try:
-                    if kwargs['vertical_direction'].upper() == 'UP':
-                        temp_offsets['vertical_distance'] = abs(val)
-                    elif kwargs['vertical_direction'].upper() == 'DOWN':
-                        temp_offsets['vertical_distance'] = -abs(val)
-                    else:
-                        errors.append(f'The Vertical Offset direction entered ({kwargs["vertical_direction"]}) was invalid. It must be Up or Down.')
-                except KeyError:
-                    errors.append('No direction was given for the Vertical Offset.')
-            except ValueError:
-                errors.append(f'The Vertical Offset distance entered ({val}) is not numerical.')
-        elif key == 'latitude_distance':
-            try:
-                val = float(val)
+                    val = float(val)
+                    try:
+                        if kwargs['vertical_direction'].upper() == 'UP':
+                            temp_offsets['vertical_distance'] = abs(val)
+                        elif kwargs['vertical_direction'].upper() == 'DOWN':
+                            temp_offsets['vertical_distance'] = -abs(val)
+                        else:
+                            errors.append(f'The Vertical Offset direction entered ({kwargs["vertical_direction"]}) was invalid. It must be Up or Down.')
+                    except KeyError:
+                        errors.append('No direction was given for the Vertical Offset.')
+                except ValueError:
+                    errors.append(f'The Vertical Offset distance entered ({val}) is not numerical.')
+            elif key == 'latitude_distance':
                 try:
-                    if kwargs['latitude_direction'].upper() == 'NORTH':
-                        temp_offsets['latitude_distance'] = abs(val)
-                    elif kwargs['latitude_direction'].upper() == 'SOUTH':
-                        temp_offsets['latitude_distance'] = -abs(val)
-                    else:
-                        errors.append(f'The Latitude Offset direction entered ({kwargs["latitude_direction"]}) was invalid. It must be North or South.')
-                except KeyError:
-                    errors.append('No direction was given for the Latitude Offset.')
-            except ValueError:
-                errors.append(f'The Latitude Offset distance entered ({val}) is not numerical.')
-        elif key == 'longitude_distance':
-            try:
-                val = float(val)
+                    val = float(val)
+                    try:
+                        if kwargs['latitude_direction'].upper() == 'NORTH':
+                            temp_offsets['latitude_distance'] = abs(val)
+                        elif kwargs['latitude_direction'].upper() == 'SOUTH':
+                            temp_offsets['latitude_distance'] = -abs(val)
+                        else:
+                            errors.append(f'The Latitude Offset direction entered ({kwargs["latitude_direction"]}) was invalid. It must be North or South.')
+                    except KeyError:
+                        errors.append('No direction was given for the Latitude Offset.')
+                except ValueError:
+                    errors.append(f'The Latitude Offset distance entered ({val}) is not numerical.')
+            elif key == 'longitude_distance':
                 try:
-                    if kwargs['longitude_direction'].upper() == 'EAST':
-                        temp_offsets['longitude_distance'] = abs(val)
-                    elif kwargs['longitude_direction'].upper() == 'WEST':
-                        temp_offsets['longitude_distance'] = -abs(val)
-                    else:
-                        errors.append(f'The Longitude Offset direction entered ({kwargs["longitude_direction"]}) was invalid. It must be East or West.')
-                except KeyError:
-                    errors.append('No direction was given for the Longitude Offset.')
-            except ValueError:
-                errors.append(f'The Longitude Offset distance entered ({val}) is not numerical.')
-        elif key == 'radial_distance':
-            try:
-                val = float(val)
+                    val = float(val)
+                    try:
+                        if kwargs['longitude_direction'].upper() == 'EAST':
+                            temp_offsets['longitude_distance'] = abs(val)
+                        elif kwargs['longitude_direction'].upper() == 'WEST':
+                            temp_offsets['longitude_distance'] = -abs(val)
+                        else:
+                            errors.append(f'The Longitude Offset direction entered ({kwargs["longitude_direction"]}) was invalid. It must be East or West.')
+                    except KeyError:
+                        errors.append('No direction was given for the Longitude Offset.')
+                except ValueError:
+                    errors.append(f'The Longitude Offset distance entered ({val}) is not numerical.')
+            elif key == 'radial_distance':
                 try:
-                    if kwargs['radial_direction'].upper() == 'AWAY':
-                        temp_offsets['radial_distance'] = abs(val)
-                    elif kwargs['radial_direction'].upper() == 'TOWARD':
-                        temp_offsets['radial_distance'] = -abs(val)
-                    else:
-                        errors.append(f'The Radial Offset direction entered ({kwargs["radial_direction"]}) was invalid. It must be Away or Toward.')
-                except KeyError:
-                    errors.append('No direction was given for the Radial Offset.')
-            except ValueError:
-                errors.append(f'The Radial Offset distance entered ({val}) is not numerical.')
-        elif key == 'tangent_distance':
-            try:
-                val = float(val)
+                    val = float(val)
+                    try:
+                        if kwargs['radial_direction'].upper() == 'AWAY':
+                            temp_offsets['radial_distance'] = abs(val)
+                        elif kwargs['radial_direction'].upper() == 'TOWARD':
+                            temp_offsets['radial_distance'] = -abs(val)
+                        else:
+                            errors.append(f'The Radial Offset direction entered ({kwargs["radial_direction"]}) was invalid. It must be Away or Toward.')
+                    except KeyError:
+                        errors.append('No direction was given for the Radial Offset.')
+                except ValueError:
+                    errors.append(f'The Radial Offset distance entered ({val}) is not numerical.')
+            elif key == 'tangent_distance':
                 try:
-                    if kwargs['tangent_direction'].upper() == 'RIGHT':
-                        temp_offsets['tangent_distance'] = abs(val)
-                    elif kwargs['tangent_direction'].upper() == 'LEFT':
-                        temp_offsets['tangent_distance'] = -abs(val)
-                    else:
-                        errors.append(f'The Tangent Offset direction entered ({kwargs["tangent_direction"]}) was invalid. It must be Right or Left.')
-                except KeyError:
-                    errors.append('No direction was given for the Tangent Offset.')
-            except ValueError:
-                errors.append(f'The Tangent Offset distance entered ({val}) is not numerical.')
-    update = database.update_current_state(temp_offsets)
-    if not update['success']:
-        errors.append(update['errors'])
-    result = {'success': not errors}
+                    val = float(val)
+                    try:
+                        if kwargs['tangent_direction'].upper() == 'RIGHT':
+                            temp_offsets['tangent_distance'] = abs(val)
+                        elif kwargs['tangent_direction'].upper() == 'LEFT':
+                            temp_offsets['tangent_distance'] = -abs(val)
+                        else:
+                            errors.append(f'The Tangent Offset direction entered ({kwargs["tangent_direction"]}) was invalid. It must be Right or Left.')
+                    except KeyError:
+                        errors.append('No direction was given for the Tangent Offset.')
+                except ValueError:
+                    errors.append(f'The Tangent Offset distance entered ({val}) is not numerical.')
+        update = database.update_current_state(temp_offsets)
+        if not update['success']:
+            errors.append(update['errors'])
+    outcome = {'success': not errors}
     if errors:
-        result['errors'] = errors
+        outcome['errors'] = errors
     else:
         _offsets = temp_offsets
-        result['result'] = f"Prism offsets are now {str(_offsets)}."
-    return result
+        outcome['results'] = f"Prism offsets are now {str(_offsets)}."
+    return outcome
