@@ -68,7 +68,7 @@ def _load_total_station_model():
             if make == 'topcon' and model[:6] == 'gts_30':
                 model = 'gts_300_series'
             try:
-                totalstation = importlib.import_module(f'{__name__}.total_stations.{make}.{model}', package='engine')
+                totalstation = importlib.import_module(f'{__name__}.total_stations.{make}.{model}', package='core')
             except ModuleNotFoundError:
                 errors.append(f'File total_stations/{make}/{model}.py does not exist. Specify the correct total station make and model in configs.ini before proceeding.')
     outcome = {'success': not errors}
