@@ -1,6 +1,7 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
 
-from . import database
+from . import _format_outcome
+from . import database as _database
 
 
 _occupied_point = {
@@ -15,16 +16,19 @@ _instrument_height = 0.0
 def get_occupied_point() -> dict:
     """This function returns the coordinates of the occupied point."""
     global _occupied_point
-    return {
-        'success': True,
-        'results': _occupied_point
-    }
+    errors = _database.get_setup_errors()
+    outcome = {'success': not errors}
+    if errors:
+        outcome['errors'] = errors
+    else:
+        outcome['results'] = _occupied_point
+    return outcome
 
 
 def set_occupied_point(n: float, e: float, z: float) -> dict:
     """This function sets the coordinates of the occupied point."""
     global _occupied_point
-    errors = database.get_setup_errors()
+    errors = _database.get_setup_errors()
     if not errors:
         try:
             n = float(n)
@@ -52,16 +56,19 @@ def set_occupied_point(n: float, e: float, z: float) -> dict:
 def get_instrument_height() -> dict:
     """This function returns the instrument height above the occupied point."""
     global _instrument_height
-    return {
-        'success': True,
-        'results': _instrument_height
-    }
+    errors = _database.get_setup_errors()
+    outcome = {'success': not errors}
+    if errors:
+        outcome['errors'] = errors
+    else:
+        outcome['results'] = _instrument_height
+    return outcome
 
 
 def set_instrument_height(height: float) -> dict:
     """This function set the instrument height above the occupied point and saves it to the database."""
     global _instrument_height
-    errors = database.get_setup_errors()
+    errors = _database.get_setup_errors()
     if not errors:
         try:
             height = float(height)

@@ -83,8 +83,14 @@ def _record_setup_error(error: str) -> None:
 
 
 def get_setup_errors() -> list:
-    outcome = read_from_database('SELECT * FROM setuperrors')
-    return outcome['results']
+    outome = read_from_database('SELECT * FROM setuperrors')
+    errors = []
+    for each in outome['results']:
+        try:
+            errors.append(each['error'])
+        except:
+            pass
+    return errors
 
 
 def _clear_setup_errors() -> None:

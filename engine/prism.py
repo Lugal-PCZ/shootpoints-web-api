@@ -1,6 +1,7 @@
 """This module handles the vertical and horizontal prism offsets."""
 
-from . import database
+from . import _format_outcome
+from . import database as _database
 
 
 # Offset direction is always FROM the point TO the prism, as viewed from the occupied station.
@@ -31,52 +32,55 @@ _offsets = {
 def get_prism_offset(full_output: bool=False) -> dict:
     """This function returns the prism offsets, in raw or human-readable form."""
     global _offsets
-    results = {'success': True}
-    if not full_output:  # Format the output to be more easily human-readable
-        readable_offsets = {}
-        for key, val in _offsets.items():
-            if _offsets[key]:
-                if key == 'vertical_distance':
-                    if val > 0:
-                        readable_offsets['vertical_direction'] = 'Up'
-                    else:
-                        readable_offsets['vertical_direction'] = 'Down'
-                        val = abs(val)
-                elif key == 'latitude_distance':
-                    if val > 0:
-                        readable_offsets['latitude_direction'] = 'North'
-                    else:
-                        readable_offsets['latitude_direction'] = 'South'
-                        val = abs(val)
-                elif key == 'longitude_distance':
-                    if val > 0:
-                        readable_offsets['longitude_direction'] = 'East'
-                    else:
-                        readable_offsets['longitude_direction'] = 'West'
-                        val = abs(val)
-                elif key == 'radial_distance':
-                    if val > 0:
-                        readable_offsets['radial_direction'] = 'Away'
-                    else:
-                        readable_offsets['radial_direction'] = 'Toward'
-                        val = abs(val)
-                elif key == 'tangent_distance':
-                    if val > 0:
-                        readable_offsets['tangent_direction'] = 'Right'
-                    else:
-                        readable_offsets['tangent_direction'] = 'Left'
-                        val = abs(val)
-                readable_offsets[key] = val
-        outcome['results'] = readable_offsets
-    else:
-        outcome['results'] = _offsets
-    return results
+    results = []
+    errors = _database.get_setup_errors()
+    if not errors:
+        if not full_output:  # Format the output to be more easily human-readable
+            readable_offsets = {}
+            for key, val in _offsets.items():
+                if _offsets[key]:
+                    if key == 'vertical_distance':
+                        if val > 0:
+                            readable_offsets['vertical_direction'] = 'Up'
+                        else:
+                            readable_offsets['vertical_direction'] = 'Down'
+                            val = abs(val)
+                    elif key == 'latitude_distance':
+                        if val > 0:
+                            readable_offsets['latitude_direction'] = 'North'
+                        else:
+                            readable_offsets['latitude_direction'] = 'South'
+                            val = abs(val)
+                    elif key == 'longitude_distance':
+                        if val > 0:
+                            readable_offsets['longitude_direction'] = 'East'
+                        else:
+                            readable_offsets['longitude_direction'] = 'West'
+                            val = abs(val)
+                    elif key == 'radial_distance':
+                        if val > 0:
+                            readable_offsets['radial_direction'] = 'Away'
+                        else:
+                            readable_offsets['radial_direction'] = 'Toward'
+                            val = abs(val)
+                    elif key == 'tangent_distance':
+                        if val > 0:
+                            readable_offsets['tangent_direction'] = 'Right'
+                        else:
+                            readable_offsets['tangent_direction'] = 'Left'
+                            val = abs(val)
+                    readable_offsets[key] = val
+            results = readable_offsets
+        else:
+            results = _offsets
+    return _format_outcome(errors, results)
 
 
 def set_prism_offset(**kwargs) -> dict:
     """This function sets the prism offsets and saves them to the database."""
     global _offsets
-    errors = database.get_setup_errors()
+    results = []
+    errors = _database.get_setup_errors()
     if not errors:
         # Cache the current offsets
         temp_offsets = {
@@ -157,13 +161,10 @@ def set_prism_offset(**kwargs) -> dict:
                         errors.append('No direction was given for the Tangent Offset.')
                 except ValueError:
                     errors.append(f'The Tangent Offset distance entered ({val}) is not numerical.')
-        update = database.update_current_state(temp_offsets)
+        update = _database.update_current_state(temp_offsets)
         if not update['success']:
             errors.append(update['errors'])
-    outcome = {'success': not errors}
-    if errors:
-        outcome['errors'] = errors
-    else:
+    if not errors:
         _offsets = temp_offsets
-        outcome['results'] = f"Prism offsets are now {str(_offsets)}."
-    return outcome
+        results.append(f'Prism offsets are now {str(_offsets)}.')
+    return _format_outcome(errors, results)

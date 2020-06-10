@@ -1,11 +1,25 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
+# TODO: De-complexify EVERYTHING by moving all state information to the database.
+# TODO: Add testing to this application.
 # TODO: Create a module in this package for taking shots and handling metadata.
+# TODO: Refactor all functions to use _format_outcome() for their return values.
 
 import configparser
 import glob
 import importlib
 import serial
 import math
+
+
+def _format_outcome(errors: list, results: list) -> dict:
+    """This function provides consistent formatting for output from functions in this application."""
+    outcome = {'success': not errors}
+    if errors:
+        outcome['errors'] = errors
+    else:
+        outcome['results'] = results
+    return outcome
+
 
 from . import tripod
 from . import prism
@@ -517,6 +531,7 @@ def summarize_application_state() -> dict:
         summary['num_sessions_in_db'] = database.read_from_database('SELECT count(*) FROM sessions')['results'][0]['count(*)']
         if sessionid:
             # TODO: Get some of the following with the getters, instead of just from the DB, for increased readability.
+            # TODO: Also, add in counts of groupings in db and session
             sql = (
                 'SELECT '
                     'curr.sessions_id, '
