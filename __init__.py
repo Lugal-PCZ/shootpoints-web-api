@@ -1,1 +1,1 @@
-"""This package contains the API and engine for ShootPoint."""
+"""This package contains the API and core for ShootPoint."""

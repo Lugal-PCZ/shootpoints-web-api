@@ -12,7 +12,7 @@ TIMEOUT=0
 ETX = chr(3)
 ACK = chr(6) + '006'
 
-port = None  # This property is set by engine/__init__.py once the serial port has been initialized.
+port = None  # This property is set by core/__init__.py once the serial port has been initialized.
 
 _canceled = False
 
