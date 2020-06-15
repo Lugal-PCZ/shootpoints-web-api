@@ -1,6 +1,6 @@
 [SERIAL]
 ; Set port to auto, demo, or the path (e.g., /dev/ttyAMA0).
-port = auto
+port = demo
 
 [TOTAL STATION]
 make = Topcon

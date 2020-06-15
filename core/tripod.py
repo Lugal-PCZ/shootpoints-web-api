@@ -1,87 +1,55 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
 
-from . import _format_outcome
 from . import database as _database
 
 
-_occupied_point = {
-    'n': 0.0,
-    'e': 0.0,
-    'z': 0.0,
-}
-
-_instrument_height = 0.0
-
-
 def get_occupied_point() -> dict:
-    """This function returns the coordinates of the occupied point."""
-    global _occupied_point
-    errors = _database.get_setup_errors()
-    outcome = {'success': not errors}
-    if errors:
-        outcome['errors'] = errors
-    else:
-        outcome['results'] = _occupied_point
-    return outcome
-
-
-def set_occupied_point(n: float, e: float, z: float) -> dict:
-    """This function sets the coordinates of the occupied point."""
-    global _occupied_point
-    errors = _database.get_setup_errors()
-    if not errors:
-        try:
-            n = float(n)
-        except ValueError:
-            errors.append(f'Northing entered ({n}) is not numeric.')
-        try:
-            e = float(e)
-        except ValueError:
-            errors.append(f'Easting entered ({e}) is not numeric.')
-        try:
-            z = float(z)
-        except ValueError:
-            errors.append(f'Elevation entered ({z}) is not numeric.')
-    outcome = {'success': not errors}
-    if errors:
-        outcome['errors'] = errors
-    else:
-        _occupied_point['n'] = n
-        _occupied_point['e'] = e
-        _occupied_point['z'] = z
-        outcome['results'] = f'Occupied Point set to {n}N, {e}E, {z}Z.'
-    return outcome
+    """
+    This function returns the coordinates of the occupied point.
+    (Note that there is no analogous setter function because the 
+    coordinates of the occupied point are those of the occupied
+    station.)
+    """
+    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    if not outcome['errors']:
+        sessionid = _database.get_current_session_id()
+        sql = (
+            'SELECT '
+                'sta.northing AS n, '
+                'sta.easting AS e, '
+                'sta.elevation AS z '
+            'FROM sessions sess '
+            'JOIN stations sta ON sess.stations_id_occupied = sta.id '
+            'WHERE sess.id = ?'
+        )
+        outcome = _database.read_from_database(sql, (sessionid,))
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if type(val) != list or val}
 
 
 def get_instrument_height() -> dict:
     """This function returns the instrument height above the occupied point."""
-    global _instrument_height
-    errors = _database.get_setup_errors()
-    outcome = {'success': not errors}
-    if errors:
-        outcome['errors'] = errors
-    else:
-        outcome['results'] = _instrument_height
-    return outcome
+    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    if not outcome['errors']:
+        sessionid = _database.get_current_session_id()
+        sql = ('SELECT instrumentheight FROM sessions WHERE is = ?')
+        outcome = _database.read_from_database(sql, (sessionid,))
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if type(val) != list or val}
 
 
-def set_instrument_height(height: float) -> dict:
-    """This function set the instrument height above the occupied point and saves it to the database."""
-    global _instrument_height
-    errors = _database.get_setup_errors()
-    if not errors:
-        try:
-            height = float(height)
-            if height < 0:
-                errors.append(f'Instrument height entered ({height}m) is negative.')
-            elif height >= 2:
-                errors.append(f'Instrument height entered ({height}m) is unrealistically high.')
-        except ValueError:
-            errors.append(f'Instrument height entered ({height}m) is not numeric.')
-    outcome = {'success': not errors}
-    if errors:
-        outcome['errors'] = errors
-    else:
-        _instrument_height = height
-        outcome['results'] = f'Instrument height set to {height}m.'
-    return outcome
+def validate_instrument_height(height: float) -> dict:
+    """This function checks the sanity of the instrument height above the occupied point."""
+    outcome = {'errors': [], 'results': []}
+    try:
+        height = float(height)
+        if height < 0:
+            outcome['errors'].append(f'Instrument height entered ({height}m) is negative.')
+        elif height >= 2:
+            outcome['errors'].append(f'Instrument height entered ({height}m) is unrealistically high.')
+    except ValueError:
+        outcome['errors'].append(f'Instrument height entered ({height}m) is not numeric.')
+    if not outcome['errors']:
+        outcome['results'] = f'{height}m is a valid instrument height.'
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if type(val) != list or val}

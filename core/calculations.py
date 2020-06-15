@@ -46,7 +46,7 @@ def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
     instrument_height = tripod.get_instrument_height()['instrument_height']
     measurement['calculated_z'] += instrument_height
     # Apply the prism vertical offset
-    prism_offsets = prism.get_prism_offset(True)['prism_offset']
+    prism_offsets = prism.get_prism_offsets()['prism_offset']
     measurement['calculated_z'] += prism_offsets['vertical_distance']
     # Apply the prism absolute offsets
     measurement['calculated_n'] += prism_offsets['latitude_distance']
@@ -68,6 +68,7 @@ def apply_offsets_to_measurement(raw_measurement: dict) -> dict:
     measurement['calculated_n'] = round(measurement['calculated_n'], 3)
     measurement['calculated_e'] = round(measurement['calculated_e'], 3)
     measurement['calculated_z'] = round(measurement['calculated_z'], 3)
+    # TODO: Modify this return value to be more like the others?
     return {
         'success': raw_measurement['success'],
         'outcome': measurement,

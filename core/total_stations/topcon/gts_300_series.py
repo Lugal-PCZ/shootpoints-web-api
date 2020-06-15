@@ -1,6 +1,6 @@
 """This module contains constants and methods for communicating with Topcon GTS-300 Series total stations."""
 
-from .. import database
+from ... import database as _database
 
 
 # Communications constants:
@@ -63,42 +63,40 @@ def _wait_for_ack(count: int=10) -> bool:
 
 def set_mode_hr() -> dict:
     """This function sets the total station to V/H mode with Horizontal Right."""
-    errors = database.get_setup_errors()
-    if not errors:
+    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    if not outcome['errors']:
         _write('Z12089')
         if not _wait_for_ack():
-            errors.append('A communication error occurred.')
-    outcome = {'success': not errors}
-    if errors:
-        outcome['errors'] = errors
-    else:
-        outcome['results'] = 'Mode set to Horizontal Right.'
-    return outcome
+            outcome['errors'].append('A communication error occurred.')
+        else:
+            outcome['results'] = 'Mode set to Horizontal Right.'
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if type(val) != list or val}
 
 
 def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
     """This function sets the azimuth reading on the total station."""
-    errors = database.get_setup_errors()
-    if not errors:
+    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    if not outcome['errors']:
         try:
             degrees = int(degrees)
             if not 0 <= degrees <= 359:
-                errors.append(f'Degrees entered ({degrees}) is out of range (0 to 359).')
+                outcome['errors'].append(f'Degrees entered ({degrees}) is out of range (0 to 359).')
         except ValueError:
-            errors.append(f'A non-integer value ({degrees}) was entered for degrees.')
+            outcome['errors'].append(f'A non-integer value ({degrees}) was entered for degrees.')
         try:
             minutes = int(minutes)
             if not 0 <= minutes <= 59:
-                errors.append(f'Minutes entered ({minutes}) is out of range (0 to 59).')
+                outcome['errors'].append(f'Minutes entered ({minutes}) is out of range (0 to 59).')
         except ValueError:
-            errors.append(f'A non-integer value ({minutes}) was entered for minutes.')
+            outcome['errors'].append(f'A non-integer value ({minutes}) was entered for minutes.')
         try:
             seconds = int(seconds)
             if not 0 <= seconds <= 59:
-                errors.append(f'Seconds entered ({seconds}) is out of range (0 to 59).')
+                outcome['errors'].append(f'Seconds entered ({seconds}) is out of range (0 to 59).')
         except ValueError:
-            errors.append(f'A non-integer value ({seconds}) was entered for seconds.')
-        if not errors:
+            outcome['errors'].append(f'A non-integer value ({seconds}) was entered for seconds.')
+        if not outcome['errors']:
             setmodehr = set_mode_hr()
             if setmodehr['success']:
                 angle = (degrees * 10000) + (minutes * 100) + seconds
@@ -108,24 +106,22 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
                 if _wait_for_ack():
                     _write(command + bcc)
                     if not _wait_for_ack():
-                        errors.append('A communication error occurred.')
+                        outcome['errors'].append('A communication error occurred.')
+                    else:
+                        outcome['results'] = f'Azimuth set to {degrees}° {minutes}\' {seconds}.'
                 else:
-                    errors.append('A communication error occurred.')
+                    outcome['errors'].append('A communication error occurred.')
             else:
-                errors.extend(setmodehr['errors'])
-    outcome = {'success': not errors}
-    if errors:
-        outcome['errors'] = errors
-    else:
-        outcome['results'] = f'Azimuth set to {degrees}° {minutes}\' {seconds}.'
-    return outcome
+                outcome['errors'].extend(setmodehr['errors'])
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if type(val) != list or val}
 
 
 def take_measurement() -> dict:
     """This function tells the total station to begin measuring a point."""
     global _canceled
-    errors = database.get_setup_errors()
-    if not errors:
+    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    if not outcome['errors']:
         measurement = b''
         _write('Z64088')
         if _wait_for_ack():
@@ -134,10 +130,10 @@ def take_measurement() -> dict:
                 measurement = _read(10).decode('utf-8')
                 _write(ACK)
             else:
-                errors.append('A communication error occurred.')
+                outcome['errors'].append('A communication error occurred.')
         else:
-            errors.append('A communication error occurred.')
-        if not errors:
+            outcome['errors'].append('A communication error occurred.')
+        if not outcome['errors']:
             try:
                 data_format = measurement[0]
                 data_unit = measurement[34]
@@ -145,22 +141,19 @@ def take_measurement() -> dict:
                     delta_e = round(float(measurement[12:23])/10000, 3)
                     delta_n = round(float(measurement[1:12])/10000, 3)
                     delta_z = round(float(measurement[23:34])/10000, 3)
+                    outcome['results'] = {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
                 else:
                     errors.append(f'Unexpected data format: {measurement}.')
             except:
                 if _canceled:
-                    outcome = None
+                    return # Short circuit this function, returning nothing.
                 else:
-                    errors.append('Measurement failed.')
-    outcome = {'success': not errors}
-    if errors:
-        outcome['errors'] = errors
-    else:
-        outcome['results'] = {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
-    return outcome
+                    outcome['errors'].append('Measurement failed.')
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if type(val) != list or val}
 
 
-def cancel_measurement() -> dict:
+def cancel_measurement() -> None:
     """This function cancels a measurement in progress."""
     global _canceled
     _canceled = True  # Flag to short circuit _wait_for_ack() and take_measurement().
@@ -170,4 +163,3 @@ def cancel_measurement() -> dict:
         'success': True,
         'results': 'Measurement canceled by user.',
     }
-

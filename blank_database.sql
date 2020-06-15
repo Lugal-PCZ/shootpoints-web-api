@@ -8,16 +8,6 @@ INSERT INTO classes VALUES(1,'Operation');
 INSERT INTO classes VALUES(2,'Architecture');
 INSERT INTO classes VALUES(3,'Artifact');
 INSERT INTO classes VALUES(4,'Feature');
-CREATE TABLE `currentstate` (
-  `sessions_id` integer  NOT NULL
-,  `prism_vertical_distance` float NOT NULL DEFAULT '0'
-,  `prism_latitude_distance` float NOT NULL DEFAULT '0'
-,  `prism_longitude_distance` float NOT NULL DEFAULT '0'
-,  `prism_radial_distance` float NOT NULL DEFAULT '0'
-,  `prism_tangent_distance` float NOT NULL DEFAULT '0'
-,  PRIMARY KEY (`sessions_id`)
-);
-INSERT INTO currentstate VALUES(0,0.0,0.0,0.0,0.0,0.0);
 CREATE TABLE `geometry` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) NOT NULL DEFAULT ''
@@ -36,6 +26,14 @@ CREATE TABLE `groupings` (
 ,  CONSTRAINT `groupings_ibfk_1` FOREIGN KEY (`geometry_id`) REFERENCES `geometry` (`id`)
 ,  CONSTRAINT `groupings_ibfk_2` FOREIGN KEY (`subclasses_id`) REFERENCES `subclasses` (`id`)
 );
+CREATE TABLE `prism` (
+  `vertical_distance` float NOT NULL DEFAULT '0'
+,  `latitude_distance` float NOT NULL DEFAULT '0'
+,  `longitude_distance` float NOT NULL DEFAULT '0'
+,  `radial_distance` float NOT NULL DEFAULT '0'
+,  `tangent_distance` float NOT NULL DEFAULT '0'
+);
+INSERT INTO prism VALUES(0.0,0.0,0.0,0.0,0.0);
 CREATE TABLE `sessions` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `label` varchar(30) NOT NULL DEFAULT ''
@@ -85,6 +83,7 @@ CREATE TABLE `stations` (
 ,  `latitude` float DEFAULT NULL
 ,  `longitude` float DEFAULT NULL
 ,  UNIQUE (`name`)
+,  UNIQUE (`northing`,`easting`)
 );
 CREATE TABLE `subclasses` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
