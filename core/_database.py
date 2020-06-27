@@ -39,7 +39,7 @@ def read_from_database(sql: str, params: tuple=()) -> dict:
     if sql[:6].upper().find('SELECT') == 0:
         try:
             cursor.execute(sql, params)
-            outcome['results'].append([dict(row) for row in cursor.fetchall()])
+            outcome['results'].extend([dict(row) for row in cursor.fetchall()])
         except sqlite3.Error as err:
             outcome['errors'].append(str(err))
     else:
