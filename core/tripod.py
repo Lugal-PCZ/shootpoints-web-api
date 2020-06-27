@@ -112,7 +112,7 @@ def get_station(id: int) -> dict:
     else:
         outcome['errors'].append(f'Station id {id} was not found in the database.')
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
@@ -165,4 +165,4 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
             else:
                 outcome['errors'].append(f'Station ({name}) could not be saved to the database.')
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}

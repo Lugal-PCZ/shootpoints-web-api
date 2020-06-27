@@ -131,4 +131,4 @@ def set_prism_offsets(**kwargs) -> dict:
         _database.save_to_database(sql, data)
         outcome['result'] = f'Prism offsets are now {str(offsets)}.'
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}

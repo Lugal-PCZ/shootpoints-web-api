@@ -58,7 +58,7 @@ def _load_configs_from_file() -> dict:
         _database._record_setup_error(error)
     survey.backsighterrorlimit = configs['BACKSIGHT ERROR']['limit']
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def _load_total_station_model() -> dict:
@@ -86,8 +86,7 @@ def _load_total_station_model() -> dict:
     if not outcome['errors']:
         survey.totalstation = totalstation
     outcome['success'] = not outcome['errors']
-    return outcome
-
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 def _load_serial_port() -> dict:
     """
@@ -126,7 +125,7 @@ def _load_serial_port() -> dict:
     for each in outcome['errors']:
         _database._record_setup_error(each)
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def load_application() -> dict:
@@ -162,7 +161,7 @@ def load_application() -> dict:
     outcome['success'] = not outcome['errors']
     if outcome['success']:
         _database._clear_setup_errors()
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def save_config_file(port: str='', make: str='', model: str='', limit: int=0) -> dict:
@@ -184,7 +183,7 @@ def save_config_file(port: str='', make: str='', model: str='', limit: int=0) ->
     if outcome['success']:
         del outcome['results']
         outcome['result'] = 'Configurations saved and reloaded.'
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def summarize_application_state() -> dict:

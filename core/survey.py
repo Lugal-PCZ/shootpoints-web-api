@@ -105,7 +105,7 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
             else:
                 outcome['errors'].append('A problem occurred while saving the new session to the database.')
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_point_id: int, instrument_height: float, degrees: int, minutes: int, seconds: int) -> dict:
@@ -140,7 +140,7 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_poi
             else:
                 outcome['errors'].extend(setazimuth['errors'])
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def end_surveying_session() -> dict:
@@ -156,4 +156,4 @@ def end_surveying_session() -> dict:
     else:
         outcome['errors'].append('There is no currently active surveying session.')
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}

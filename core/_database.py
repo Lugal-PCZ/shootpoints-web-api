@@ -30,7 +30,7 @@ def save_to_database(sql: str, data: tuple) -> dict:
     else:
         outcome['errors'].append('The given sql does not appear to be an INSERT or UPDATE query.')
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def read_from_database(sql: str, params: tuple=()) -> dict:
@@ -45,7 +45,7 @@ def read_from_database(sql: str, params: tuple=()) -> dict:
     else:
         outcome['errors'].append('The given sql does not appear to be a SELECT query.')
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def _record_setup_error(error: str) -> None:

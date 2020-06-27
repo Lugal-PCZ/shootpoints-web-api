@@ -68,7 +68,7 @@ def set_mode_hr() -> dict:
         else:
             outcome['result'] = 'Mode set to Horizontal Right.'
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
@@ -111,7 +111,7 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
             else:
                 outcome['errors'].extend(setmodehr['errors'])
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def take_measurement() -> dict:
@@ -147,7 +147,7 @@ def take_measurement() -> dict:
                 else:
                     outcome['errors'].append('Measurement failed.')
     outcome['success'] = not outcome['errors']
-    return outcome
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def cancel_measurement() -> None:
