@@ -1,4 +1,5 @@
 """This module contains functions for handling the surveying session and associated data."""
+# TODO: Build out data collection routines in this module, with checks for the appropriate preconditions for the process (like an active session, for example).
 
 from . import _database
 from . import _calculations

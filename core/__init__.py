@@ -1,6 +1,4 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
-# TODO: Revisit the sub-modules' functions to make sure that existing session/station/etc. prerequisites are in place before proceeding.
-# TODO: Add testing to this application.
 
 import configparser
 import shutil
@@ -87,6 +85,7 @@ def _load_total_station_model() -> dict:
         survey.totalstation = totalstation
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
+
 
 def _load_serial_port() -> dict:
     """
