@@ -1,6 +1,6 @@
 """This module contains constants and methods for communicating with Topcon GTS-300 Series total stations."""
 
-from ... import database as _database
+from ... import survey as _survey
 
 
 # Communications constants:
@@ -19,7 +19,6 @@ _canceled = False
 
 def _read(timeout: float=0.2) -> bytes:
     """This function reads all characters waiting in the serial port's buffer."""
-    global port
     port.timeout = timeout
     buffer = port.read_until(bytes(ETX, 'ascii'))
     return buffer
@@ -27,7 +26,6 @@ def _read(timeout: float=0.2) -> bytes:
 
 def _write(command: str) -> None:
     """This function blindly writes the command to the serial port."""
-    global port
     command = bytes(command + ETX, 'ascii')
     port.write(command)
     _clear_buffers()
@@ -35,7 +33,6 @@ def _write(command: str) -> None:
 
 def _clear_buffers() -> None:
     """This function clears the serial port buffers."""
-    global port
     port.reset_input_buffer()
     port.reset_output_buffer()
 
@@ -63,20 +60,20 @@ def _wait_for_ack(count: int=10) -> bool:
 
 def set_mode_hr() -> dict:
     """This function sets the total station to V/H mode with Horizontal Right."""
-    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    outcome = {'errors': _survey.get_setup_errors(), 'result': ''}
     if not outcome['errors']:
         _write('Z12089')
         if not _wait_for_ack():
             outcome['errors'].append('A communication error occurred.')
         else:
-            outcome['results'] = 'Mode set to Horizontal Right.'
+            outcome['result'] = 'Mode set to Horizontal Right.'
     outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if type(val) != list or val}
+    return outcome
 
 
 def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
     """This function sets the azimuth reading on the total station."""
-    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    outcome = {'errors': _survey.get_setup_errors(), 'result': ''}
     if not outcome['errors']:
         try:
             degrees = int(degrees)
@@ -108,19 +105,19 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
                     if not _wait_for_ack():
                         outcome['errors'].append('A communication error occurred.')
                     else:
-                        outcome['results'] = f'Azimuth set to {degrees}° {minutes}\' {seconds}.'
+                        outcome['result'] = f'Azimuth set to {degrees}° {minutes}\' {seconds}.'
                 else:
                     outcome['errors'].append('A communication error occurred.')
             else:
                 outcome['errors'].extend(setmodehr['errors'])
     outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if type(val) != list or val}
+    return outcome
 
 
 def take_measurement() -> dict:
     """This function tells the total station to begin measuring a point."""
     global _canceled
-    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    outcome = {'errors': _survey.get_setup_errors(), 'measurement': {}, 'notification': ''}
     if not outcome['errors']:
         measurement = b''
         _write('Z64088')
@@ -141,7 +138,7 @@ def take_measurement() -> dict:
                     delta_e = round(float(measurement[12:23])/10000, 3)
                     delta_n = round(float(measurement[1:12])/10000, 3)
                     delta_z = round(float(measurement[23:34])/10000, 3)
-                    outcome['results'] = {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
+                    outcome['measurement'] = {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
                 else:
                     errors.append(f'Unexpected data format: {measurement}.')
             except:
@@ -150,7 +147,7 @@ def take_measurement() -> dict:
                 else:
                     outcome['errors'].append('Measurement failed.')
     outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if type(val) != list or val}
+    return outcome
 
 
 def cancel_measurement() -> None:
@@ -161,5 +158,5 @@ def cancel_measurement() -> None:
     _canceled = False  # Reset flag.
     return {
         'success': True,
-        'results': 'Measurement canceled by user.',
+        'notification': 'Measurement canceled by user.',
     }

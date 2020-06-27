@@ -21,128 +21,96 @@ from the occupied station.
     tangent_distance < 0 = Left
 """
 
-from . import database as _database
+from . import _database
 
 
-def get_prism_offsets(human_reabable: bool=False) -> dict:
-    """This function returns the prism offsets, in raw or human-readable form."""
-    offsets = _database.read_from_database('SELECT * FROM prism LIMIT 1')['results'][0]
-    if human_reabable:
-        readable_offsets = {}
-        for key, val in offsets.items():
-            if offsets[key]:
-                if key == 'vertical_distance':
-                    if val > 0:
-                        readable_offsets['vertical_direction'] = 'Up'
-                    else:
-                        readable_offsets['vertical_direction'] = 'Down'
-                        val = abs(val)
-                elif key == 'latitude_distance':
-                    if val > 0:
-                        readable_offsets['latitude_direction'] = 'North'
-                    else:
-                        readable_offsets['latitude_direction'] = 'South'
-                        val = abs(val)
-                elif key == 'longitude_distance':
-                    if val > 0:
-                        readable_offsets['longitude_direction'] = 'East'
-                    else:
-                        readable_offsets['longitude_direction'] = 'West'
-                        val = abs(val)
-                elif key == 'radial_distance':
-                    if val > 0:
-                        readable_offsets['radial_direction'] = 'Away'
-                    else:
-                        readable_offsets['radial_direction'] = 'Toward'
-                        val = abs(val)
-                elif key == 'tangent_distance':
-                    if val > 0:
-                        readable_offsets['tangent_direction'] = 'Right'
-                    else:
-                        readable_offsets['tangent_direction'] = 'Left'
-                        val = abs(val)
-                readable_offsets[key] = val
-            outcome = readable_offsets
-    else:
-        outcome = offsets
-    return outcome
+offsets = {
+    'vertical_distance': 0.0,
+    'latitude_distance': 0.0,
+    'longitude_distance': 0.0,
+    'radial_distance': 0.0,
+    'tangent_distance': 0.0,
+}
+
+_directions = {
+    'vertical': ['Up', 'Down'],
+    'latitude': ['North', 'South'],
+    'longitude': ['East', 'West'],
+    'radial': ['Away', 'Toward'],
+    'tangent': ['Right', 'Left']
+}
+
+
+def get_readable_offsets() -> dict:
+    """This function returns the prism offsets in human-readable form."""
+    readable_offsets = {}
+    for key, val in offsets.items():
+        if key == 'vertical_distance':
+            if val > 0:
+                readable_offsets['vertical_direction'] = _directions['vertical'][0]
+            elif val < 0:
+                readable_offsets['vertical_direction'] = _directions['vertical'][1]
+                val = abs(val)
+        elif key == 'latitude_distance':
+            if val > 0:
+                readable_offsets['latitude_direction'] = _directions['latitude'][0]
+            elif val < 0:
+                readable_offsets['latitude_direction'] = _directions['latitude'][1]
+                val = abs(val)
+        elif key == 'longitude_distance':
+            if val > 0:
+                readable_offsets['longitude_direction'] = _directions['longitude'][0]
+            elif val < 0:
+                readable_offsets['longitude_direction'] = _directions['longitude'][1]
+                val = abs(val)
+        elif key == 'radial_distance':
+            if val > 0:
+                readable_offsets['radial_direction'] = _directions['radial'][0]
+            elif val < 0:
+                readable_offsets['radial_direction'] = _directions['radial'][1]
+                val = abs(val)
+        elif key == 'tangent_distance':
+            if val > 0:
+                readable_offsets['tangent_direction'] = _directions['tangent'][0]
+            elif val < 0:
+                readable_offsets['tangent_direction'] = _directions['tangent'][1]
+                val = abs(val)
+    return readable_offsets
+
+
+def _validate_prism_offset(offsettype: str, distance: str, direction: str, errors: list) -> None:
+    """This function verifies the sanity of the given prism offset."""
+    global offsets
+    try:
+        distance = float(distance)
+        try:
+            if direction.upper() == _directions[offsettype][0].upper():
+                distance = abs(distance)
+            elif direction.upper() == _directions[offsettype][1].upper():
+                distance = -abs(distance)
+            else:
+                errors.append(f'The {offsettype.title()} Offset direction entered ({direction}) was invalid. It must be {_directions[offsettype][0]} or {_directions[offsettype][1]}.')
+            offsets[f'{offsettype}_distance'] = distance
+        except KeyError:
+            errors.append(f'No direction was given for the {offsettype.title()} Offset.')
+    except ValueError:
+        errors.append(f'The {offsettype.title()} Offset distance entered ({distance}) is not numerical.')
 
 
 def set_prism_offsets(**kwargs) -> dict:
     """This function sets the prism offsets and saves them to the database."""
-    outcome = {'errors': [], 'results': []}
-    offsets = get_prism_offsets()
+    outcome = {'errors': [], 'result': ''}
     for key, val in kwargs.items():
         if key == 'vertical_distance':
-            try:
-                val = float(val)
-                try:
-                    if kwargs['vertical_direction'].upper() == 'UP':
-                        offsets['vertical_distance'] = abs(val)
-                    elif kwargs['vertical_direction'].upper() == 'DOWN':
-                        offsets['vertical_distance'] = -abs(val)
-                    else:
-                        outcome['errors'].append(f'The Vertical Offset direction entered ({kwargs["vertical_direction"]}) was invalid. It must be Up or Down.')
-                except KeyError:
-                    outcome['errors'].append('No direction was given for the Vertical Offset.')
-            except ValueError:
-                outcome['errors'].append(f'The Vertical Offset distance entered ({val}) is not numerical.')
+            _validate_prism_offset('vertical', kwargs['vertical_distance'], kwargs['vertical_direction'], outcome['errors'])
         elif key == 'latitude_distance':
-            try:
-                val = float(val)
-                try:
-                    if kwargs['latitude_direction'].upper() == 'NORTH':
-                        offsets['latitude_distance'] = abs(val)
-                    elif kwargs['latitude_direction'].upper() == 'SOUTH':
-                        offsets['latitude_distance'] = -abs(val)
-                    else:
-                        outcome['errors'].append(f'The Latitude Offset direction entered ({kwargs["latitude_direction"]}) was invalid. It must be North or South.')
-                except KeyError:
-                    outcome['errors'].append('No direction was given for the Latitude Offset.')
-            except ValueError:
-                outcome['errors'].append(f'The Latitude Offset distance entered ({val}) is not numerical.')
+            _validate_prism_offset('latitude', kwargs['latitude_distance'], kwargs['latitude_direction'], outcome['errors'])
         elif key == 'longitude_distance':
-            try:
-                val = float(val)
-                try:
-                    if kwargs['longitude_direction'].upper() == 'EAST':
-                        offsets['longitude_distance'] = abs(val)
-                    elif kwargs['longitude_direction'].upper() == 'WEST':
-                        offsets['longitude_distance'] = -abs(val)
-                    else:
-                        outcome['errors'].append(f'The Longitude Offset direction entered ({kwargs["longitude_direction"]}) was invalid. It must be East or West.')
-                except KeyError:
-                    outcome['errors'].append('No direction was given for the Longitude Offset.')
-            except ValueError:
-                outcome['errors'].append(f'The Longitude Offset distance entered ({val}) is not numerical.')
+            _validate_prism_offset('longitude', kwargs['longitude_distance'], kwargs['longitude_direction'], outcome['errors'])
         elif key == 'radial_distance':
-            try:
-                val = float(val)
-                try:
-                    if kwargs['radial_direction'].upper() == 'AWAY':
-                        offsets['radial_distance'] = abs(val)
-                    elif kwargs['radial_direction'].upper() == 'TOWARD':
-                        offsets['radial_distance'] = -abs(val)
-                    else:
-                        outcome['errors'].append(f'The Radial Offset direction entered ({kwargs["radial_direction"]}) was invalid. It must be Away or Toward.')
-                except KeyError:
-                    outcome['errors'].append('No direction was given for the Radial Offset.')
-            except ValueError:
-                outcome['errors'].append(f'The Radial Offset distance entered ({val}) is not numerical.')
+            _validate_prism_offset('radial', kwargs['radial_distance'], kwargs['radial_direction'], outcome['errors'])
         elif key == 'tangent_distance':
-            try:
-                val = float(val)
-                try:
-                    if kwargs['tangent_direction'].upper() == 'RIGHT':
-                        offsets['tangent_distance'] = abs(val)
-                    elif kwargs['tangent_direction'].upper() == 'LEFT':
-                        offsets['tangent_distance'] = -abs(val)
-                    else:
-                        outcome['errors'].append(f'The Tangent Offset direction entered ({kwargs["tangent_direction"]}) was invalid. It must be Right or Left.')
-                except KeyError:
-                    outcome['errors'].append('No direction was given for the Tangent Offset.')
-            except ValueError:
-                outcome['errors'].append(f'The Tangent Offset distance entered ({val}) is not numerical.')
+            _validate_prism_offset('tangent', kwargs['tangent_distance'], kwargs['tangent_direction'], outcome['errors'])
     if not outcome['errors']:
         data = (
             offsets['vertical_distance'],
@@ -161,6 +129,6 @@ def set_prism_offsets(**kwargs) -> dict:
                 'tangent_distance = ?'
         )
         _database.save_to_database(sql, data)
-        outcome['results'].append(f'Prism offsets are now {str(offsets)}.')
+        outcome['result'] = f'Prism offsets are now {str(offsets)}.'
     outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if type(val) != list or val}
+    return outcome

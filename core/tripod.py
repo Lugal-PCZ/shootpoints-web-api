@@ -1,55 +1,168 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
 
-from . import database as _database
+from . import _database
+from . import _calculations
 
 
-def get_occupied_point() -> dict:
-    """
-    This function returns the coordinates of the occupied point.
-    (Note that there is no analogous setter function because the 
-    coordinates of the occupied point are those of the occupied
-    station.)
-    """
-    outcome = {'errors': _database.get_setup_errors(), 'results': []}
-    if not outcome['errors']:
-        sessionid = _database.get_current_session_id()
-        sql = (
-            'SELECT '
-                'sta.northing AS n, '
-                'sta.easting AS e, '
-                'sta.elevation AS z '
-            'FROM sessions sess '
-            'JOIN stations sta ON sess.stations_id_occupied = sta.id '
-            'WHERE sess.id = ?'
-        )
-        outcome = _database.read_from_database(sql, (sessionid,))
-    outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if type(val) != list or val}
+occupied_point = {
+    'n': 0.0,
+    'e': 0.0,
+    'z': 0.0,
+}
+
+instrument_height = 0.0
 
 
-def get_instrument_height() -> dict:
-    """This function returns the instrument height above the occupied point."""
-    outcome = {'errors': _database.get_setup_errors(), 'results': []}
-    if not outcome['errors']:
-        sessionid = _database.get_current_session_id()
-        sql = ('SELECT instrumentheight FROM sessions WHERE is = ?')
-        outcome = _database.read_from_database(sql, (sessionid,))
-    outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if type(val) != list or val}
+def _validate_elevation(elevation: float, errors: list) -> None:
+    """This function verifies that the elevation given is a float."""
+    try:
+        float(elevation)
+    except ValueError:
+        errors.append(f'Non-numeric elevation given ({elevation}).')
 
 
-def validate_instrument_height(height: float) -> dict:
+def _validate_site_coordinates(northing: float, easting: float, errors: list) -> None:
+    """This function verifies that the northing and easting given are floats."""
+    try:
+        float(northing)
+    except ValueError:
+        errors.append(f'Non-numeric northing given ({northing}).')
+    try:
+        float(easting)
+    except ValueError:
+        errors.append(f'Non-numeric easting given ({easting}).')
+
+
+def _validate_utm_coordinates(northing: float, easting: float, utmzone: str, errors: list) -> None:
+    """This function verifies the validity of the UTM coordinates given."""
+    try:
+        float(northing)
+    except ValueError:
+        errors.append(f'Non-numeric northing given ({northing}).')
+    else:
+        if not 0 <= northing <= 10000000:
+            errors.append(f'Northing given ({northing}) is out of range (0–10000000m).')
+    try:
+        float(easting)
+    except ValueError:
+        errors.append(f'Non-numeric easting given ({easting}).')
+    else:
+        if not 100000 <= easting <= 999999:
+            errors.append(f'Easting given ({easting}) is out of range (100000–999999m).')
+    try:
+        utmzone = str(utmzone).upper()
+        utmzonenumber = int(utmzone[:-1])
+    except KeyError:
+        errors.append(f'UTM Zone not given.')
+    except ValueError:
+        errors.append(f'Non-numeric UTM Zone number given ({utmzonenumber}).')
+    else:
+        if not 1 <= utmzonenumber <= 60:
+            errors.append(f'Invalid UTM Zone number given ({utmzonenumber}).')
+        else:
+            utmzoneletter = utmzone[-1]
+            if utmzoneletter not in 'CDEFGHJKLMNPQRSTUVWX':
+                errors.append(f'Invalid UTM Zone letter given ({utmzoneletter}).')
+
+
+def _validate_latlong_coordinates(latitude: float, longitude: float, errors: list) -> None:
+    """This function verifies the validity of the Latitude and Longitude coordinates given."""
+    try:
+        latitude = float(latitude)
+    except ValueError:
+        errors.append(f"Non-numeric latitude given ({latitude}).")
+    else:
+        if not 0 <= latitude <= 90:
+            errors.append('Latitude given is out of range (0–90°).')
+    try:
+        longitude = float(longitude)
+    except ValueError:
+        errors.append(f"Non-numeric latitude given ({longitude}).")
+    else:
+        if not -180 <= longitude <= 180:
+            errors.append('Longitude given is out of range (-180–180°).')
+
+
+def _validate_uniqueness_of_station(name: str, northing: float, easting: float, errors: list) -> None:
+    """This function verifies that the station name is unique in the database, as is its northing and easting."""
+    if _database.read_from_database('SELECT count(*) FROM stations WHERE name = ?', (name,))['results'][0]['count(*)']:
+        errors.append(f'The station name “{name}” is not unique.')
+    if _database.read_from_database('SELECT count(*) FROM stations WHERE (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)', (name,))['results'][0]['count(*)']:
+        errors.append(f'The station coordinates are not unique.')
+
+
+def _validate_instrument_height(height: float, errors: list) -> dict:
     """This function checks the sanity of the instrument height above the occupied point."""
-    outcome = {'errors': [], 'results': []}
     try:
         height = float(height)
         if height < 0:
-            outcome['errors'].append(f'Instrument height entered ({height}m) is negative.')
+            errors.append(f'Instrument height entered ({height}m) is negative.')
         elif height >= 2:
-            outcome['errors'].append(f'Instrument height entered ({height}m) is unrealistically high.')
+            errors.append(f'Instrument height entered ({height}m) is unrealistically high.')
     except ValueError:
-        outcome['errors'].append(f'Instrument height entered ({height}m) is not numeric.')
-    if not outcome['errors']:
-        outcome['results'] = f'{height}m is a valid instrument height.'
+        errors.append(f'Instrument height entered ({height}m) is not numeric.')
+
+
+def get_station(id: int) -> dict:
+    """"This function returns the name and coordinates of the indicated station from the database."""
+    outcome = {'errors': [], 'station': {}}
+    query = _database.read_from_database('SELECT * FROM stations WHERE id = ?', (id,))
+    if query['success'] and 'results' in query:
+        outcome['station'] = query['results'][0]
+    else:
+        outcome['errors'].append(f'Station id {id} was not found in the database.')
     outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if type(val) != list or val}
+    return outcome
+
+
+def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
+    """This function creates a new station record in the database with the given name and coordinates."""
+    outcome = {'errors': [], 'result': ''}
+    _validate_elevation(coordinates['elevation'], outcome['errors'])
+    if coordinatesystem == 'Site':
+        _validate_site_coordinates(coordinates['northing'], coordinates['easting'], outcome['errors'])
+        # Latitude, longitude, and UTM zone are not needed or 
+        # calculated when the coordinate system is 'Site'.
+        if not outcome['errors']:
+            northing = float(coordinates['northing'])
+            easting = float(coordinates['easting'])
+            elevation = float(coordinates['elevation'])
+            latitude = None
+            longitude = None
+            utmzone = None
+    elif coordinatesystem == 'UTM':
+        _validate_utm_coordinates(coordinates['northing'], coordinates['easting'], coordinates['utmzone'], outcome['errors'])
+        if not outcome['errors']:
+            northing = float(coordinates['northing'])
+            easting = float(coordinates['easting'])
+            elevation = float(coordinates['elevation'])
+            latitude, longitude = _calculations.convert_utm_to_latlon(
+                northing,
+                easting,
+                coordinates['utmzone'][:-1],
+                coordinates['utmzone'][-1].upper()
+            )
+    elif coordinatesystem == 'Lat/Lon':
+        _validate_latlong_coordinates(coordinates['latitude'], coordinates['longitude'], outcome['errors'])
+        if not outcome['errors']:
+            latitude = float(coordinates['latitude'])
+            longitude = float(coordinates['longitude'])
+            elevation = float(coordinates['elevation'])
+            northing, easting, utmzone = _calculations.convert_latlon_to_utm(latitude, longitude)
+    else:
+        outcome['errors'].append(f'Invalid coordinate system given ({coordinatesystem}) It should be one of Site, UTM, or Lat/Lon.')
+    if not outcome['errors']:
+        _validate_uniqueness_of_station(name, northing, easting, outcome['errors'])
+        if not outcome['errors']:
+            sql = (
+                f'INSERT INTO stations '
+                f'(name, northing, easting, elevation, utmzone, latitude, longitude) '
+                f'VALUES (?, ?, ?, ?, ?, ?, ?)'
+            )
+            newstation = (name, northing, easting, elevation, utmzone, latitude, longitude)
+            if _database.save_to_database(sql, newstation)['success']:
+                outcome['result'] = f'Station {name} saved to the database.'
+            else:
+                outcome['errors'].append(f'Station ({name}) could not be saved to the database.')
+    outcome['success'] = not outcome['errors']
+    return outcome

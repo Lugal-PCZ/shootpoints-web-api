@@ -6,7 +6,7 @@ for when ShootPoints is run in demo mode.
 from time import sleep as _sleep
 from random import randint as _randint
 
-from .. import database as _database
+from .. import survey as _survey
 
 
 _canceled = False
@@ -14,16 +14,16 @@ _canceled = False
 
 def set_mode_hr() -> dict:
     """This function sets the total station to V/H mode with Horizontal Right."""
-    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    outcome = {'errors': _survey.get_setup_errors(), 'result': ''}
     if not outcome['errors']:
-        outcome['results'] = 'Mode set to Horizontal Right.'
+        outcome['result'] = 'Mode set to Horizontal Right.'
     outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if type(val) != list or val}
+    return outcome
 
 
 def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
     """This function sets the azimuth reading on the total station."""
-    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    outcome = {'errors': _survey.get_setup_errors(), 'result': ''}
     if not outcome['errors']:
         try:
             degrees = int(degrees)
@@ -44,28 +44,28 @@ def set_azimuth(degrees: int=0, minutes: int=0, seconds: int=0) -> dict:
         except ValueError:
             outcome['errors'].append(f'A non-integer value ({seconds}) was entered for seconds.')
         if not outcome['errors']:
-            outcome['results'] = f'Azimuth set to {degrees}° {minutes}\' {seconds}"',
+            outcome['result'] = f'Azimuth set to {degrees}° {minutes}\' {seconds}"'
     outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if type(val) != list or val}
+    return outcome
 
 
 def take_measurement() -> dict:
     """This function tells the total station to begin measuring a point."""
-    outcome = {'errors': _database.get_setup_errors(), 'results': []}
+    outcome = {'errors': _survey.get_setup_errors(), 'measurement': {}, 'notification': ''}
     if not outcome['errors']:
         global _canceled
         delay = 5
-        for _ in range(delay - 1):
-            _sleep(_)
+        for i in range(delay - 1):
+            _sleep(i)
             if _canceled:
                 _canceled = False
-                return {'success': True, 'results': 'Measurement canceled by user.'}
+                return {'success': True, 'notification': 'Measurement canceled by user.'}
         delta_n = round((496337 + _randint(-50000, 50000)) / 10000, 3)
         delta_e = round((311930 + _randint(-50000, 50000)) / 10000, 3)
         delta_z = round((95802 + _randint(-10000, 10000)) / 10000, 3)
-        outcome['results'] = {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z},
+        outcome['measurement'] = {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
     outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if type(val) != list or val}
+    return outcome
 
 
 def cancel_measurement() -> dict:
