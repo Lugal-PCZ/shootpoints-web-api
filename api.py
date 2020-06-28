@@ -5,60 +5,20 @@ from fastapi import FastAPI, Response
 import core
 
 
-state = core._load_application_state()
-
 app = FastAPI()
 
 
 @app.get('/')
 def show_summary():
-    """This function gives summary data about the active """
+    """This function gives summary data about the current state of ShootPoints."""
     return core.summarize_application_state()
-
-
-@app.post('/azimuth/')
-def azimuth_set(response: Response, degrees: int=0, minutes: int=0, seconds: int=0):
-    """This function sets the azimuth on the total station."""
-    try:
-        outcome = core.totalstation.set_azimuth(degrees, minutes, seconds)
-        if 'errors' in outcome:
-            response.status_code = 422
-    except:
-        outcome = state
-        response.status_code = 403
-    return outcome
 
 
 @app.post('/configs/')
 def configs_set(response: Response, port: str='', make: str='', model: str='', limit: int=0):
-    global state
-    try:
-        outcome = core.save_config_file(port, make, model, limit)
-        state = core._load_application_state()
-        if 'errors' in outcome:
-            response.status_code = 422
-    except:
-        outcome = state
-        response.status_code = 403
-    return state
-
-
-@app.get('/instrument_height/')
-def instrument_height_get():
-    """"This function gets the instrument height above the occupied point."""
-    return core.tripod.get_instrument_height()
-
-
-@app.post('/instrument_height/')
-def instrument_height_set(response: Response, height: float):
-    """"This function gets the instrument height above the occupied point."""
-    try:
-        outcome = core.totalstation.set_azimuth(degrees, minutes, seconds)
-        if 'errors' in outcome:
-            response.status_code = 422
-    except:
-        outcome = state
-        response.status_code = 403
+    outcome = core.save_config_file(port, make, model, limit)
+    if 'errors' in outcome:
+        response.status_code = 422
     return outcome
 
 
@@ -72,19 +32,49 @@ def measurement_cancel():
 @app.get('/measurement/')
 def measurement_take(response: Response):
     """This function tells the total station to start measuring a point."""
-    try:
-        if core.prism.get_prism_offset()['results']:
-            outcome = core.totalstation.take_measurement()
-        else:
-            outcome = {'success': False, 'errors': ['Set a prism offset before proceeding.']}
-        if 'errors' in outcome:
-            response.status_code = 422
-        else:
-            outcome = core.calculations.apply_offsets_to_measurement(outcome)
-    except:
-        outcome = state
-        response.status_code = 403
+    # TODO: Update the following to use a function in survey.py, instead of calling totalstation.take_measurement() directly.
+    outcome = core.totalstation.take_measurement()
+    if outcome and 'errors' in outcome:
+        response.status_code = 422
     return outcome
+
+
+################################################
+# The following functions are only for testing.
+# Actual manipulation of total station functions
+# will happen via the survey.py module.
+################################################
+
+# @app.post('/azimuth/')
+# def azimuth_set(response: Response, degrees: int=0, minutes: int=0, seconds: int=0):
+#     """This function sets the azimuth on the total station."""
+#     try:
+#         outcome = core.totalstation.set_azimuth(degrees, minutes, seconds)
+#         if 'errors' in outcome:
+#             response.status_code = 422
+#     except:
+#         outcome = state
+#         response.status_code = 403
+#     return outcome
+
+
+# @app.get('/instrument_height/')
+# def instrument_height_get():
+#     """"This function gets the instrument height above the occupied point."""
+#     return core.tripod.get_instrument_height()
+
+
+# @app.post('/instrument_height/')
+# def instrument_height_set(response: Response, height: float):
+#     """"This function gets the instrument height above the occupied point."""
+#     try:
+#         outcome = core.totalstation.set_azimuth(degrees, minutes, seconds)
+#         if 'errors' in outcome:
+#             response.status_code = 422
+#     except:
+#         outcome = state
+#         response.status_code = 403
+#     return outcome
 
 
 # @app.post('/mode_hr/')
