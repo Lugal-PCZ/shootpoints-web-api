@@ -150,7 +150,4 @@ def cancel_measurement() -> None:
     _canceled = True  # Flag to short circuit _wait_for_ack() and take_measurement().
     set_mode_hr()  # Issue harmless command that interrupts the GTS.
     _canceled = False  # Reset flag.
-    return {
-        'success': True,
-        'notification': 'Measurement canceled by user.',
-    }
+    return {'success': True, 'notification': 'Measurement canceled by user.'}
