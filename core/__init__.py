@@ -97,10 +97,10 @@ def _load_serial_port() -> dict:
     if configs['SERIAL']['port'] == 'demo':
         outcome['result'] = 'Demo total station loaded, so no physical serial port initialized.'
     elif configs['SERIAL']['port'] == 'auto':
-        if glob.glob('/dev/cu.ttyAMA*'):  # Linux with RS232 adapter
-            serialport = glob.glob('/dev/cu.ttyAMA*')[0]
-        elif glob.glob('/dev/ttyUSB*'):  # Linux with USB adapter
-            serialport = glob.glob('/dev/cu.ttyUSB*')[0]
+        if glob.glob('/dev/ttyUSB*'):  # Linux with USB adapter
+            serialport = glob.glob('/dev/ttyUSB*')[0]
+        elif glob.glob('/dev/ttyAMA*'):  # Linux with RS232 adapter
+            serialport = glob.glob('/dev/ttyAMA*')[0]
         elif glob.glob('/dev/cu.usbserial*'):  # Mac with USB adapter
             serialport = glob.glob('/dev/cu.usbserial*')[0]
         else:  # Serial port not found.
