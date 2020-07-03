@@ -3,6 +3,7 @@ BEGIN TRANSACTION;
 CREATE TABLE `classes` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) NOT NULL DEFAULT ''
+,  UNIQUE (`name`)
 );
 INSERT INTO classes VALUES(1,'Operation');
 INSERT INTO classes VALUES(2,'Architecture');
@@ -71,7 +72,8 @@ CREATE TABLE `shots` (
 ,  `label` varchar(30) DEFAULT NULL
 ,  `comment` text COLLATE BINARY
 ,  UNIQUE (`groupings_id`,`sequenceingroup`)
-,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`groupings_id`) REFERENCES `groupings` (`id`)
+,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`sessions_id`) REFERENCES `sessions` (`id`)
+,  CONSTRAINT `shots_ibfk_2` FOREIGN KEY (`groupings_id`) REFERENCES `groupings` (`id`)
 );
 CREATE TABLE `stations` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
@@ -89,6 +91,7 @@ CREATE TABLE `subclasses` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `classes_id` integer  NOT NULL
 ,  `name` varchar(30) NOT NULL DEFAULT ''
+,  UNIQUE (`classes_id`,`name`)
 ,  CONSTRAINT `subclasses_ibfk_1` FOREIGN KEY (`classes_id`) REFERENCES `classes` (`id`)
 );
 INSERT INTO subclasses VALUES(1,2,'Wall');
@@ -102,7 +105,7 @@ INSERT INTO sqlite_sequence VALUES('geometry',4);
 INSERT INTO sqlite_sequence VALUES('subclasses',5);
 CREATE INDEX "idx_sessions_stations_id_occupied" ON "sessions" (`stations_id_occupied`);
 CREATE INDEX "idx_sessions_stations_id_backsight" ON "sessions" (`stations_id_backsight`);
+CREATE INDEX "idx_shots_sessions_id" ON "shots" (`sessions_id`);
 CREATE INDEX "idx_groupings_geometry_id" ON "groupings" (`geometry_id`);
 CREATE INDEX "idx_groupings_subclasses_id" ON "groupings" (`subclasses_id`);
-CREATE INDEX "idx_subclasses_classes_id" ON "subclasses" (`classes_id`);
 COMMIT;

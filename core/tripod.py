@@ -1,4 +1,5 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
+# TODO: Create delete_station() function.
 
 from . import _database
 from . import _calculations

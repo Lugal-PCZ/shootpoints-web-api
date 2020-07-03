@@ -1,4 +1,7 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
+# TODO: Update all checks of outcome['errors'] to use outcome['success'], instead
+# TODO: Update the blank_database.sql file because of the newly-created unique constraints.
+
 
 import configparser
 import shutil
@@ -11,9 +14,10 @@ from datetime import datetime
 
 from . import _database
 from . import _calculations
-from . import tripod
+from . import classifications
 from . import prism
 from . import survey
+from . import tripod
 
 
 configs = None

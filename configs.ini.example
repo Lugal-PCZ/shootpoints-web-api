@@ -7,5 +7,5 @@ make = Topcon
 model = GTS-303
 
 [BACKSIGHT ERROR]
-; Acceptable error range for backsight shots (expected distance vs. measured distance), in cm.
+; Acceptable error range for backsight shots (expected horizontal distance vs. measured distance), in cm.
 limit = 3

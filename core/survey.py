@@ -31,6 +31,7 @@ def _save_new_session(data: tuple) -> int:
         'VALUES(?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)'
     )
     if _database.save_to_database(sql, data)['success']:
+        # TODO: Use python sqlite function to get the last id, instead of the query below?
         sessionid = _database.read_from_database('SELECT last_insert_rowid()')['results'][0]['last_insert_rowid()']
     else:
         sessionid = 0

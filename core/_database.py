@@ -7,6 +7,7 @@ import os
 dbconn = sqlite3.connect('ShootPoints.db', check_same_thread=False)
 dbconn.row_factory = sqlite3.Row
 cursor = dbconn.cursor()
+cursor.execute('PRAGMA foreign_keys = ON')
 try:
     cursor.execute('SELECT 1 FROM stations')
 except:
@@ -45,7 +46,27 @@ def read_from_database(sql: str, params: tuple=()) -> dict:
     else:
         outcome['errors'].append('The given sql does not appear to be a SELECT query.')
     outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if val or key == 'success'}
+    return {key: val for key, val in outcome.items() if val or key == 'success' or key == 'results'}
+
+
+def delete_from_database(sql: str, params: tuple) -> dict:
+    """This function deletes data from the database"""
+    outcome = {'errors': [], 'result': ''}
+    if sql[:6].upper().find('DELETE') == 0:
+        try:
+            cursor.execute(sql, params)
+            dbconn.commit()
+            affected = cursor.rowcount
+            if affected == 1:
+                outcome['result'] = f'1 row was deleted.'
+            else:
+                outcome['result'] = f'{affected} rows were deleted.'
+        except sqlite3.Error as err:
+            outcome['errors'].append(str(err))
+    else:
+        outcome['errors'].append('The given sql does not appear to be a DELETE query.')
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if val or key == 'success' or key == 'results'}
 
 
 def _record_setup_error(error: str) -> None:
