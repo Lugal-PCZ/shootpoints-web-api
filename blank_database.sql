@@ -9,6 +9,12 @@ INSERT INTO classes VALUES(1,'Operation');
 INSERT INTO classes VALUES(2,'Architecture');
 INSERT INTO classes VALUES(3,'Artifact');
 INSERT INTO classes VALUES(4,'Feature');
+CREATE TABLE `currentstate` (
+  id INTEGER PRIMARY KEY CHECK (id = 1)  -- limit this table to only one row
+,  `sessions_id` integer  DEFAULT NULL
+,  `prismheight` float  DEFAULT NULL
+,  CONSTRAINT `currentstate_ibfk_1` FOREIGN KEY (`sessions_id`) REFERENCES `sessions` (`id`)
+);
 CREATE TABLE `geometry` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) NOT NULL DEFAULT ''
