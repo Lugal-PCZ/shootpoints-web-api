@@ -7,7 +7,6 @@ import os
 dbconn = sqlite3.connect('ShootPoints.db', check_same_thread=False)
 dbconn.row_factory = sqlite3.Row
 cursor = dbconn.cursor()
-cursor.execute('PRAGMA foreign_keys = ON')
 try:
     cursor.execute('SELECT 1 FROM stations')
 except:
@@ -16,6 +15,7 @@ except:
         sql = f.read().split(';')
         _ = [cursor.execute(query) for query in sql]
         dbconn.commit()
+cursor.execute('PRAGMA foreign_keys = ON')
 
 
 def save_to_database(sql: str, data: tuple) -> dict:

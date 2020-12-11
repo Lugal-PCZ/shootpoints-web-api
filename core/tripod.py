@@ -1,5 +1,4 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
-# TODO: Create delete_station() function.
 
 from . import _database
 from . import _calculations
@@ -165,5 +164,26 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
                 outcome['result'] = f'Station {name} saved to the database.'
             else:
                 outcome['errors'].append(f'Station ({name}) could not be saved to the database.')
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
+
+
+def delete_station(id: int) -> dict:
+    """This function deletes the indicated station from the database."""
+    outcome = {'errors': [], 'results': ''}
+    exists = _database.read_from_database('SELECT name FROM stations WHERE id = ?', (id,))
+    if exists['success']:
+        try:
+            name = exists['results'][0]['name']
+            sql = 'DELETE FROM stations WHERE id = ?'
+            deleted = _database.delete_from_database(sql, (id,))
+            if deleted['success']:
+                outcome['result'] = f'Station “{name}” successfully deleted from the database.'
+            else:
+                outcome['errors'] = deleted['errors']
+        except IndexError:
+            outcome['errors'].append(f'Station id {id} does not exist.')
+    else:
+        outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}

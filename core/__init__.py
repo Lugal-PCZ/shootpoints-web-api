@@ -1,7 +1,5 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
-# TODO: Update all checks of outcome['errors'] to use outcome['success'], instead
-# TODO: Update the blank_database.sql file because of the newly-created unique constraints.
-
+# TODO: update all modules to simply pull their settings from the DB on import, instead of the current method of trying to overthink it.
 
 import configparser
 import shutil
@@ -137,21 +135,31 @@ def load_application() -> dict:
     _check_system_date()
     if not configs:  # This app is being loaded fresh or reloaded, so check to see if there's current state saved in the database, and use that to set the module variables.
         try:
-            survey.sessionid = _database.read_from_database('SELECT id FROM sessions WHERE ended IS NULL ORDER BY started DESC LIMIT 1')['results'][0]
+            survey.sessionid = _database.read_from_database('SELECT id FROM sessions WHERE ended IS NULL ORDER BY started DESC LIMIT 1')['results'][0]['id']
             sql = (
                 'SELECT '
-                    'sta.northing, '
-                    'sta.easting, '
-                    'sta.elevation , '
-                    'sess.instrumentheight '
-                'FROM sessions sess '
+                    'sta.northing AS n, '
+                    'sta.easting AS e, '
+                    'sta.elevation AS z, '
+                    'sess.instrumentheight AS ih, '
+                    'max(grp.id) AS gid, '
+                    'prism.* '
+                'FROM sessions sess, prism '
                 'JOIN stations sta ON sess.stations_id_occupied = sta.id '
+                'LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id '
                 'WHERE sess.id = ?'
             )
-            setup_coordinates = _database.read_from_database(sql, (survey.sessionid,))['results'][0]
-            tripod.occupied_point = {'n': setup_coordinates['northing'], 'e': setup_coordinates['easting'], 'z': setup_coordinates['elevation']}
-            tripod.instrument_height = setup_coordinates['instrumentheight']
-            prism.offsets = _database.read_from_database('SELECT * FROM prism LIMIT 1')['results'][0]
+            session_info = _database.read_from_database(sql, (survey.sessionid,))['results'][0]
+            tripod.occupied_point = {'n': session_info['n'], 'e': session_info['e'], 'z': session_info['z']}
+            tripod.instrument_height = session_info['ih']
+            survey.groupingid = session_info['gid']
+            prism.offsets = {
+                'vertical_distance': session_info['vertical_distance'],
+                'latitude_distance': session_info['latitude_distance'],
+                'longitude_distance': session_info['longitude_distance'],
+                'radial_distance': session_info['radial_distance'],
+                'tangent_distance': session_info['tangent_distance'],
+            }
         except:
             pass
     loaders = [_load_configs_from_file, _load_total_station_model, _load_serial_port]

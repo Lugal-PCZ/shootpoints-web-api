@@ -16,27 +16,38 @@ def _calculate_radial_offset(measurement: dict, offset: float) -> tuple:
     return n_diff, e_diff
 
 
+def _calculate_wedge_offset(measurement: dict, offset: float) -> tuple:
+    """This function calculates the northing and easting change due to cw/ccw wedge prism offsets on the circle's radius."""
+    azimuth_to_prism = calculate_azimuth((0, 0), (measurement['delta_n'], measurement['delta_e']))
+    distance_to_prism = math.hypot(measurement['delta_n'], measurement['delta_e'])
+    # Note: distance_to_point = distance_to_prism
+    offset_angle = math.degrees(math.acos(((2 * distance_to_prism**2) - offset**2) / (2 * distance_to_prism**2)))
+    if offset < 0: offset_angle *= -1
+    azimuth_to_point = azimuth_to_prism + offset_angle
+    if azimuth_to_point < 0:
+        azimuth_to_point += 360
+    elif azimuth_to_point > 360:
+        azimuth_to_point -= 360
+    n_diff = (distance_to_prism * math.cos(math.radians(azimuth_to_point))) - measurement['delta_n']
+    e_diff = (distance_to_prism * math.sin(math.radians(azimuth_to_point))) - measurement['delta_e']
+    return n_diff, e_diff
+
+
 def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
-    """This function calculates the northing and easting change due to left/right tangential prism offsets."""
-    # TODO: Test these with real-world measurements
+    """This function calculates the northing and easting change due to left/right prism offsets tangential the circle's radius at the prism."""
+    azimuth_to_prism = calculate_azimuth((0, 0), (measurement['delta_n'], measurement['delta_e']))
     distance_to_prism = math.hypot(measurement['delta_n'], measurement['delta_e'])
     distance_to_point = math.hypot(distance_to_prism, offset)
     offset_angle = math.degrees(math.acos((distance_to_prism**2 + distance_to_point**2 - offset**2) / (2 * distance_to_prism * distance_to_point)))
-    azimuth_to_prism = calculate_azimuth(
-        (0, 0),
-        (measurement['delta_n'], measurement['delta_e']),
-    )
-    if offset < 0:
-        azimuth_to_point = azimuth_to_prism - offset_angle
-    else:
-        azimuth_to_point = azimuth_to_prism + offset_angle
+    if offset < 0: offset_angle *= -1
+    azimuth_to_point = azimuth_to_prism + offset_angle
     # Correct azimuth when the offset moves it across due north
     if azimuth_to_point < 0:
         azimuth_to_point += 360
     elif azimuth_to_point > 360:
         azimuth_to_point -= 360
-    n_diff = measurement['delta_n'] - (distance_to_point * math.cos(math.radians(azimuth_to_point)))
-    e_diff = measurement['delta_e'] - (distance_to_point * math.sin(math.radians(azimuth_to_point)))
+    n_diff = distance_to_point * (math.sin(math.radians(90 - azimuth_to_point)) / math.sin(math.radians(90))) - measurement['delta_n']
+    e_diff = distance_to_point * (math.sin(math.radians(azimuth_to_point)) / math.sin(math.radians(90))) - measurement['delta_e']
     return n_diff, e_diff
 
 
@@ -51,7 +62,7 @@ def apply_offsets_to_measurement(measurement: dict) -> dict:
     measurement['calculated_e'] = measurement['delta_e'] + tripod.occupied_point['e']
     measurement['calculated_z'] = measurement['delta_z'] + tripod.occupied_point['z']
     # Apply the instrument height offset
-    measurement['calculated_z'] += tripod.instrument_height['instrumentheight']
+    measurement['calculated_z'] += tripod.instrument_height
     # Apply the prism vertical offset
     measurement['calculated_z'] += prism.offsets['vertical_distance']
     # Apply the prism absolute offsets
@@ -64,6 +75,12 @@ def apply_offsets_to_measurement(measurement: dict) -> dict:
     )
     measurement['calculated_n'] += radial_n_diff
     measurement['calculated_e'] += radial_e_diff
+    wedge_n_diff, wedge_e_diff = _calculate_wedge_offset(
+        measurement,
+        prism.offsets['wedge_distance'],
+    )
+    measurement['calculated_n'] += wedge_n_diff
+    measurement['calculated_e'] += wedge_e_diff
     tangent_n_diff, tangent_e_diff = _calculate_tangent_offset(
         measurement,
         prism.offsets['tangent_distance'],

@@ -1,4 +1,4 @@
-"""This module contains functions for creating and removing classes and subclasses of archaeological survey data."""
+"""This module contains functions for reading, creating, and removing classes and subclasses of archaeological survey data."""
 
 from . import _database
 
@@ -21,11 +21,11 @@ def get_classes_and_subclasses() -> dict:
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def create_new_class(name: str) -> dict:
+def create_new_class(name: str, description: str=None) -> dict:
     """This function saves a new class to the database."""
     outcome = {'errors': [], 'results': ''}
     sql = 'INSERT INTO classes (name) VALUES(?)'
-    newclass = _database.save_to_database(sql, (name.strip().title(),))
+    newclass = _database.save_to_database(sql, (name.strip().title(), description.strip()))
     if newclass['success']:
         outcome['result'] = f'Class “{name}” successfully saved to the database.'
     else:
@@ -34,11 +34,11 @@ def create_new_class(name: str) -> dict:
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def create_new_subclass(classes_id: int, name: str) -> dict:
+def create_new_subclass(classes_id: int, name: str, description: str=None) -> dict:
     """This function saves a new subclass to the database."""
     outcome = {'errors': [], 'results': ''}
     sql = 'INSERT INTO subclasses (classes_id, name) VALUES(?, ?)'
-    newclass = _database.save_to_database(sql, (classes_id, name.strip().title()))
+    newclass = _database.save_to_database(sql, (classes_id, name.strip().title(), description.strip()))
     if newclass['success']:
         outcome['result'] = f'Sublass “{name}” successfully saved to the database.'
     else:
@@ -52,13 +52,16 @@ def delete_class(id: int) -> dict:
     outcome = {'errors': [], 'results': ''}
     exists = _database.read_from_database('SELECT name FROM classes WHERE id = ?', (id,))
     if exists['success']:
-        name = exists['results'][0]['name']
-        sql = 'DELETE FROM classes WHERE id = ?'
-        deleted = _database.delete_from_database(sql, (id,))
-        if deleted['success']:
-            outcome['result'] = f'Class “{name}” successfully deleted from the database.'
-        else:
-            outcome['errors'] = deleted['errors']
+        try:
+            name = exists['results'][0]['name']
+            sql = 'DELETE FROM classes WHERE id = ?'
+            deleted = _database.delete_from_database(sql, (id,))
+            if deleted['success']:
+                outcome['result'] = f'Class “{name}” successfully deleted from the database.'
+            else:
+                outcome['errors'] = deleted['errors']
+        except IndexError:
+            outcome['errors'].append(f'Class id {id} does not exist.')
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']
@@ -70,13 +73,16 @@ def delete_subclass(id: int) -> dict:
     outcome = {'errors': [], 'results': ''}
     exists = _database.read_from_database('SELECT name FROM subclasses WHERE id = ?', (id,))
     if exists['success']:
-        name = exists['results'][0]['name']
-        sql = 'DELETE FROM subclasses WHERE id = ?'
-        deleted = _database.delete_from_database(sql, (id,))
-        if deleted['success']:
-            outcome['result'] = f'Subclass “{name}” successfully deleted from the database.'
-        else:
-            outcome['errors'] = deleted['errors']
+        try:
+            name = exists['results'][0]['name']
+            sql = 'DELETE FROM subclasses WHERE id = ?'
+            deleted = _database.delete_from_database(sql, (id,))
+            if deleted['success']:
+                outcome['result'] = f'Subclass “{name}” successfully deleted from the database.'
+            else:
+                outcome['errors'] = deleted['errors']
+        except IndexError:
+            outcome['errors'].append(f'Subclass id {id} does not exist.')
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']

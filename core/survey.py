@@ -1,14 +1,21 @@
 """This module contains functions for handling the surveying session and associated data."""
-# TODO: Build out data collection routines in this module, with checks for the appropriate preconditions for the process (like an active session, for example).
+# TODO: Figure out how to update classification and groupings prior to saving
+# TODO: Figure out how to update and recalculate prism offsets prior to saving (you'll have to wipe out calculated_n, calculated_e, and calculated_z first)
+# TODO: Prompt to start new session if it's been more than 8 hours since the last one was started?
 
 from . import _database
 from . import _calculations
 from . import tripod
+from . import prism
 
 
-backsighterrorlimit = None
+backsighterrorlimit = 0.0
 totalstation = None
 sessionid = 0
+groupingid = 0
+lastshotdata = {}
+lastshotsequence = 0
+lastshotlabel = ''
 
 
 def get_setup_errors() -> list:
@@ -25,16 +32,23 @@ def get_setup_errors() -> list:
 def _save_new_session(data: tuple) -> int:
     """This function saves the surveying session information to the database."""
     global sessionid
+    global groupingid
+    global lastshotdata
+    global lastshotsequence
+    global lastshotlabel
     sql = (
         'INSERT INTO sessions '
         '(label, started, surveyor, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight) '
         'VALUES(?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)'
     )
     if _database.save_to_database(sql, data)['success']:
-        # TODO: Use python sqlite function to get the last id, instead of the query below?
-        sessionid = _database.read_from_database('SELECT last_insert_rowid()')['results'][0]['last_insert_rowid()']
+        sessionid = _database.cursor.lastrowid
     else:
         sessionid = 0
+    groupingid = 0
+    lastshotdata = {}
+    lastshotsequence = 0
+    lastshotlabel = ''
     return sessionid
 
 
@@ -61,6 +75,12 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
             outcome['errors'].extend(backsightstation['errors'])
         if prism_height < 0:
             outcome['errors'].append(f'An invalid prism height ({prism_height}m) was entered.')
+        else:
+            newoffsets = {each_offset:0 for each_offset in prism.offsets}
+            newoffsets['vertical_distance'] = prism_height
+            newoffsets['vertical_direction'] = 'Down'
+            # TODO: Capture errors in the following:
+            prism.set_prism_offsets(**newoffsets)
         if not outcome['errors']:
             azimuth = _calculations.calculate_azimuth(
                 (occupied_n, occupied_e),
@@ -82,7 +102,7 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
                         measurement['measurement']['delta_e']
                     )
                     if variance >= backsighterrorlimit:
-                        outcome['errors'].append(f'The measured distance between the Occupied Point and the Backsight Station ({variance}cm) exceeds the limit set in configs.ini ({limit}cm).')
+                        outcome['errors'].append(f'The measured distance between the Occupied Point and the Backsight Station ({variance}cm) exceeds the limit set in configs.ini ({backsighterrorlimit}cm).')
                     elev_diff_of_points = occupied_z - backsight_z
                     delta_z_to_point = measurement['measurement']['delta_z'] - prism_height
                     instrument_height = elev_diff_of_points + delta_z_to_point
@@ -157,5 +177,83 @@ def end_surveying_session() -> dict:
             outcome['errors'].append(f'An error occurred closing the session. Session {sessionid} is still active.')
     else:
         outcome['errors'].append('There is no currently active surveying session.')
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
+
+
+def start_new_grouping(geometry_id: int, subclasses_id: int, label: str=None) -> dict:
+    """This function begins recording a grouping of total station measurements."""
+    outcome = {'errors': [], 'result': ''}
+    global groupingid
+    sql = (
+        'INSERT INTO groupings '
+        '(sessions_id, geometry_id, subclasses_id, label) '
+        'VALUES(?, ?, ?, ?)'
+    )
+    if _database.save_to_database(sql, (sessionid, geometry_id, subclasses_id, label))['success']:
+        groupingid = _database.cursor.lastrowid
+    else:
+        groupingid = 0
+        outcome['errors'].append('An error occurred while starting the new grouping.')
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
+
+
+def take_shot() -> dict:
+    """This function instructs the total station to take a measurement, applies the offsets, and augments it with metadata."""
+    outcome = {'errors': [], 'result': ''}
+    if not sessionid:
+        outcome['errors'].append('No shot taken because there is no active surveying session.')
+    elif not groupingid:
+        outcome['errors'].append('No shot taken because there is no active shot grouping.')
+    else:
+        measurement = totalstation.take_measurement()
+        if 'notification' in measurement:
+            outcome['result'] = measurement['notification']
+        elif 'errors' in measurement:
+            outcome['errors'] = measurement['errors']
+        else:
+            outcome['result'] = _calculations.apply_offsets_to_measurement(measurement['measurement'])
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
+
+
+# TODO: create updater functions for groupings (new and join), subclass (update), sequence in grouping (?), shot label, and shot comments
+
+
+def save_shot(label: str=None, comment: str=None) -> dict:
+    # TODO: geometry_id 1 (isolated point) needs to start a new grouping w/ each point shot. All other groupings need to be explicitly started (and stopped?).
+    outcome = {'errors': [], 'result': ''}
+    global lastshotdata
+    global lastshotsequence
+    global lastshotlabel
+    data = (
+        lastshotdata['delta_n'],
+        lastshotdata['delta_e'],
+        lastshotdata['delta_z'],
+        lastshotdata['calculated_n'],
+        lastshotdata['calculated_e'],
+        lastshotdata['calculated_z'],
+        prism.offsets['vertical_distance'],
+        prism.offsets['latitude_distance'],
+        prism.offsets['longitude_distance'],
+        prism.offsets['radial_distance'],
+        prism.offsets['tangent_distance'],
+        groupingid,
+        lastshotsequence + 1,
+        label,
+        comment,
+    )
+    sql = (
+        'INSERT INTO shots '
+        '(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, groupings_id, sequenceingroup, label, comment) '
+        'VALUES(CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    )
+    if _database.save_to_database(sql, data)['success']:
+        lastshotdata = {}
+        lastshotlabel = label
+        lastshotsequence += 1
+    else:
+        outcome['errors'].append('An error occurred while saving the last shot.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
