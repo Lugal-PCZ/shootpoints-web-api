@@ -17,13 +17,11 @@ from the occupied station.
   Relative Offsets:
     radial_distance > 0 = Away
     radial_distance < 0 = Toward
-    wedge_distance > 0 = Clockwise
-    wedge_distance < 0 = Counter-Clockwise
     tangent_distance > 0 = Right
     tangent_distance < 0 = Left
+    wedge_distance > 0 = Clockwise
+    wedge_distance < 0 = Counter-Clockwise
 """
-
-# TODO: Prompt to verify the offsets when a session is started.
 
 from . import _database
 
@@ -48,46 +46,45 @@ _directions = {
 
 
 def get_readable_offsets() -> dict:
-    # TODO: fix this so that you get an empty dictionary when there are no offsets
     """This function returns the prism offsets in human-readable form."""
-    readable_offsets = {}
+    readable_offsets = {'offsets': []}
     for key, val in offsets.items():
         if key == 'vertical_distance':
             if val > 0:
-                readable_offsets['vertical_direction'] = _directions['vertical'][0]
+                readable_offsets['offsets'].append(f"{val}m {_directions['vertical'][0]}")
             elif val < 0:
-                readable_offsets['vertical_direction'] = _directions['vertical'][1]
                 val = abs(val)
+                readable_offsets['offsets'].append(f"{val}m {_directions['vertical'][1]}")
         elif key == 'latitude_distance':
             if val > 0:
-                readable_offsets['latitude_direction'] = _directions['latitude'][0]
+                readable_offsets['offsets'].append(f"{val}m {_directions['latitude'][0]}")
             elif val < 0:
-                readable_offsets['latitude_direction'] = _directions['latitude'][1]
                 val = abs(val)
+                readable_offsets['offsets'].append(f"{val}m {_directions['latitude'][1]}")
         elif key == 'longitude_distance':
             if val > 0:
-                readable_offsets['longitude_direction'] = _directions['longitude'][0]
+                readable_offsets['offsets'].append(f"{val}m {_directions['longitude'][0]}")
             elif val < 0:
-                readable_offsets['longitude_direction'] = _directions['longitude'][1]
                 val = abs(val)
+                readable_offsets['offsets'].append(f"{val}m {_directions['longitude'][1]}")
         elif key == 'radial_distance':
             if val > 0:
-                readable_offsets['radial_direction'] = _directions['radial'][0]
+                readable_offsets['offsets'].append(f"{val}m {_directions['radial'][0]}")
             elif val < 0:
-                readable_offsets['radial_direction'] = _directions['radial'][1]
                 val = abs(val)
+                readable_offsets['offsets'].append(f"{val}m {_directions['radial'][1]}")
         elif key == 'tangent_distance':
             if val > 0:
-                readable_offsets['tangent_direction'] = _directions['tangent'][0]
+                readable_offsets['offsets'].append(f"{val}m {_directions['tangent'][0]}")
             elif val < 0:
-                readable_offsets['tangent_direction'] = _directions['tangent'][1]
                 val = abs(val)
+                readable_offsets['offsets'].append(f"{val}m {_directions['tangent'][1]}")
         elif key == 'wedge_distance':
             if val > 0:
-                readable_offsets['wedge_direction'] = _directions['wedge'][0]
+                readable_offsets['offsets'].append(f"{val}m {_directions['wedge'][0]}")
             elif val < 0:
-                readable_offsets['wedge_direction'] = _directions['wedge'][1]
                 val = abs(val)
+                readable_offsets['offsets'].append(f"{val}m {_directions['wedge'][1]}")
     return readable_offsets
 
 

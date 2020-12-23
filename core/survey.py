@@ -2,6 +2,7 @@
 # TODO: Figure out how to update classification and groupings prior to saving
 # TODO: Figure out how to update and recalculate prism offsets prior to saving (you'll have to wipe out calculated_n, calculated_e, and calculated_z first)
 # TODO: Prompt to start new session if it's been more than 8 hours since the last one was started?
+# TODO: Prompt to verify the prism offsets when a session is started.
 
 from . import _database
 from . import _calculations

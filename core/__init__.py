@@ -158,6 +158,7 @@ def load_application() -> dict:
                 'longitude_distance': session_info['longitude_distance'],
                 'radial_distance': session_info['radial_distance'],
                 'tangent_distance': session_info['tangent_distance'],
+                'wedge_distance': session_info['wedge_distance'],
             }
         except:
             pass
