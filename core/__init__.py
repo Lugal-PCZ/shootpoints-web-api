@@ -1,5 +1,4 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
-# TODO: update all modules to simply pull their settings from the DB on import, instead of the current method of trying to overthink it.
 
 import configparser
 import shutil

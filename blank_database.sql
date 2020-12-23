@@ -1,4 +1,3 @@
--- TODO: add check constraints for values that cannot be negative (like ids)
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
 CREATE TABLE `classes` (
@@ -11,13 +10,6 @@ INSERT INTO classes VALUES(1,'Operation','Excavation units, controls, grids, and
 INSERT INTO classes VALUES(2,'Architecture','Human-built structures.');
 INSERT INTO classes VALUES(3,'Artifact','Objects made, modified, or used by people.');
 INSERT INTO classes VALUES(4,'Feature','Natural formations or immovable, non-architectural, human creations.');
-CREATE TABLE `currentstate` (
-  id INTEGER PRIMARY KEY CHECK (id = 1)  -- limit this table to only one row
-,  `sessions_id` integer  DEFAULT NULL
-,  `prismheight` float  DEFAULT NULL
-,  CONSTRAINT `currentstate_ibfk_1` FOREIGN KEY (`sessions_id`) REFERENCES `sessions` (`id`)
-);
-INSERT INTO currentstate VALUES (1,NULL,NULL);
 CREATE TABLE `geometry` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) NOT NULL
