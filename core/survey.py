@@ -2,7 +2,7 @@
 # TODO: Figure out how to update classification and groupings prior to saving
 # TODO: Figure out how to update and recalculate prism offsets prior to saving (you'll have to wipe out calculated_n, calculated_e, and calculated_z first)
 # TODO: Prompt to start new session if it's been more than 8 hours since the last one was started?
-# TODO: Prompt to verify the prism offsets when a session is started.
+# TODO: Create updater functions for groupings (new and join), subclass (update), sequence in grouping (?), previous shot label, and previous shot comments
 
 from . import _database
 from . import _calculations
@@ -80,7 +80,6 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
             newoffsets = {each_offset:0 for each_offset in prism.offsets}
             newoffsets['vertical_distance'] = prism_height
             newoffsets['vertical_direction'] = 'Down'
-            # TODO: Capture errors in the following:
             prism.set_prism_offsets(**newoffsets)
         if not outcome['errors']:
             azimuth = _calculations.calculate_azimuth(
@@ -90,6 +89,7 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
             degrees, remainder = divmod(azimuth, 1)
             minutes, remainder = divmod(remainder * 60, 1)
             seconds = round(remainder * 60)
+            degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
             setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
             if setazimuth['success']:
                 measurement = totalstation.take_measurement()
@@ -131,7 +131,7 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_point_id: int, instrument_height: float, degrees: int, minutes: int, seconds: int) -> dict:
+def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_point_id: int, instrument_height: float, azimuth: float) -> dict:
     """This function starts a new surveying session with an azimuth to a landmark."""
     outcome = {'errors': get_setup_errors(), 'result': ''}
     if not outcome['errors']:
@@ -144,6 +144,10 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_poi
         else:
             outcome['errors'].extend(occupiedpoint['errors'])
         if not outcome['errors']:
+            degrees, remainder = divmod(azimuth, 1)
+            minutes, remainder = divmod(remainder * 100, 1)
+            seconds = round(remainder * 100)
+            degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
             setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
             if setazimuth['success']:
                 data = (
@@ -217,9 +221,6 @@ def take_shot() -> dict:
             outcome['result'] = _calculations.apply_offsets_to_measurement(measurement['measurement'])
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
-
-
-# TODO: create updater functions for groupings (new and join), subclass (update), sequence in grouping (?), shot label, and shot comments
 
 
 def save_shot(label: str=None, comment: str=None) -> dict:

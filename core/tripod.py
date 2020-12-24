@@ -107,7 +107,7 @@ def get_station(id: int) -> dict:
     """"This function returns the name and coordinates of the indicated station from the database."""
     outcome = {'errors': [], 'station': {}}
     query = _database.read_from_database('SELECT * FROM stations WHERE id = ?', (id,))
-    if query['success'] and 'results' in query:
+    if query['success'] and len(query['results']):
         outcome['station'] = query['results'][0]
     else:
         outcome['errors'].append(f'Station id {id} was not found in the database.')
