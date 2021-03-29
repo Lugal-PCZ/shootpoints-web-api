@@ -80,7 +80,7 @@ def _validate_latlong_coordinates(latitude: float, longitude: float, errors: lis
         errors.append(f"Non-numeric latitude given ({longitude}).")
     else:
         if not -180 <= longitude <= 180:
-            errors.append('Longitude given is out of range (-180–180°).')
+            errors.append('Longitude given is out of range (±180°).')
 
 
 # TODO: add site name lookup to the following error messages
