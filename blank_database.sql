@@ -124,3 +124,4 @@ CREATE INDEX "idx_groupings_sessions_id" ON "groupings" (`sessions_id`);
 CREATE INDEX "idx_groupings_geometry_id" ON "groupings" (`geometry_id`);
 CREATE INDEX "idx_groupings_subclasses_id" ON "groupings" (`subclasses_id`);
 COMMIT;
+PRAGMA foreign_keys=ON;
