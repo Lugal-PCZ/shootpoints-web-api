@@ -1,4 +1,5 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
+# TODO: Create sites table, and tie each survey station to a specific site (that way, multiple site-specific grids can be in the same database).
 
 from . import _database
 from . import _calculations
@@ -83,11 +84,12 @@ def _validate_latlong_coordinates(latitude: float, longitude: float, errors: lis
             errors.append('Longitude given is out of range (-180–180°).')
 
 
-def _validate_uniqueness_of_station(name: str, northing: float, easting: float, errors: list) -> None:
+# TODO: add site name lookup to the following error messages
+def _validate_uniqueness_of_station(sites_id: int, name: str, northing: float, easting: float, errors: list) -> None:
     """This function verifies that the station name is unique in the database, as is its northing and easting."""
-    if _database.read_from_database('SELECT count(*) FROM stations WHERE name = ?', (name,))['results'][0]['count(*)']:
+    if _database.read_from_database('SELECT count(*) FROM stations WHERE sites_id = ? AND name = ?', (sites_id, name))['results'][0]['count(*)']:
         errors.append(f'The station name “{name}” is not unique.')
-    if _database.read_from_database('SELECT count(*) FROM stations WHERE (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)', (name,))['results'][0]['count(*)']:
+    if _database.read_from_database('SELECT count(*) FROM stations WHERE sites_id = ? AND (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)', (sites_id, northing, easting))['results'][0]['count(*)']:
         errors.append(f'The station coordinates are not unique.')
 
 
@@ -104,10 +106,12 @@ def _validate_instrument_height(height: float, errors: list) -> dict:
 
 
 def get_station(id: int) -> dict:
+    # TODO: modify this so that id is optional, returning all stations if no id is given
+    # TODO: also modify this to limit by site id
     """"This function returns the name and coordinates of the indicated station from the database."""
     outcome = {'errors': [], 'station': {}}
     query = _database.read_from_database('SELECT * FROM stations WHERE id = ?', (id,))
-    if query['success'] and len(query['results']):
+    if query['success'] and len(query['results']) > 0:
         outcome['station'] = query['results'][0]
     else:
         outcome['errors'].append(f'Station id {id} was not found in the database.')
@@ -115,7 +119,7 @@ def get_station(id: int) -> dict:
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
+def save_station(sites_id, name: str, coordinatesystem: str, coordinates: dict, description: str=None) -> bool:
     """This function creates a new station record in the database with the given name and coordinates."""
     outcome = {'errors': [], 'result': ''}
     _validate_elevation(coordinates['elevation'], outcome['errors'])
@@ -152,14 +156,14 @@ def save_station(name: str, coordinatesystem: str, coordinates: dict) -> bool:
     else:
         outcome['errors'].append(f'Invalid coordinate system given ({coordinatesystem}) It should be one of Site, UTM, or Lat/Lon.')
     if not outcome['errors']:
-        _validate_uniqueness_of_station(name, northing, easting, outcome['errors'])
+        _validate_uniqueness_of_station(sites_id, name, northing, easting, outcome['errors'])
         if not outcome['errors']:
             sql = (
                 f'INSERT INTO stations '
-                f'(name, northing, easting, elevation, utmzone, latitude, longitude) '
-                f'VALUES (?, ?, ?, ?, ?, ?, ?)'
+                f'(sites_id, name, northing, easting, elevation, utmzone, latitude, longitude, description) '
+                f'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
             )
-            newstation = (name, northing, easting, elevation, utmzone, latitude, longitude)
+            newstation = (sites_id, name, northing, easting, elevation, utmzone, latitude, longitude, description)
             if _database.save_to_database(sql, newstation)['success']:
                 outcome['result'] = f'Station {name} saved to the database.'
             else:

@@ -12,6 +12,7 @@ from datetime import datetime
 from . import _database
 from . import _calculations
 from . import classifications
+from . import sites
 from . import prism
 from . import survey
 from . import tripod

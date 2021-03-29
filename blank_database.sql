@@ -80,8 +80,15 @@ CREATE TABLE `shots` (
 ,  UNIQUE (`groupings_id`,`sequenceingroup`)
 ,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`groupings_id`) REFERENCES `groupings` (`id`)
 );
+CREATE TABLE `sites` (
+  `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `name` varchar(30) NOT NULL
+,  `description` varchar(200) DEFAULT NULL
+,  UNIQUE (`name`)
+);
 CREATE TABLE `stations` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `sites_id` integer  NOT NULL
 ,  `name` varchar(30) NOT NULL
 ,  `northing` float NOT NULL
 ,  `easting` float NOT NULL
@@ -89,8 +96,10 @@ CREATE TABLE `stations` (
 ,  `utmzone` varchar(3) DEFAULT ''
 ,  `latitude` float DEFAULT NULL
 ,  `longitude` float DEFAULT NULL
-,  UNIQUE (`name`)
-,  UNIQUE (`northing`,`easting`)
+,  `description` varchar(200) DEFAULT NULL
+,  UNIQUE (`name`,`sites_id`)
+,  UNIQUE (`northing`,`easting`,`sites_id`)
+,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`sites_id`) REFERENCES `sites` (`id`)
 );
 CREATE TABLE `subclasses` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
