@@ -20,7 +20,7 @@ CREATE TABLE `geometry` (
 INSERT INTO geometry VALUES(1,'Isolated Point',0,'Individual point that encapsulates granular information such as a point elevation or the location of a small artifact.');
 INSERT INTO geometry VALUES(2,'Open Polygon',1,'Multiple points that trace an outline wherein the start and end points do not connect.');
 INSERT INTO geometry VALUES(3,'Closed Polygon',1,'Multiple points that trace an outline wherein the start point is connected to the end point.');
-INSERT INTO geometry VALUES(4,'Point Cloud',0,'Multiple points that do not carry information except as a group that in toto describes an entity such as topography.');
+INSERT INTO geometry VALUES(4,'Point Cloud',0,'Multiple points that are not connected with lines and do not carry information individually but as elements of a group that in toto describes an entity such as topography.');
 CREATE TABLE `groupings` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `sessions_id` integer  NOT NULL
