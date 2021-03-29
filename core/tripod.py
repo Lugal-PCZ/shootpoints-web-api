@@ -83,13 +83,12 @@ def _validate_latlong_coordinates(latitude: float, longitude: float, errors: lis
             errors.append('Longitude given is out of range (±180°).')
 
 
-# TODO: add site name lookup to the following error messages
 def _validate_uniqueness_of_station(sites_id: int, name: str, northing: float, easting: float, errors: list) -> None:
-    """This function verifies that the station name is unique in the database, as is its northing and easting."""
-    if _database.read_from_database('SELECT count(*) FROM stations WHERE sites_id = ? AND name = ?', (sites_id, name))['results'][0]['count(*)']:
-        errors.append(f'The station name “{name}” is not unique.')
+    """This function verifies that the station name is unique at this site, as is its northing and easting."""
+    if _database.read_from_database('SELECT count(*) FROM stations WHERE sites_id = ? AND upper(name) = ?', (sites_id, name.upper()))['results'][0]['count(*)']:
+        errors.append(f'The station name “{name}” is not unique at this site.')
     if _database.read_from_database('SELECT count(*) FROM stations WHERE sites_id = ? AND (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)', (sites_id, northing, easting))['results'][0]['count(*)']:
-        errors.append(f'The station coordinates are not unique.')
+        errors.append(f'The station coordinates are not unique at this site.')
 
 
 def _validate_instrument_height(height: float, errors: list) -> dict:
@@ -104,21 +103,26 @@ def _validate_instrument_height(height: float, errors: list) -> dict:
         errors.append(f'Instrument height entered ({height}m) is not numeric.')
 
 
-def get_station(id: int) -> dict:
-    # TODO: modify this so that id is optional, returning all stations if no id is given
-    # TODO: also modify this to limit by site id
+def get_station(sites_id: int, id: int=None) -> dict:
     """"This function returns the name and coordinates of the indicated station from the database."""
     outcome = {'errors': [], 'station': {}}
-    query = _database.read_from_database('SELECT * FROM stations WHERE id = ?', (id,))
-    if query['success'] and len(query['results']) > 0:
-        outcome['station'] = query['results'][0]
+    if id:
+        query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ? AND id = ?', (sites_id, id,))
+        if query['success'] and len(query['results']) > 0:
+            outcome['station'] = query['results'][0]
+        else:
+                outcome['errors'].append(f'Station id {id} was not found at this site.')
     else:
-        outcome['errors'].append(f'Station id {id} was not found in the database.')
+        query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ?', (sites_id,))
+        if query['success'] and len(query['results']) > 0:
+            outcome['stations'] = query['results']
+        else:
+            outcome['errors'].append(f'No stations were found at this site.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def save_station(sites_id, name: str, coordinatesystem: str, coordinates: dict, description: str=None) -> bool:
+def save_station(sites_id: int, name: str, coordinatesystem: str, coordinates: dict, description: str=None) -> bool:
     """This function creates a new station record in the database with the given name and coordinates."""
     outcome = {'errors': [], 'result': ''}
     _validate_elevation(coordinates['elevation'], outcome['errors'])
