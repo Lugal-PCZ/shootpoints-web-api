@@ -142,6 +142,10 @@ def set_prism_offsets(**kwargs) -> dict:
                 'wedge_distance = ?, '
         )
         _database.save_to_database(sql, data)
-        outcome['result'] = f'Prism offsets are now {str(offsets)}.'
+        readable_offsets = get_readable_offsets()['offsets']
+        if len(readable_offsets):
+            outcome['result'] = f'Prism offsets are now {", ".join(readable_offsets)}.'
+        else:
+            outcome['result'] = 'Prism offsets are 0 in all directions.'
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
