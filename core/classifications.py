@@ -62,6 +62,8 @@ def delete_class(id: int) -> dict:
                 outcome['errors'] = deleted['errors']
         except IndexError:
             outcome['errors'].append(f'Class id {id} does not exist.')
+        if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
+            outcome['errors'][0] = f'Class “{name}” could not be deleted because it is a foreign key for one or more subclasses.'
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']
@@ -83,6 +85,8 @@ def delete_subclass(id: int) -> dict:
                 outcome['errors'] = deleted['errors']
         except IndexError:
             outcome['errors'].append(f'Subclass id {id} does not exist.')
+        if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
+            outcome['errors'][0] = f'Subclass “{name}” could not be deleted because it is a foreign key for one or more groupings.'
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']
