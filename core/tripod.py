@@ -1,5 +1,4 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
-# TODO: Create sites table, and tie each survey station to a specific site (that way, multiple site-specific grids can be in the same database).
 
 from . import _database
 from . import _calculations
