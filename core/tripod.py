@@ -103,21 +103,26 @@ def _validate_instrument_height(height: float, errors: list) -> dict:
         errors.append(f'Instrument height entered ({height}m) is not numeric.')
 
 
-def get_station(sites_id: int, id: int=None) -> dict:
-    """"This function returns the name and coordinates of the indicated station from the database."""
+def get_station(sites_id: int, id: int) -> dict:
+    """"This function returns the name and coordinates of the indicated station."""
     outcome = {'errors': [], 'station': {}}
-    if id:
-        query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ? AND id = ?', (sites_id, id,))
-        if query['success'] and len(query['results']) > 0:
-            outcome['station'] = query['results'][0]
-        else:
-                outcome['errors'].append(f'Station id {id} was not found at this site.')
+    query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ? AND id = ?', (sites_id, id,))
+    if query['success'] and len(query['results']) > 0:
+        outcome['station'] = query['results'][0]
     else:
-        query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ?', (sites_id,))
-        if query['success'] and len(query['results']) > 0:
-            outcome['stations'] = query['results']
-        else:
-            outcome['errors'].append(f'No stations were found at this site.')
+        outcome['errors'].append(f'Station id {id} was not found at this site.')
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
+
+
+def get_all_stations_at_site(sites_id: int) -> dict:
+    """"This function returns the name and coordinates of all the stations at the indicated site."""
+    outcome = {'errors': [], 'stations': {}}
+    query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ?', (sites_id,))
+    if query['success'] and len(query['results']) > 0:
+        outcome['stations'] = query['results']
+    else:
+        outcome['errors'].append(f'No stations were found at this site.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
