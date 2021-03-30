@@ -129,7 +129,7 @@ def _load_serial_port() -> dict:
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def load_application() -> dict:
+def _load_applications() -> dict:
     """This function runs the private loader funtions (above) and clears setup errors if they run cleanly."""
     outcome = {'errors': [], 'results': []}
     _check_system_date()
@@ -191,7 +191,7 @@ def save_config_file(port: str='', make: str='', model: str='', limit: int=0) ->
         configs['BACKSIGHT ERROR']['limit'] = limit
     with open('configs.ini', 'w') as f:
         configs.write(f)
-    outcome = load_application()
+    outcome = _load_applications()
     if outcome['success']:
         del outcome['results']
         outcome['result'] = 'Configurations saved and reloaded.'
@@ -246,4 +246,4 @@ def summarize_application_state() -> dict:
     return summary
 
 
-print(load_application())
+print(_load_applications())
