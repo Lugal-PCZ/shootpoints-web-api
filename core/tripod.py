@@ -85,10 +85,14 @@ def _validate_latlong_coordinates(latitude: float, longitude: float, errors: lis
 
 def _validate_uniqueness_of_station(sites_id: int, name: str, northing: float, easting: float, errors: list) -> None:
     """This function verifies that the station name is unique at this site, as is its northing and easting."""
-    if _database.read_from_database('SELECT count(*) FROM stations WHERE sites_id = ? AND upper(name) = ?', (sites_id, name.upper()))['results'][0]['count(*)']:
-        errors.append(f'The station name “{name}” is not unique at this site.')
-    if _database.read_from_database('SELECT count(*) FROM stations WHERE sites_id = ? AND (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)', (sites_id, northing, easting))['results'][0]['count(*)']:
-        errors.append(f'The station coordinates are not unique at this site.')
+    sitename = _database.read_from_database('SELECT name FROM sites WHERE id = ?', (sites_id,))['results'][0]['name']
+    if sitename:
+        if _database.read_from_database('SELECT count(*) FROM stations WHERE sites_id = ? AND upper(name) = ?', (sites_id, name.upper()))['results'][0]['count(*)']:
+            errors.append(f'The station name “{name}” is not unique at site “{sitename}.”')
+        if _database.read_from_database('SELECT count(*) FROM stations WHERE sites_id = ? AND (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)', (sites_id, northing, easting))['results'][0]['count(*)']:
+            errors.append(f'The station coordinates are not unique at site “{sitename}.”')
+    else:
+        errors.append(f'There is no site with id {sites_id}.')
 
 
 def _validate_instrument_height(height: float, errors: list) -> dict:
@@ -132,9 +136,8 @@ def save_station(sites_id: int, name: str, coordinatesystem: str, coordinates: d
     outcome = {'errors': [], 'result': ''}
     _validate_elevation(coordinates['elevation'], outcome['errors'])
     if coordinatesystem == 'Site':
+        # Note: Latitude, longitude, and UTM zone are not needed or calculated when the coordinate system is 'Site'.
         _validate_site_coordinates(coordinates['northing'], coordinates['easting'], outcome['errors'])
-        # Latitude, longitude, and UTM zone are not needed or 
-        # calculated when the coordinate system is 'Site'.
         if not outcome['errors']:
             northing = float(coordinates['northing'])
             easting = float(coordinates['easting'])
