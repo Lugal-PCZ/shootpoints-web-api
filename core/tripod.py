@@ -127,7 +127,7 @@ def get_all_stations_at_site(sites_id: int) -> dict:
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def save_station(sites_id: int, name: str, coordinatesystem: str, coordinates: dict, description: str=None) -> bool:
+def save_station(sites_id: int, name: str, coordinatesystem: str, coordinates: dict, description: str=None) -> dict:
     """This function creates a new station record in the database with the given name and coordinates."""
     outcome = {'errors': [], 'result': ''}
     _validate_elevation(coordinates['elevation'], outcome['errors'])
