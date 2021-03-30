@@ -30,6 +30,7 @@ def get_all_sites() -> dict:
 def save_site(name: str, description: str=None) -> dict:
     """This function creates a new site record in the database with the given name and description."""
     outcome = {'errors': [], 'result': ''}
+    name = name.strip()
     if _database.read_from_database('SELECT count(*) FROM sites WHERE upper(name) = ?', (name.upper(),))['results'][0]['count(*)']:
         outcome['errors'].append(f'The site name “{name}” is not unique.')
     if not outcome['errors']:

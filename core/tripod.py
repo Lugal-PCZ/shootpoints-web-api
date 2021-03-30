@@ -167,6 +167,7 @@ def save_station(sites_id: int, name: str, coordinatesystem: str, coordinates: d
     else:
         outcome['errors'].append(f'Invalid coordinate system given ({coordinatesystem}) It should be one of Site, UTM, or Lat/Lon.')
     if not outcome['errors']:
+        name = name.strip()
         _validate_uniqueness_of_station(sites_id, name, northing, easting, outcome['errors'])
         if not outcome['errors']:
             sql = (

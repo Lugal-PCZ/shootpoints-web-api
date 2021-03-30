@@ -224,6 +224,7 @@ def save_shot(label: str=None, comment: str=None) -> dict:
     global lastshotdata
     global lastshotsequence
     global lastshotlabel
+    label = label.strip()
     data = (
         lastshotdata['delta_n'],
         lastshotdata['delta_e'],
