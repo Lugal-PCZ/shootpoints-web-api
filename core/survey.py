@@ -49,21 +49,21 @@ def _save_new_session(data: tuple) -> int:
     return sessionid
 
 
-def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_point_id: int, backsight_station_id: int, prism_height: float) -> dict:
+def start_surveying_session_with_backsight(label: str, surveyor: str, sites_id: int, occupied_point_id: int, backsight_station_id: int, prism_height: float) -> dict:
     """This function starts a new surveying session with a backsight to a known point."""
     outcome = {'errors': get_setup_errors(), 'result': ''}
     if not outcome['errors']:
         end_surveying_session()  # End the current session, if it's still open.
         if occupied_point_id == backsight_station_id:
             outcome['errors'].append(f'The Occupied Point and Backsight Station are the same (id = {occupied_point_id}).')
-        occupiedpoint = tripod.get_station(occupied_point_id)
+        occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
         if occupiedpoint['success']:
             occupied_n = occupiedpoint['station']['northing']
             occupied_e = occupiedpoint['station']['easting']
             occupied_z = occupiedpoint['station']['elevation']
         else:
             outcome['errors'].extend(occupiedpoint['errors'])
-        backsightstation = tripod.get_station(backsight_station_id)
+        backsightstation = tripod.get_station(sites_id, backsight_station_id)
         if backsightstation['success']:
             backsight_n = backsightstation['station']['northing']
             backsight_e = backsightstation['station']['easting']
@@ -112,6 +112,7 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
             data = (
                 label,
                 surveyor,
+                sites_id,
                 occupied_point_id,
                 backsight_station_id,
                 f'{degrees}° {minutes}\' {seconds}"',
@@ -127,12 +128,12 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, occupied_p
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_point_id: int, instrument_height: float, azimuth: float) -> dict:
+def start_surveying_session_with_azimuth(label: str, surveyor: str, sites_id: int, occupied_point_id: int, instrument_height: float, azimuth: float) -> dict:
     """This function starts a new surveying session with an azimuth to a landmark."""
     outcome = {'errors': get_setup_errors(), 'result': ''}
     if not outcome['errors']:
         end_surveying_session()  # End the current session, if it's still open.
-        occupiedpoint = tripod.get_station(occupied_point_id)
+        occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
         if occupiedpoint['success']:
             occupied_n = occupiedpoint['station']['northing']
             occupied_e = occupiedpoint['station']['easting']
@@ -149,6 +150,7 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, occupied_poi
                 data = (
                     label,
                     surveyor,
+                    sites_id,
                     occupied_point_id,
                     None,  # There is no backsight station in this setup, but _save_new_session() expects a value.
                     f'{degrees}° {minutes}\' {seconds}"',
