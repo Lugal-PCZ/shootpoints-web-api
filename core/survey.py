@@ -10,9 +10,9 @@ backsighterrorlimit = 0.0
 totalstation = None
 sessionid = 0
 groupingid = 0
-lastshotdata = {}
-lastshotsequence = 0
-lastshotlabel = ''
+activeshotdata = {}
+activeshotsequence = 0
+activeshotlabel = ''
 
 
 def get_setup_errors() -> list:
@@ -30,9 +30,9 @@ def _save_new_session(data: tuple) -> int:
     """This function saves the surveying session information to the database."""
     global sessionid
     global groupingid
-    global lastshotdata
-    global lastshotsequence
-    global lastshotlabel
+    global activeshotdata
+    global activeshotsequence
+    global activeshotlabel
     sql = (
         'INSERT INTO sessions '
         '(label, started, surveyor, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight) '
@@ -43,9 +43,9 @@ def _save_new_session(data: tuple) -> int:
     else:
         sessionid = 0
     groupingid = 0
-    lastshotdata = {}
-    lastshotsequence = 0
-    lastshotlabel = ''
+    activeshotdata = {}
+    activeshotsequence = 0
+    activeshotlabel = ''
     return sessionid
 
 
@@ -205,6 +205,7 @@ def start_new_grouping(geometry_id: int, subclasses_id: int, label: str=None) ->
 def take_shot() -> dict:
     """This function instructs the total station to take a measurement, applies the offsets, and augments it with metadata."""
     outcome = {'errors': [], 'result': ''}
+    global activeshotdata
     if not sessionid:
         outcome['errors'].append('No shot taken because there is no active surveying session.')
     elif not groupingid:
@@ -217,43 +218,53 @@ def take_shot() -> dict:
             outcome['errors'] = measurement['errors']
         else:
             outcome['result'] = _calculations.apply_offsets_to_measurement(measurement['measurement'])
+            activeshotdata = outcome['result']
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def save_shot(label: str=None, comment: str=None) -> dict:
+    """This function saves the data from the last shot to the database."""
     outcome = {'errors': [], 'result': ''}
-    global lastshotdata
-    global lastshotsequence
-    global lastshotlabel
-    label = label.strip()
-    data = (
-        lastshotdata['delta_n'],
-        lastshotdata['delta_e'],
-        lastshotdata['delta_z'],
-        lastshotdata['calculated_n'],
-        lastshotdata['calculated_e'],
-        lastshotdata['calculated_z'],
-        prism.offsets['vertical_distance'],
-        prism.offsets['latitude_distance'],
-        prism.offsets['longitude_distance'],
-        prism.offsets['radial_distance'],
-        prism.offsets['tangent_distance'],
-        groupingid,
-        lastshotsequence + 1,
-        label,
-        comment,
-    )
-    sql = (
-        'INSERT INTO shots '
-        '(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, groupings_id, sequenceingroup, label, comment) '
-        'VALUES(CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    )
-    if _database.save_to_database(sql, data)['success']:
-        lastshotdata = {}
-        lastshotlabel = label
-        lastshotsequence += 1
+    global activeshotdata
+    global activeshotsequence
+    global activeshotlabel
+    if not activeshotdata:
+        outcome['errors'].append('Shot not saved because there is no unsaved shot data.')
     else:
-        outcome['errors'].append('An error occurred while saving the last shot.')
+        try:
+            label = label.strip()
+        except AttributeError:
+            pass
+        data = (
+            activeshotdata['delta_n'],
+            activeshotdata['delta_e'],
+            activeshotdata['delta_z'],
+            activeshotdata['calculated_n'],
+            activeshotdata['calculated_e'],
+            activeshotdata['calculated_z'],
+            prism.offsets['vertical_distance'],
+            prism.offsets['latitude_distance'],
+            prism.offsets['longitude_distance'],
+            prism.offsets['radial_distance'],
+            prism.offsets['tangent_distance'],
+            prism.offsets['wedge_distance'],
+            groupingid,
+            activeshotsequence + 1,
+            label,
+            comment,
+        )
+        sql = (
+            'INSERT INTO shots '
+            '(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, sequenceingroup, label, comment) '
+            'VALUES(CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )
+        if _database.save_to_database(sql, data)['success']:
+            activeshotdata = {}
+            activeshotlabel = label
+            # TODO: this probably shouldn't be incremented if the data are point types
+            activeshotsequence += 1
+        else:
+            outcome['errors'].append('An error occurred while saving the last shot.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
