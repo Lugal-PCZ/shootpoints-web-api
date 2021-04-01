@@ -177,7 +177,7 @@ def save_station(sites_id: int, name: str, coordinatesystem: str, coordinates: d
             )
             newstation = (sites_id, name, northing, easting, elevation, utmzone, latitude, longitude, description)
             if _database.save_to_database(sql, newstation)['success']:
-                outcome['result'] = f'Station {name} saved to the database.'
+                outcome['result'] = f'Station “{name}” saved to the database.'
             else:
                 outcome['errors'].append(f'Station ({name}) could not be saved to the database.')
     outcome['success'] = not outcome['errors']
