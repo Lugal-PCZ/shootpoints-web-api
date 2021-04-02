@@ -36,8 +36,8 @@ def _save_new_session(data: tuple) -> int:
     global activeshotlabel
     sql = (
         'INSERT INTO sessions '
-        '(label, started, surveyor, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight) '
-        'VALUES(?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)'
+        '(label, started, surveyor, sites_id, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight) '
+        'VALUES(?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)'
     )
     if _database.save_to_database(sql, data)['success']:
         sessionid = _database.cursor.lastrowid
@@ -54,7 +54,6 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, sites_id: 
     """This function starts a new surveying session with a backsight to a known point."""
     outcome = {'errors': get_setup_errors(), 'result': ''}
     if not outcome['errors']:
-        end_surveying_session()  # End the current session, if it's still open.
         if occupied_point_id == backsight_station_id:
             outcome['errors'].append(f'The Occupied Point and Backsight Station are the same (id = {occupied_point_id}).')
         occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
