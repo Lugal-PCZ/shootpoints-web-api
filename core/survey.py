@@ -174,7 +174,7 @@ def end_surveying_session() -> dict:
     outcome = {'errors': [], 'result': ''}
     global sessionid
     if sessionid:
-        sql = "UPDATE sessions SET ended = CURRENT_TIMESTAMP WHERE id = ?"
+        sql = "UPDATE sessions SET ended = 0 WHERE id = ?"
         if _database.save_to_database(sql, (sessionid,))['success']:
             outcome['result'] = f'Session {sessionid} ended.'
         else:

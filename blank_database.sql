@@ -45,7 +45,7 @@ CREATE TABLE `sessions` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `label` varchar(30) NOT NULL
 ,  `started` timestamp NULL DEFAULT current_timestamp
-,  `ended` timestamp NULL DEFAULT NULL
+,  `ended` integer  NOT NULL DEFAULT '0'
 ,  `surveyor` varchar(100) NOT NULL
 ,  `sites_id` integer  NOT NULL
 ,  `stations_id_occupied` integer  NOT NULL
