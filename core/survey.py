@@ -10,6 +10,7 @@ backsighterrorlimit = 0.0
 totalstation = None
 sessionid = 0
 groupingid = 0
+groupingissequential = False
 activeshotdata = {}
 activeshotsequence = 0
 activeshotlabel = ''
@@ -188,6 +189,7 @@ def start_new_grouping(geometry_id: int, subclasses_id: int, label: str=None) ->
     """This function begins recording a grouping of total station measurements."""
     outcome = {'errors': [], 'result': ''}
     global groupingid
+    global groupingissequential
     sql = (
         'INSERT INTO groupings '
         '(sessions_id, geometry_id, subclasses_id, label) '
@@ -195,6 +197,7 @@ def start_new_grouping(geometry_id: int, subclasses_id: int, label: str=None) ->
     )
     if _database.save_to_database(sql, (sessionid, geometry_id, subclasses_id, label))['success']:
         groupingid = _database.cursor.lastrowid
+        groupingissequential = bool(_database.read_from_database('SELECT sequential FROM geometry WHERE id = ?', (geometry_id,))['results'][0]['sequential'])
     else:
         groupingid = 0
         outcome['errors'].append('An error occurred while starting the new grouping.')
@@ -262,8 +265,8 @@ def save_shot(label: str=None, comment: str=None) -> dict:
         if _database.save_to_database(sql, data)['success']:
             activeshotdata = {}
             activeshotlabel = label
-            # TODO: this probably shouldn't be incremented if the data are point types
-            activeshotsequence += 1
+            if groupingissequential:
+                activeshotsequence += 1
         else:
             outcome['errors'].append('An error occurred while saving the last shot.')
     outcome['success'] = not outcome['errors']
