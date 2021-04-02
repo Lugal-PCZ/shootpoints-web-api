@@ -135,7 +135,7 @@ def _load_application() -> dict:
     _check_system_date()
     if not configs:  # This app is being loaded fresh or reloaded, so check to see if there's current state saved in the database, and use that to set the module variables.
         try:
-            survey.sessionid = _database.read_from_database('SELECT id FROM sessions WHERE ended = 0 ORDER BY started DESC LIMIT 1')['results'][0]['id']
+            survey.sessionid = _database.read_from_database('SELECT id FROM sessions ORDER BY started DESC LIMIT 1')['results'][0]['id']
             sql = (
                 'SELECT '
                     'sta.northing AS n, '

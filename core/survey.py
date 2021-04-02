@@ -133,7 +133,6 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, sites_id: in
     """This function starts a new surveying session with an azimuth to a landmark."""
     outcome = {'errors': get_setup_errors(), 'result': ''}
     if not outcome['errors']:
-        end_surveying_session()  # End the current session, if it's still open.
         occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
         if occupiedpoint['success']:
             occupied_n = occupiedpoint['station']['northing']
@@ -165,22 +164,6 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, sites_id: in
                     outcome['errors'].append(f'A problem occurred while saving the new session to the database.')
             else:
                 outcome['errors'].extend(setazimuth['errors'])
-    outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if val or key == 'success'}
-
-
-def end_surveying_session() -> dict:
-    """This function ends a surveying session."""
-    outcome = {'errors': [], 'result': ''}
-    global sessionid
-    if sessionid:
-        sql = "UPDATE sessions SET ended = 0 WHERE id = ?"
-        if _database.save_to_database(sql, (sessionid,))['success']:
-            outcome['result'] = f'Session {sessionid} ended.'
-        else:
-            outcome['errors'].append(f'An error occurred closing the session. Session {sessionid} is still active.')
-    else:
-        outcome['errors'].append('There is no currently active surveying session.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
