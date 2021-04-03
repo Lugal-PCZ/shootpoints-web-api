@@ -59,7 +59,7 @@ def delete_site(id: int) -> dict:
         except IndexError:
             outcome['errors'].append(f'Site id {id} does not exist.')
         if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
-            outcome['errors'][0] = f'Site “{name}” could not be deleted because it is a foreign key for one or more stations.'
+            outcome['errors'][0] = f'Site “{name}” could not be deleted because one or more stations are at this site.'
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']

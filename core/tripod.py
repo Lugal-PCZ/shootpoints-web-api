@@ -200,7 +200,7 @@ def delete_station(id: int) -> dict:
         except IndexError:
             outcome['errors'].append(f'Station id {id} does not exist.')
         if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
-            outcome['errors'][0] = f'Station “{name}” could not be deleted because it is a foreign key for one or more sessions.'
+            outcome['errors'][0] = f'Station “{name}” could not be deleted because it is the occupied station or backsight station for one or more sessions.'
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']
