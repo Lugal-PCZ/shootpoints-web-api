@@ -24,8 +24,13 @@ def get_all_classes_and_subclasses() -> dict:
 def create_new_class(name: str, description: str=None) -> dict:
     """This function saves a new class to the database."""
     outcome = {'errors': [], 'results': ''}
-    sql = 'INSERT INTO classes (name) VALUES(?)'
-    newclass = _database.save_to_database(sql, (name.strip().title(), description.strip()))
+    sql = 'INSERT INTO classes (name, description) VALUES(?, ?)'
+    name = name.strip().title()
+    try:
+        description = description.strip()
+    except:
+        pass
+    newclass = _database.save_to_database(sql, (name, description))
     if newclass['success']:
         outcome['result'] = f'Class “{name}” successfully saved to the database.'
     else:
@@ -37,8 +42,13 @@ def create_new_class(name: str, description: str=None) -> dict:
 def create_new_subclass(classes_id: int, name: str, description: str=None) -> dict:
     """This function saves a new subclass to the database."""
     outcome = {'errors': [], 'results': ''}
-    sql = 'INSERT INTO subclasses (classes_id, name) VALUES(?, ?)'
-    newclass = _database.save_to_database(sql, (classes_id, name.strip().title(), description.strip()))
+    sql = 'INSERT INTO subclasses (classes_id, name, description) VALUES(?, ?, ?)'
+    name = name.strip().title()
+    try:
+        description = description.strip()
+    except:
+        pass
+    newclass = _database.save_to_database(sql, (classes_id, name, description))
     if newclass['success']:
         outcome['result'] = f'Sublass “{name}” successfully saved to the database.'
     else:
@@ -52,7 +62,7 @@ def delete_class(id: int) -> dict:
     outcome = {'errors': [], 'results': ''}
     exists = _database.read_from_database('SELECT name FROM classes WHERE id = ?', (id,))
     if exists['success']:
-        try:
+        if exists['results']:  # This is an empty list if there are no matches for the above query.
             name = exists['results'][0]['name']
             sql = 'DELETE FROM classes WHERE id = ?'
             deleted = _database.delete_from_database(sql, (id,))
@@ -60,10 +70,13 @@ def delete_class(id: int) -> dict:
                 outcome['result'] = f'Class “{name}” successfully deleted from the database.'
             else:
                 outcome['errors'] = deleted['errors']
-        except IndexError:
+            try:
+                if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
+                    outcome['errors'][0] = f'Class “{name}” could not be deleted because it has one or more subclasses.'
+            except IndexError:
+                pass
+        else:
             outcome['errors'].append(f'Class id {id} does not exist.')
-        if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
-            outcome['errors'][0] = f'Class “{name}” could not be deleted because it is a foreign key for one or more subclasses.'
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']
@@ -75,7 +88,7 @@ def delete_subclass(id: int) -> dict:
     outcome = {'errors': [], 'results': ''}
     exists = _database.read_from_database('SELECT name FROM subclasses WHERE id = ?', (id,))
     if exists['success']:
-        try:
+        if exists['results']:  # This is an empty list if there are no matches for the above query.
             name = exists['results'][0]['name']
             sql = 'DELETE FROM subclasses WHERE id = ?'
             deleted = _database.delete_from_database(sql, (id,))
@@ -83,10 +96,13 @@ def delete_subclass(id: int) -> dict:
                 outcome['result'] = f'Subclass “{name}” successfully deleted from the database.'
             else:
                 outcome['errors'] = deleted['errors']
-        except IndexError:
+            try:
+                if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
+                    outcome['errors'][0] = f'Subclass “{name}” could not be deleted because it is the subclass of one or more groupings.'
+            except IndexError:
+                pass
+        else:
             outcome['errors'].append(f'Subclass id {id} does not exist.')
-        if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
-            outcome['errors'][0] = f'Subclass “{name}” could not be deleted because it is a foreign key for one or more groupings.'
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']

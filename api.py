@@ -46,6 +46,42 @@ def get_all_classes_and_subclasses(response: Response):
     return outcome
 
 
+@app.post('/class/')
+def create_new_class(response: Response, name: str, description: str=None):
+    """This function saves a new class to the database."""
+    outcome = core.classifications.create_new_class(name, description)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
+@app.delete('/class/')
+def delete_class(response: Response, id: int):
+    """This function deletes a class from the database."""
+    outcome = core.classifications.delete_class(id)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
+@app.post('/subclass/')
+def create_new_subclass(response: Response, classes_id: int, name: str, description: str=None):
+    """This function saves a new subclass to the database."""
+    outcome = core.classifications.create_new_subclass(classes_id, name, description)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
+@app.delete('/subclass/')
+def delete_subclass(response: Response, id: int):
+    """This function deletes a subclass from the database."""
+    outcome = core.classifications.delete_subclass(id)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
 #####################
 ## PRISM ENDPOINTS ##
 #####################
