@@ -54,7 +54,7 @@ def get_classes_and_subclasses(response: Response):
 def get_prism_offsets(response: Response):
     """This function gets the prism offsets."""
     outcome = core.prism.get_readable_offsets()
-    if not outcome['success']:
+    if not outcome['offsets']:
         response.status_code = 422
     return outcome
 
