@@ -3,7 +3,7 @@
 from . import _database
 
 
-def get_classes_and_subclasses() -> dict:
+def get_all_classes_and_subclasses() -> dict:
     """This function returns all the classes and subclasses in the database."""
     outcome = {'errors': [], 'results': []}
     classes = _database.read_from_database('SELECT * FROM classes ORDER BY name')

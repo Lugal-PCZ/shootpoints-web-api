@@ -19,7 +19,7 @@ def homepage():
 ## CORE ENDPOINTS ##
 ####################
 
-@app.post('/configs/')
+@app.post('/config/')
 def set_configs(response: Response, port: str='', make: str='', model: str='', limit: int=0):
     outcome = core.save_config_file(port, make, model, limit)
     if not outcome['success']:
@@ -37,10 +37,10 @@ def show_summary():
 ## CLASSIFICATIONS ENDPOINTS ##
 ###############################
 
-@app.get('/classes/')
-def get_classes_and_subclasses(response: Response):
+@app.get('/class/')
+def get_all_classes_and_subclasses(response: Response):
     """This function returns all the classes and subclasses in the database."""
-    outcome = core.classifications.get_classes_and_subclasses()
+    outcome = core.classifications.get_all_classes_and_subclasses()
     if not outcome['success']:
         response.status_code = 422
     return outcome
@@ -50,7 +50,7 @@ def get_classes_and_subclasses(response: Response):
 ## PRISM ENDPOINTS ##
 #####################
 
-@app.get('/prism_offset/')
+@app.get('/prism/')
 def get_prism_offsets(response: Response):
     """This function gets the prism offsets."""
     outcome = core.prism.get_readable_offsets()
@@ -59,7 +59,7 @@ def get_prism_offsets(response: Response):
     return outcome
 
 
-@app.post('/prism_offset/')
+@app.post('/prism/')
 def set_prism_offsets(response: Response, offsets: dict):
     # TODO: Update this endpoint to take each type of offset and construct the offsets dictionary
     """This function sets the prism offsets."""
