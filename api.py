@@ -57,7 +57,7 @@ def create_new_class(response: Response, name: str, description: str=None):
 
 @app.delete('/class/')
 def delete_class(response: Response, id: int):
-    """This function deletes a class from the database."""
+    """This function deletes the indicated class from the database."""
     outcome = core.classifications.delete_class(id)
     if not outcome['success']:
         response.status_code = 422
@@ -75,7 +75,7 @@ def create_new_subclass(response: Response, classes_id: int, name: str, descript
 
 @app.delete('/subclass/')
 def delete_subclass(response: Response, id: int):
-    """This function deletes a subclass from the database."""
+    """This function deletes the indicated subclass from the database."""
     outcome = core.classifications.delete_subclass(id)
     if not outcome['success']:
         response.status_code = 422
@@ -109,13 +109,37 @@ def set_prism_offsets(response: Response, offsets: dict):
 ## SITES ENDPOINTS ##
 #####################
 
-@app.get('/site/')
-def get_site(response: Response, id: int=None):
-    """This function gets the site indicate or all sites, if the id isn’t passed."""
-    if id:
-        outcome = core.sites.get_site(id)
-    else:
-        outcome = core.sites.get_all_sites()
+@app.get('/sites/')
+def get_all_sites(response: Response):
+    """This function gets all the sites in the database."""
+    outcome = core.sites.get_all_sites()
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
+@app.get('/site/{id}')
+def get_site(response: Response, id: int):
+    """This function gets the site indicated."""
+    outcome = core.sites.get_site(id)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
+@app.post('/site/')
+def create_new_site(response: Response, name: str, description: str=None):
+    """This function saves a new site to the database."""
+    outcome = core.sites.save_site(name, description)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
+@app.delete('/site/')
+def delete_site(response: Response, id: int):
+    """This function deletes the indicated site from the database."""
+    outcome = core.sites.delete_site(id)
     if not outcome['success']:
         response.status_code = 422
     return outcome
@@ -137,11 +161,29 @@ def start_surveying_session(
         instrument_height: float=0.0,
         azimuth: float=0.0000  # dd.mmss format
     ):
+    """This function saves a new surveying session to the database."""
     if sessiontype == 'Backsight':
         outcome = core.survey.start_surveying_session_with_backsight(label, surveyor, occupied_point_id, backsight_station_id, prism_height)
     elif sessiontype == 'Azimuth':
         outcome = core.survey.start_surveying_session_with_azimuth(label, surveyor, occupied_point_id, instrument_height, azimuth)
-    """This function starts a new surveying session."""
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
+@app.get('/shot/')
+def take_shot(response: Response):
+    """This function tells the total station to start measuring a point."""
+    outcome = core.survey.take_shot()
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
+@app.post('/shot/')
+def save_last_shot(response: Response, label: str=None, comment: str=None):
+    """This function saves the last shot to the database."""
+    outcome = core.survey.save_last_shot(label, comment)
     if not outcome['success']:
         response.status_code = 422
     return outcome
@@ -152,24 +194,33 @@ def start_surveying_session(
 #############################
 
 @app.get('/cancel/')
-def cancel_measurement():
+def cancel_shot():
     """This function stops a measurement in progress."""
     outcome = core.totalstation.cancel_measurement()
-    return outcome
-
-
-@app.get('/measurement/')
-def take_measurement(response: Response):
-    """This function tells the total station to start measuring a point."""
-    outcome = core.survey.take_shot()
-    if not outcome['success']:
-        response.status_code = 422
     return outcome
 
 
 ######################
 ## TRIPOD ENDPOINTS ##
 ######################
+
+@app.get('/station/{sites_id}')
+def get_all_sites(response: Response, sites_id: int):
+    """This function gets all the stations in the database at the indicated site."""
+    outcome = core.tripod.get_all_station_at_site(sites_id)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
+@app.get('/station/{sites_id}/{id}')
+def get_site(response: Response, sites_id: int, id: int):
+    """This function gets the station indicated."""
+    outcome = core.tripod.get_station(sites_id, id)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
 
 @app.post('/station/')
 def save_survey_station(
@@ -193,6 +244,15 @@ def save_survey_station(
     elif coordinatesystem == 'Lat/Lon':
         coordinates = {'latitude': latitude, 'longitude': longitude, 'elevation': elevation}
     outcome = core.tripod.save_station(sites_id, name, coordinatesystem, coordinates)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
+@app.delete('/station/')
+def delete_class(response: Response, id: int):
+    """This function deletes the indicated station from the database."""
+    outcome = core.tripod.delete_station(id)
     if not outcome['success']:
         response.status_code = 422
     return outcome

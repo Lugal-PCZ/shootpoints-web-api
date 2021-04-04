@@ -3,18 +3,6 @@
 from . import _database
 
 
-def get_site(id: int) -> dict:
-    """"This function returns the name and description of the indicated site."""
-    outcome = {'errors': [], 'site': {}}
-    query = _database.read_from_database('SELECT * FROM sites WHERE id = ?', (id,))
-    if query['success'] and len(query['results']) > 0:
-        outcome['site'] = query['results'][0]
-    else:
-        outcome['errors'].append(f'Site id {id} was not found in the database.')
-    outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if val or key == 'success'}
-
-
 def get_all_sites() -> dict:
     """"This function returns the names and descriptions of all the sites in the database."""
     outcome = {'errors': [], 'sites': {}}
@@ -23,6 +11,18 @@ def get_all_sites() -> dict:
         outcome['sites'] = query['results']
     else:
         outcome['errors'].append(f'No sites were found in the database.')
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
+
+
+def get_site(id: int) ->dict:
+    """"This function returns the name and description of the indicated site."""
+    outcome = {'errors': [], 'site': {}}
+    query = _database.read_from_database('SELECT * FROM sites WHERE id = ?', (id,))
+    if query['success'] and len(query['results']) > 0:
+        outcome['site' ] = query['results'][0]
+    else:
+        outcome['errors'].append(f'Site id {id} was not found in the database.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
@@ -48,7 +48,7 @@ def delete_site(id: int) -> dict:
     outcome = {'errors': [], 'results': ''}
     exists = _database.read_from_database('SELECT name FROM sites WHERE id = ?', (id,))
     if exists['success']:
-        try:
+        if exists['results']:  # This is an empty list if there are no matches for the above query.
             name = exists['results'][0]['name']
             sql = 'DELETE FROM sites WHERE id = ?'
             deleted = _database.delete_from_database(sql, (id,))
@@ -56,10 +56,13 @@ def delete_site(id: int) -> dict:
                 outcome['result'] = f'Site “{name}” successfully deleted from the database.'
             else:
                 outcome['errors'] = deleted['errors']
-        except IndexError:
+            try:
+                if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
+                    outcome['errors'][0] = f'Site “{name}” could not be deleted because one or more stations are at this site.'
+            except IndexError:
+                pass
+        else:
             outcome['errors'].append(f'Site id {id} does not exist.')
-        if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
-            outcome['errors'][0] = f'Site “{name}” could not be deleted because one or more stations are at this site.'
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']

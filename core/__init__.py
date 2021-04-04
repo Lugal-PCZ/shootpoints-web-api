@@ -218,7 +218,7 @@ def summarize_application_state() -> dict:
         'num_points_in_db': 0,
         'num_points_in_current_session': 0,
     }
-    setuperrors = survey.get_setup_errors()
+    setuperrors = survey._get_setup_errors()
     if setuperrors:
         summary['setup_errors'] = setuperrors
     if configs['SERIAL']['port'] == 'demo':

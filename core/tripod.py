@@ -85,7 +85,10 @@ def _validate_latlong_coordinates(latitude: float, longitude: float, errors: lis
 
 def _validate_uniqueness_of_station(sites_id: int, name: str, northing: float, easting: float, errors: list) -> None:
     """This function verifies that the station name is unique at this site, as is its northing and easting."""
-    sitename = _database.read_from_database('SELECT name FROM sites WHERE id = ?', (sites_id,))['results'][0]['name']
+    try:
+        sitename = _database.read_from_database('SELECT name FROM sites WHERE id = ?', (sites_id,))['results'][0]['name']
+    except:
+        sitename = None
     if sitename:
         if _database.read_from_database('SELECT count(*) FROM stations WHERE sites_id = ? AND upper(name) = ?', (sites_id, name.upper()))['results'][0]['count(*)']:
             errors.append(f'The station name “{name}” is not unique at site “{sitename}.”')
@@ -105,28 +108,30 @@ def _validate_instrument_height(height: float, errors: list) -> dict:
             errors.append(f'Instrument height entered ({height}m) is unrealistically high.')
     except ValueError:
         errors.append(f'Instrument height entered ({height}m) is not numeric.')
+ 
+
+def get_all_station_at_site(sites_id: int) -> dict:
+    """This function returns all the stations at the indicated site."""
+    # TODO: check for valid sites_id before continuing
+    outcome = {'errors': [], 'station': {}}
+    query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ?', (sites_id,))
+    if query['success'] and len(query['results']) > 0:
+        outcome['station'] = query['results']
+    else:
+        outcome['errors'].append(f'No stations were found at site {sites_id}.')
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def get_station(sites_id: int, id: int) -> dict:
     """"This function returns the name and coordinates of the indicated station."""
+    # TODO: check for valid sites_id before continuing
     outcome = {'errors': [], 'station': {}}
     query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ? AND id = ?', (sites_id, id,))
     if query['success'] and len(query['results']) > 0:
         outcome['station'] = query['results'][0]
     else:
-        outcome['errors'].append(f'Station id {id} was not found at this site.')
-    outcome['success'] = not outcome['errors']
-    return {key: val for key, val in outcome.items() if val or key == 'success'}
-
-
-def get_all_stations_at_site(sites_id: int) -> dict:
-    """"This function returns the name and coordinates of all the stations at the indicated site."""
-    outcome = {'errors': [], 'stations': {}}
-    query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ?', (sites_id,))
-    if query['success'] and len(query['results']) > 0:
-        outcome['stations'] = query['results']
-    else:
-        outcome['errors'].append(f'No stations were found at this site.')
+        outcome['errors'].append(f'Station id {id} was not found at site {sites_id}.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
@@ -189,7 +194,7 @@ def delete_station(id: int) -> dict:
     outcome = {'errors': [], 'results': ''}
     exists = _database.read_from_database('SELECT name FROM stations WHERE id = ?', (id,))
     if exists['success']:
-        try:
+        if exists['results']:  # This is an empty list if there are no matches for the above query.
             name = exists['results'][0]['name']
             sql = 'DELETE FROM stations WHERE id = ?'
             deleted = _database.delete_from_database(sql, (id,))
@@ -197,10 +202,13 @@ def delete_station(id: int) -> dict:
                 outcome['result'] = f'Station “{name}” successfully deleted from the database.'
             else:
                 outcome['errors'] = deleted['errors']
-        except IndexError:
+            try:
+                if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
+                    outcome['errors'][0] = f'Station “{name}” could not be deleted because it is the occupied station or backsight station for one or more sessions.'
+            except IndexError:
+                pass
+        else:
             outcome['errors'].append(f'Station id {id} does not exist.')
-        if outcome['errors'][0] == 'FOREIGN KEY constraint failed':
-            outcome['errors'][0] = f'Station “{name}” could not be deleted because it is the occupied station or backsight station for one or more sessions.'
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']

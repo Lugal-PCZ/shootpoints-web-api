@@ -16,7 +16,7 @@ activeshotsequence = 0
 activeshotlabel = ''
 
 
-def get_setup_errors() -> list:
+def _get_setup_errors() -> list:
     outcome = _database.read_from_database('SELECT * FROM setuperrors')
     errors = []
     try:
@@ -52,7 +52,7 @@ def _save_new_session(data: tuple) -> int:
 
 def start_surveying_session_with_backsight(label: str, surveyor: str, sites_id: int, occupied_point_id: int, backsight_station_id: int, prism_height: float) -> dict:
     """This function starts a new surveying session with a backsight to a known point."""
-    outcome = {'errors': get_setup_errors(), 'result': ''}
+    outcome = {'errors': _get_setup_errors(), 'result': ''}
     if not outcome['errors']:
         if occupied_point_id == backsight_station_id:
             outcome['errors'].append(f'The Occupied Point and Backsight Station are the same (id = {occupied_point_id}).')
@@ -130,7 +130,7 @@ def start_surveying_session_with_backsight(label: str, surveyor: str, sites_id: 
 
 def start_surveying_session_with_azimuth(label: str, surveyor: str, sites_id: int, occupied_point_id: int, instrument_height: float, azimuth: float) -> dict:
     """This function starts a new surveying session with an azimuth to a landmark."""
-    outcome = {'errors': get_setup_errors(), 'result': ''}
+    outcome = {'errors': _get_setup_errors(), 'result': ''}
     if not outcome['errors']:
         occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
         if occupiedpoint['success']:
@@ -208,7 +208,7 @@ def take_shot() -> dict:
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def save_shot(label: str=None, comment: str=None) -> dict:
+def save_last_shot(label: str=None, comment: str=None) -> dict:
     """This function saves the data from the last shot to the database."""
     outcome = {'errors': [], 'result': ''}
     global activeshotdata
