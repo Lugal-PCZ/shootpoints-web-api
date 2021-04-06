@@ -8,7 +8,6 @@ import core
 
 app = FastAPI()
 
-
 @app.get('/')
 def homepage():
     """This is the homepage for the ShootPoints Web API."""
@@ -20,7 +19,13 @@ def homepage():
 ####################
 
 @app.post('/config/')
-def set_configs(response: Response, port: str='', make: str='', model: str='', limit: int=0):
+def set_configs(
+        response: Response,
+        port: str=None,
+        make: str=None,
+        model: str=None,
+        limit: int=0
+    ):
     outcome = core.save_config_file(port, make, model, limit)
     if not outcome['success']:
         response.status_code = 422
@@ -47,7 +52,11 @@ def get_all_classes_and_subclasses(response: Response):
 
 
 @app.post('/class/')
-def create_new_class(response: Response, name: str, description: str=None):
+def create_new_class(
+        response: Response,
+        name: str,
+        description: str=None
+    ):
     """This function saves a new class to the database."""
     outcome = core.classifications.create_new_class(name, description)
     if not outcome['success']:
@@ -55,8 +64,11 @@ def create_new_class(response: Response, name: str, description: str=None):
     return outcome
 
 
-@app.delete('/class/')
-def delete_class(response: Response, id: int):
+@app.delete('/class/{id}')
+def delete_class(
+        response: Response,
+        id: int
+    ):
     """This function deletes the indicated class from the database."""
     outcome = core.classifications.delete_class(id)
     if not outcome['success']:
@@ -64,8 +76,13 @@ def delete_class(response: Response, id: int):
     return outcome
 
 
-@app.post('/subclass/')
-def create_new_subclass(response: Response, classes_id: int, name: str, description: str=None):
+@app.post('/class/{classes_id}')
+def create_new_subclass(
+        response: Response,
+        classes_id: int,
+        name: str,
+        description: str=None
+    ):
     """This function saves a new subclass to the database."""
     outcome = core.classifications.create_new_subclass(classes_id, name, description)
     if not outcome['success']:
@@ -73,10 +90,14 @@ def create_new_subclass(response: Response, classes_id: int, name: str, descript
     return outcome
 
 
-@app.delete('/subclass/')
-def delete_subclass(response: Response, id: int):
+@app.delete('/class/{classes_id}/{id}')
+def delete_subclass(
+        response: Response,
+        classes_id: int,
+        id: int
+    ):
     """This function deletes the indicated subclass from the database."""
-    outcome = core.classifications.delete_subclass(id)
+    outcome = core.classifications.delete_subclass(classes_id, id)
     if not outcome['success']:
         response.status_code = 422
     return outcome
@@ -96,7 +117,10 @@ def get_prism_offsets(response: Response):
 
 
 @app.post('/prism/')
-def set_prism_offsets(response: Response, offsets: dict):
+def set_prism_offsets(
+        response: Response,
+        offsets: dict
+    ):
     # TODO: Update this endpoint to take each type of offset and construct the offsets dictionary
     """This function sets the prism offsets."""
     outcome = core.prism.set_prism_offsets(**offsets)
@@ -109,7 +133,7 @@ def set_prism_offsets(response: Response, offsets: dict):
 ## SITES ENDPOINTS ##
 #####################
 
-@app.get('/sites/')
+@app.get('/site/')
 def get_all_sites(response: Response):
     """This function gets all the sites in the database."""
     outcome = core.sites.get_all_sites()
@@ -119,7 +143,10 @@ def get_all_sites(response: Response):
 
 
 @app.get('/site/{id}')
-def get_site(response: Response, id: int):
+def get_site(
+        response: Response,
+        id: int
+    ):
     """This function gets the site indicated."""
     outcome = core.sites.get_site(id)
     if not outcome['success']:
@@ -128,7 +155,11 @@ def get_site(response: Response, id: int):
 
 
 @app.post('/site/')
-def create_new_site(response: Response, name: str, description: str=None):
+def create_new_site(
+        response: Response,
+        name: str,
+        description: str=None
+    ):
     """This function saves a new site to the database."""
     outcome = core.sites.save_site(name, description)
     if not outcome['success']:
@@ -136,8 +167,11 @@ def create_new_site(response: Response, name: str, description: str=None):
     return outcome
 
 
-@app.delete('/site/')
-def delete_site(response: Response, id: int):
+@app.delete('/site/{id}')
+def delete_site(
+        response: Response,
+        id: int,
+    ):
     """This function deletes the indicated site from the database."""
     outcome = core.sites.delete_site(id)
     if not outcome['success']:
@@ -181,7 +215,11 @@ def take_shot(response: Response):
 
 
 @app.post('/shot/')
-def save_last_shot(response: Response, label: str=None, comment: str=None):
+def save_last_shot(
+        response: Response,
+        label: str=None,
+        comment: str=None
+    ):
     """This function saves the last shot to the database."""
     outcome = core.survey.save_last_shot(label, comment)
     if not outcome['success']:
@@ -205,7 +243,10 @@ def cancel_shot():
 ######################
 
 @app.get('/station/{sites_id}')
-def get_all_sites(response: Response, sites_id: int):
+def get_all_station_at_site(
+        response: Response,
+        sites_id: int
+    ):
     """This function gets all the stations in the database at the indicated site."""
     outcome = core.tripod.get_all_station_at_site(sites_id)
     if not outcome['success']:
@@ -214,7 +255,11 @@ def get_all_sites(response: Response, sites_id: int):
 
 
 @app.get('/station/{sites_id}/{id}')
-def get_site(response: Response, sites_id: int, id: int):
+def get_station(
+        response: Response,
+        sites_id: int,
+        id: int
+    ):
     """This function gets the station indicated."""
     outcome = core.tripod.get_station(sites_id, id)
     if not outcome['success']:
@@ -227,10 +272,10 @@ def save_survey_station(
         response: Response,
         sites_id: int,
         name: str,
-        elevation: float,
-        coordinatesystem: str = Query('Site', enum=['Site', 'UTM', 'Lat/Lon']),
+        coordinatesystem: str = Query(..., enum=['Site', 'UTM', 'Lat/Lon']),
         northing: float=None,
         easting: float=None,
+        elevation: float=None,
         utmzone: str=None,
         latitude: float=None,
         longitude: float=None,
@@ -249,8 +294,11 @@ def save_survey_station(
     return outcome
 
 
-@app.delete('/station/')
-def delete_class(response: Response, id: int):
+@app.delete('/station/{id}')
+def delete_class(
+        response: Response,
+        id: int
+    ):
     """This function deletes the indicated station from the database."""
     outcome = core.tripod.delete_station(id)
     if not outcome['success']:
