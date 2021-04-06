@@ -32,7 +32,7 @@ def create_new_class(name: str, description: str=None) -> dict:
         pass
     newclass = _database.save_to_database(sql, (name, description))
     if newclass['success']:
-        outcome['result'] = f'Class “{name}” successfully saved to the database.'
+        outcome['result'] = f'Class “{name}” saved to the database.'
     else:
         outcome['errors'] = newclass['errors']
     outcome['success'] = not outcome['errors']
@@ -50,7 +50,7 @@ def create_new_subclass(classes_id: int, name: str, description: str=None) -> di
         pass
     newclass = _database.save_to_database(sql, (classes_id, name, description))
     if newclass['success']:
-        outcome['result'] = f'Sublass “{name}” successfully saved to the database.'
+        outcome['result'] = f'Sublass “{name}” saved to the database.'
     else:
         outcome['errors'] = newclass['errors']
     outcome['success'] = not outcome['errors']
@@ -83,10 +83,10 @@ def delete_class(id: int) -> dict:
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def delete_subclass(id: int) -> dict:
+def delete_subclass(classes_id: int, id: int) -> dict:
     """This function deletes the indicated subclass from the database."""
     outcome = {'errors': [], 'results': ''}
-    exists = _database.read_from_database('SELECT name FROM subclasses WHERE id = ?', (id,))
+    exists = _database.read_from_database('SELECT name FROM subclasses WHERE classes_id = ? AND id = ?', (classes_id, id,))
     if exists['success']:
         if exists['results']:  # This is an empty list if there are no matches for the above query.
             name = exists['results'][0]['name']
@@ -102,7 +102,7 @@ def delete_subclass(id: int) -> dict:
             except IndexError:
                 pass
         else:
-            outcome['errors'].append(f'Subclass id {id} does not exist.')
+            outcome['errors'].append(f'Subclass id {id} does not exist or is not a subclass of class id {classes_id}.')
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']

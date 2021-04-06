@@ -36,9 +36,9 @@ def save_site(name: str, description: str=None) -> dict:
     if not outcome['errors']:
         sql = (f'INSERT INTO sites (name, description) VALUES (?, ?)')
         if _database.save_to_database(sql, (name, description,))['success']:
-            outcome['result'] = f'Site {name} saved to the database.'
+            outcome['result'] = f'Site “{name}” saved to the database.'
         else:
-            outcome['errors'].append(f'Site ({name}) could not be saved to the database.')
+            outcome['errors'].append(f'Site “{name}” could not be saved to the database.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 

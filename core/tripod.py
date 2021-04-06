@@ -113,10 +113,10 @@ def _validate_instrument_height(height: float, errors: list) -> dict:
 def get_all_station_at_site(sites_id: int) -> dict:
     """This function returns all the stations at the indicated site."""
     # TODO: check for valid sites_id before continuing
-    outcome = {'errors': [], 'station': {}}
+    outcome = {'errors': [], 'stations': {}}
     query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ?', (sites_id,))
     if query['success'] and len(query['results']) > 0:
-        outcome['station'] = query['results']
+        outcome['stations'] = query['results']
     else:
         outcome['errors'].append(f'No stations were found at site {sites_id}.')
     outcome['success'] = not outcome['errors']
@@ -184,7 +184,7 @@ def save_station(sites_id: int, name: str, coordinatesystem: str, coordinates: d
             if _database.save_to_database(sql, newstation)['success']:
                 outcome['result'] = f'Station “{name}” saved to the database.'
             else:
-                outcome['errors'].append(f'Station ({name}) could not be saved to the database.')
+                outcome['errors'].append(f'Station “{name}” could not be saved to the database.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
