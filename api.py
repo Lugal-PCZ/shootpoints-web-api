@@ -183,11 +183,12 @@ def delete_site(
 ## SURVEY ENDPOINTS ##
 ######################
 
-@app.post('/session/')
+@app.post('/session/{sites_id}')
 def start_surveying_session(
         response: Response,
         label: str,
         surveyor: str,
+        sites_id: int,
         occupied_point_id: int,
         sessiontype: str=Query(..., enum=['Backsight', 'Azimuth']),
         backsight_station_id: int=0,
@@ -197,9 +198,9 @@ def start_surveying_session(
     ):
     """This function saves a new surveying session to the database."""
     if sessiontype == 'Backsight':
-        outcome = core.survey.start_surveying_session_with_backsight(label, surveyor, occupied_point_id, backsight_station_id, prism_height)
+        outcome = core.survey.start_surveying_session_with_backsight(label, surveyor, sites_id, occupied_point_id, backsight_station_id, prism_height)
     elif sessiontype == 'Azimuth':
-        outcome = core.survey.start_surveying_session_with_azimuth(label, surveyor, occupied_point_id, instrument_height, azimuth)
+        outcome = core.survey.start_surveying_session_with_azimuth(label, surveyor, sites_id, occupied_point_id, instrument_height, azimuth)
     if not outcome['success']:
         response.status_code = 422
     return outcome
@@ -267,7 +268,7 @@ def get_station(
     return outcome
 
 
-@app.post('/station/')
+@app.post('/station/{sites_id}')
 def save_survey_station(
         response: Response,
         sites_id: int,
@@ -294,13 +295,14 @@ def save_survey_station(
     return outcome
 
 
-@app.delete('/station/{id}')
+@app.delete('/station/{sites_id}/{id}')
 def delete_class(
         response: Response,
+        sites_id: int,
         id: int
     ):
     """This function deletes the indicated station from the database."""
-    outcome = core.tripod.delete_station(id)
+    outcome = core.tripod.delete_station(sites_id, id)
     if not outcome['success']:
         response.status_code = 422
     return outcome

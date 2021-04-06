@@ -189,10 +189,10 @@ def save_station(sites_id: int, name: str, coordinatesystem: str, coordinates: d
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def delete_station(id: int) -> dict:
+def delete_station(sites_id: int, id: int) -> dict:
     """This function deletes the indicated station from the database."""
     outcome = {'errors': [], 'results': ''}
-    exists = _database.read_from_database('SELECT name FROM stations WHERE id = ?', (id,))
+    exists = _database.read_from_database('SELECT name FROM stations WHERE sites_id = ? AND id = ?', (sites_id, id,))
     if exists['success']:
         if exists['results']:  # This is an empty list if there are no matches for the above query.
             name = exists['results'][0]['name']
@@ -208,7 +208,7 @@ def delete_station(id: int) -> dict:
             except IndexError:
                 pass
         else:
-            outcome['errors'].append(f'Station id {id} does not exist.')
+            outcome['errors'].append(f'Station id {id} does not exist at site {sites_id}.')
     else:
         outcome['errors'] = exists['errors']
     outcome['success'] = not outcome['errors']
