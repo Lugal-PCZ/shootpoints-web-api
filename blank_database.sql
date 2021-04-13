@@ -26,7 +26,7 @@ CREATE TABLE `groupings` (
 ,  `sessions_id` integer  NOT NULL
 ,  `geometry_id` integer  NOT NULL
 ,  `subclasses_id` integer  NOT NULL
-,  `label` varchar(30) DEFAULT ''
+,  `label` varchar(30)  NOT NULL
 ,  `comment` text
 ,  CONSTRAINT `groupings_ibfk_1` FOREIGN KEY (`sessions_id`) REFERENCES `sessions` (`id`)
 ,  CONSTRAINT `groupings_ibfk_2` FOREIGN KEY (`geometry_id`) REFERENCES `geometry` (`id`)

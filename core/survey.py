@@ -167,7 +167,7 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, sites_id: in
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def start_new_grouping(geometry_id: int, subclasses_id: int, label: str=None) -> dict:
+def start_new_grouping(geometry_id: int, subclasses_id: int, label: str, comment: str=None) -> dict:
     """This function begins recording a grouping of total station measurements."""
     outcome = {'errors': [], 'result': ''}
     global groupingid
@@ -177,7 +177,7 @@ def start_new_grouping(geometry_id: int, subclasses_id: int, label: str=None) ->
         '(sessions_id, geometry_id, subclasses_id, label) '
         'VALUES(?, ?, ?, ?)'
     )
-    if _database.save_to_database(sql, (sessionid, geometry_id, subclasses_id, label))['success']:
+    if _database.save_to_database(sql, (sessionid, geometry_id, subclasses_id, label, comment))['success']:
         groupingid = _database.cursor.lastrowid
         groupingissequential = bool(_database.read_from_database('SELECT sequential FROM geometry WHERE id = ?', (geometry_id,))['results'][0]['sequential'])
     else:
