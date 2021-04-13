@@ -143,19 +143,16 @@ def _load_application() -> dict:
                     'sta.elevation AS z, '
                     'sess.instrumentheight AS ih, '
                     'max(grp.id) AS gid, '
-                    'geo.sequential AS seq, '
                     'prism.* '
                 'FROM sessions sess, prism '
                 'JOIN stations sta ON sess.stations_id_occupied = sta.id '
                 'LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id '
-                'LEFT OUTER JOIN geometry geo ON grp.geometry_id = geo.id '
                 'WHERE sess.id = ?'
             )
             session_info = _database.read_from_database(sql, (survey.sessionid,))['results'][0]
             tripod.occupied_point = {'n': session_info['n'], 'e': session_info['e'], 'z': session_info['z']}
             tripod.instrument_height = session_info['ih']
             survey.groupingid = session_info['gid']
-            survey.groupingissequential = bool(session_info['seq'])
             prism.offsets = {
                 'vertical_distance': session_info['vertical_distance'],
                 'latitude_distance': session_info['latitude_distance'],

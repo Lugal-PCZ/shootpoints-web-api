@@ -10,9 +10,7 @@ backsighterrorlimit = 0.0
 totalstation = None
 sessionid = 0
 groupingid = 0
-groupingissequential = False
 activeshotdata = {}
-activeshotsequence = 0
 activeshotlabel = ''
 
 
@@ -32,7 +30,6 @@ def _save_new_session(data: tuple) -> int:
     global sessionid
     global groupingid
     global activeshotdata
-    global activeshotsequence
     global activeshotlabel
     sql = (
         'INSERT INTO sessions '
@@ -45,7 +42,6 @@ def _save_new_session(data: tuple) -> int:
         sessionid = 0
     groupingid = 0
     activeshotdata = {}
-    activeshotsequence = 0
     activeshotlabel = ''
     return sessionid
 
@@ -171,15 +167,13 @@ def start_new_grouping(geometry_id: int, subclasses_id: int, label: str, comment
     """This function begins recording a grouping of total station measurements."""
     outcome = {'errors': [], 'result': ''}
     global groupingid
-    global groupingissequential
     sql = (
         'INSERT INTO groupings '
-        '(sessions_id, geometry_id, subclasses_id, label) '
-        'VALUES(?, ?, ?, ?)'
+        '(sessions_id, geometry_id, subclasses_id, label, comment) '
+        'VALUES(?, ?, ?, ?, ?)'
     )
     if _database.save_to_database(sql, (sessionid, geometry_id, subclasses_id, label, comment))['success']:
         groupingid = _database.cursor.lastrowid
-        groupingissequential = bool(_database.read_from_database('SELECT sequential FROM geometry WHERE id = ?', (geometry_id,))['results'][0]['sequential'])
     else:
         groupingid = 0
         outcome['errors'].append('An error occurred while starting the new grouping.')
@@ -212,7 +206,6 @@ def save_last_shot(label: str=None, comment: str=None) -> dict:
     """This function saves the data from the last shot to the database."""
     outcome = {'errors': [], 'result': ''}
     global activeshotdata
-    global activeshotsequence
     global activeshotlabel
     if not activeshotdata:
         outcome['errors'].append('Shot not saved because there is no unsaved shot data.')
@@ -235,20 +228,17 @@ def save_last_shot(label: str=None, comment: str=None) -> dict:
             prism.offsets['tangent_distance'],
             prism.offsets['wedge_distance'],
             groupingid,
-            activeshotsequence + 1,
             label,
             comment,
         )
         sql = (
             'INSERT INTO shots '
-            '(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, sequenceingroup, label, comment) '
+            '(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, label, comment) '
             'VALUES(CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         )
         if _database.save_to_database(sql, data)['success']:
             activeshotdata = {}
             activeshotlabel = label
-            if groupingissequential:
-                activeshotsequence += 1
         else:
             outcome['errors'].append('An error occurred while saving the last shot.')
     outcome['success'] = not outcome['errors']

@@ -75,10 +75,8 @@ CREATE TABLE `shots` (
 ,  `prismoffset_tangent` float NOT NULL DEFAULT '0'
 ,  `prismoffset_wedge` float NOT NULL DEFAULT '0'
 ,  `groupings_id` integer  NOT NULL
-,  `sequenceingroup` integer  DEFAULT NULL
 ,  `label` varchar(30) DEFAULT NULL
 ,  `comment` text COLLATE BINARY
-,  UNIQUE (`groupings_id`,`sequenceingroup`)
 ,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`groupings_id`) REFERENCES `groupings` (`id`)
 );
 CREATE TABLE `sites` (
