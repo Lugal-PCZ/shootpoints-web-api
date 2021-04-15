@@ -163,7 +163,7 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, sites_id: in
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def start_new_grouping(geometry_id: int, subclasses_id: int, label: str, comment: str=None) -> dict:
+def start_new_grouping(geometry_id: int, subclasses_id: int, label: str=None, comment: str=None) -> dict:
     """This function begins recording a grouping of total station measurements."""
     outcome = {'errors': [], 'result': ''}
     global groupingid
@@ -239,6 +239,8 @@ def save_last_shot(label: str=None, comment: str=None) -> dict:
         if _database.save_to_database(sql, data)['success']:
             activeshotdata = {}
             activeshotlabel = label
+            if _database.read_from_database('SELECT geometry_id FROM groupings WHERE id = ?', (groupingid,))['results'] == 1:
+                groupingid = 0  # The active shot is an isolated point, so reset the groupingid to 0
         else:
             outcome['errors'].append('An error occurred while saving the last shot.')
     outcome['success'] = not outcome['errors']
