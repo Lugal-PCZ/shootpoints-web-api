@@ -183,6 +183,25 @@ def delete_site(
 ## SURVEY ENDPOINTS ##
 ######################
 
+@app.post('/grouping/')
+def start_new_grouping(
+        response: Response,
+        sessions_id: int,
+        geometry_id: int,
+        subclasses_id: int,
+        label: str,
+        comment: str=None
+    ):
+    """This function saves a new grouping to the database."""
+    if geometry_id == 1:  # This is an isolated point, so don’t ever save label or comment at the shot level, only at the grouping level.
+        label = None
+        comment = None
+    outcome = core.survey.start_new_grouping(sessions_id, geometry_id, subclasses_id, label, comment)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
 @app.post('/session/{sites_id}')
 def start_surveying_session(
         response: Response,
