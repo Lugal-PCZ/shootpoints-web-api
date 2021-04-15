@@ -163,7 +163,7 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, sites_id: in
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def start_new_grouping(geometry_id: int, subclasses_id: int, label: str, comment: str=None) -> dict:
+def start_new_grouping(sessions_id: int, geometry_id: int, subclasses_id: int, label: str, comment: str=None) -> dict:
     """This function begins recording a grouping of total station measurements."""
     outcome = {'errors': [], 'result': ''}
     global groupingid
