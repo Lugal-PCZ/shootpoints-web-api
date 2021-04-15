@@ -163,7 +163,7 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, sites_id: in
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def start_new_grouping(geometry_id: int, subclasses_id: int, label: str=None, comment: str=None) -> dict:
+def start_new_grouping(geometry_id: int, subclasses_id: int, label: str, comment: str=None) -> dict:
     """This function begins recording a grouping of total station measurements."""
     outcome = {'errors': [], 'result': ''}
     global groupingid
@@ -203,8 +203,13 @@ def take_shot() -> dict:
 
 
 def save_last_shot(label: str=None, comment: str=None) -> dict:
-    """This function saves the data from the last shot to the database."""
+    """This function saves the data from the last shot to the database.
+
+    Note: isolated points (groupings_id = 0) should only have label and comment
+    for the grouping, and not for the shot.
+    """
     outcome = {'errors': [], 'result': ''}
+    global groupinglabel
     global activeshotdata
     global activeshotlabel
     if not activeshotdata:
