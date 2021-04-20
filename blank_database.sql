@@ -1,7 +1,7 @@
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
 CREATE TABLE `classes` (
-  `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
+  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) NOT NULL
 ,  `description` varchar(200) DEFAULT NULL
 ,  UNIQUE (`name`)
@@ -11,9 +11,9 @@ INSERT INTO classes VALUES(2,'Architecture','Human-built structures.');
 INSERT INTO classes VALUES(3,'Artifact','Objects made, modified, or used by people.');
 INSERT INTO classes VALUES(4,'Feature','Natural formations or immovable, non-architectural, human creations.');
 CREATE TABLE `geometry` (
-  `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
+  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) NOT NULL
-,  `sequential` integer  NOT NULL DEFAULT '0'
+,  `sequential` integer NOT NULL DEFAULT '0'
 ,  `description` varchar(200) NOT NULL
 ,  UNIQUE (`name`)
 );
@@ -22,11 +22,11 @@ INSERT INTO geometry VALUES(2,'Point Cloud',0,'Multiple non-sequential point sam
 INSERT INTO geometry VALUES(3,'Open Polygon',1,'Multiple sequential points that trace an outline wherein the start and end points do not connect.');
 INSERT INTO geometry VALUES(4,'Closed Polygon',1,'Multiple sequential points that trace an outline wherein the start point is connected to the end point.');
 CREATE TABLE `groupings` (
-  `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `sessions_id` integer  NOT NULL
-,  `geometry_id` integer  NOT NULL
-,  `subclasses_id` integer  NOT NULL
-,  `label` varchar(30)  NOT NULL
+  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `sessions_id` integer NOT NULL
+,  `geometry_id` integer NOT NULL
+,  `subclasses_id` integer NOT NULL
+,  `label` varchar(30) NOT NULL
 ,  `comment` text
 ,  CONSTRAINT `groupings_ibfk_1` FOREIGN KEY (`sessions_id`) REFERENCES `sessions` (`id`)
 ,  CONSTRAINT `groupings_ibfk_2` FOREIGN KEY (`geometry_id`) REFERENCES `geometry` (`id`)
@@ -42,15 +42,15 @@ CREATE TABLE `prism` (
 );
 INSERT INTO prism VALUES(0.0,0.0,0.0,0.0,0.0,0.0);
 CREATE TABLE `sessions` (
-  `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
+  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `label` varchar(30) NOT NULL
 ,  `started` timestamp NULL DEFAULT current_timestamp
 ,  `surveyor` varchar(100) NOT NULL
-,  `sites_id` integer  NOT NULL
-,  `stations_id_occupied` integer  NOT NULL
+,  `sites_id` integer NOT NULL
+,  `stations_id_occupied` integer NOT NULL
 ,  `stations_id_backsight` integer  DEFAULT NULL
 ,  `azimuth` varchar(12) NOT NULL DEFAULT '0°0''0"'
-,  `instrumentheight` float  NOT NULL
+,  `instrumentheight` float NOT NULL
 ,  CONSTRAINT `sessions_ibfk_1` FOREIGN KEY (`sites_id`) REFERENCES `sites` (`id`)
 ,  CONSTRAINT `sessions_ibfk_2` FOREIGN KEY (`stations_id_occupied`) REFERENCES `stations` (`id`)
 ,  CONSTRAINT `sessions_ibfk_3` FOREIGN KEY (`stations_id_backsight`) REFERENCES `stations` (`id`)
@@ -60,7 +60,10 @@ CREATE TABLE `setuperrors` (
 ,  PRIMARY KEY (`error`)
 );
 CREATE TABLE `shots` (
-  `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
+  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `groupings_id` integer NOT NULL
+,  `label` varchar(30) DEFAULT NULL
+,  `comment` text COLLATE BINARY DEFAULT NULL
 ,  `timestamp` timestamp NOT NULL DEFAULT current_timestamp
 ,  `delta_n` float NOT NULL
 ,  `delta_e` float NOT NULL
@@ -74,20 +77,17 @@ CREATE TABLE `shots` (
 ,  `prismoffset_radial` float NOT NULL DEFAULT '0'
 ,  `prismoffset_tangent` float NOT NULL DEFAULT '0'
 ,  `prismoffset_wedge` float NOT NULL DEFAULT '0'
-,  `groupings_id` integer  NOT NULL
-,  `label` varchar(30) DEFAULT NULL
-,  `comment` text COLLATE BINARY
 ,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`groupings_id`) REFERENCES `groupings` (`id`)
 );
 CREATE TABLE `sites` (
-  `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
+  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) NOT NULL
 ,  `description` varchar(200) DEFAULT NULL
 ,  UNIQUE (`name`)
 );
 CREATE TABLE `stations` (
-  `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `sites_id` integer  NOT NULL
+  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `sites_id` integer NOT NULL
 ,  `name` varchar(30) NOT NULL
 ,  `northing` float NOT NULL
 ,  `easting` float NOT NULL
@@ -101,8 +101,8 @@ CREATE TABLE `stations` (
 ,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`sites_id`) REFERENCES `sites` (`id`)
 );
 CREATE TABLE `subclasses` (
-  `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `classes_id` integer  NOT NULL
+  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `classes_id` integer NOT NULL
 ,  `name` varchar(30) NOT NULL
 ,  `description` varchar(200) DEFAULT NULL
 ,  UNIQUE (`classes_id`,`name`)
