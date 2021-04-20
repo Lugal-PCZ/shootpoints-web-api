@@ -193,9 +193,6 @@ def start_new_grouping(
         comment: str=None
     ):
     """This function saves a new grouping to the database."""
-    if geometry_id == 1:  # This is an isolated point, so don’t ever save label or comment at the shot level, only at the grouping level.
-        label = None
-        comment = None
     outcome = core.survey.start_new_grouping(sessions_id, geometry_id, subclasses_id, label, comment)
     if not outcome['success']:
         response.status_code = 422
@@ -241,6 +238,7 @@ def save_last_shot(
         comment: str=None
     ):
     """This function saves the last shot to the database."""
+    # Note: the front end should not prompt the user for label or comment in cases where groupings.geometry_id = 1 (= isolate point).
     outcome = core.survey.save_last_shot(label, comment)
     if not outcome['success']:
         response.status_code = 422
