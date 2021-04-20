@@ -209,7 +209,7 @@ def save_last_shot(label: str=None, comment: str=None) -> dict:
     for the grouping, and not for the shot.
     """
     outcome = {'errors': [], 'result': ''}
-    global groupinglabel
+    global groupingid
     global activeshotdata
     global activeshotlabel
     if not activeshotdata:
@@ -219,6 +219,9 @@ def save_last_shot(label: str=None, comment: str=None) -> dict:
             label = label.strip()
         except AttributeError:
             pass
+        if _database.read_from_database('SELECT geometry_id FROM groupings WHERE id = ?', (groupingid,))['results'][0]['geometry_id'] == 1:
+            label = None  # Set label to None, if this is an isolated point.
+            comment = None  # Set comment to None, if this is an isolated point.
         data = (
             activeshotdata['delta_n'],
             activeshotdata['delta_e'],
