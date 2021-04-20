@@ -214,6 +214,8 @@ def summarize_application_state() -> dict:
         'prism_offsets': {},
         'num_points_in_db': 0,
         'num_points_in_current_session': 0,
+        'current_grouping_id': 0,
+        'num_points_in_current_grouping': 0,
     }
     setuperrors = survey._get_setup_errors()
     if setuperrors:
@@ -227,6 +229,8 @@ def summarize_application_state() -> dict:
     sql = (
         'SELECT '
             'sess.id, '
+            'sess.label, '
+            'sess.started, '
             'sess.stations_id_occupied, '
             'sta.northing, '
             'sta.easting, '
@@ -240,7 +244,9 @@ def summarize_application_state() -> dict:
         summary['current_session'] = _database.read_from_database(sql, (survey.sessionid,))['results'][0]
         summary['prism_offsets'] = prism.get_readable_offsets()
         summary['num_points_in_db'] = _database.read_from_database('SELECT count(*) FROM shots')['results'][0]['count(*)']
-        summary['num_points_in_current_session'] = _database.read_from_database('SELECT count(*) FROM shots WHERE sessions_id = ?', (survey.sessionid,))['results'][0]['count(*)']
+        summary['num_points_in_current_session'] = _database.read_from_database('SELECT count(*) FROM shots sh JOIN groupings grp ON sh.groupings_id = grp.id WHERE grp.sessions_id = ?', (survey.sessionid,))['results'][0]['count(*)']
+        summary['current_grouping_id'] = survey.groupingid
+        summary['num_points_in_current_grouping'] = _database.read_from_database('SELECT count(*) FROM shots sh JOIN groupings grp ON sh.groupings_id = grp.id WHERE grp.id = ?', (survey.groupingid,))['results'][0]['count(*)']
     except:
         pass
     return summary
