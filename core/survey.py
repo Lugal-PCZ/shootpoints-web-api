@@ -167,6 +167,8 @@ def start_new_grouping(sessions_id: int, geometry_id: int, subclasses_id: int, l
     """This function begins recording a grouping of total station measurements."""
     outcome = {'errors': [], 'result': ''}
     global groupingid
+    label = label.strip() if label else None
+    comment = comment.strip() if comment else None
     sql = (
         'INSERT INTO groupings '
         '(sessions_id, geometry_id, subclasses_id, label, comment) '
@@ -215,10 +217,8 @@ def save_last_shot(label: str=None, comment: str=None) -> dict:
     if not activeshotdata:
         outcome['errors'].append('Shot not saved because there is no unsaved shot data.')
     else:
-        try:
-            label = label.strip()
-        except AttributeError:
-            pass
+        label = label.strip() if label else None
+        comment = comment.strip() if comment else None
         if _database.read_from_database('SELECT geometry_id FROM groupings WHERE id = ?', (groupingid,))['results'][0]['geometry_id'] == 1:
             label = None  # Set label to None, if this is an isolated point.
             comment = None  # Set comment to None, if this is an isolated point.

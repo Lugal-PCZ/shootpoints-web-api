@@ -24,12 +24,9 @@ def get_all_classes_and_subclasses() -> dict:
 def create_new_class(name: str, description: str=None) -> dict:
     """This function saves a new class to the database."""
     outcome = {'errors': [], 'results': ''}
-    sql = 'INSERT INTO classes (name, description) VALUES(?, ?)'
     name = name.strip().title()
-    try:
-        description = description.strip()
-    except:
-        pass
+    description = description.strip() if description else None
+    sql = 'INSERT INTO classes (name, description) VALUES(?, ?)'
     newclass = _database.save_to_database(sql, (name, description))
     if newclass['success']:
         outcome['result'] = f'Class “{name}” saved to the database.'
@@ -42,12 +39,9 @@ def create_new_class(name: str, description: str=None) -> dict:
 def create_new_subclass(classes_id: int, name: str, description: str=None) -> dict:
     """This function saves a new subclass to the database."""
     outcome = {'errors': [], 'results': ''}
-    sql = 'INSERT INTO subclasses (classes_id, name, description) VALUES(?, ?, ?)'
     name = name.strip().title()
-    try:
-        description = description.strip()
-    except:
-        pass
+    description = description.strip() if description else None
+    sql = 'INSERT INTO subclasses (classes_id, name, description) VALUES(?, ?, ?)'
     newclass = _database.save_to_database(sql, (classes_id, name, description))
     if newclass['success']:
         outcome['result'] = f'Sublass “{name}” saved to the database.'
