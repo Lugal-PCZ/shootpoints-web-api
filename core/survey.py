@@ -163,22 +163,26 @@ def start_surveying_session_with_azimuth(label: str, surveyor: str, sites_id: in
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def start_new_grouping(sessions_id: int, geometry_id: int, subclasses_id: int, label: str, comment: str=None) -> dict:
+def start_new_grouping(geometry_id: int, subclasses_id: int, label: str, comment: str=None) -> dict:
     """This function begins recording a grouping of total station measurements."""
     outcome = {'errors': [], 'result': ''}
+    global sessionid
     global groupingid
-    label = label.strip() if label else None
-    comment = comment.strip() if comment else None
-    sql = (
-        'INSERT INTO groupings '
-        '(sessions_id, geometry_id, subclasses_id, label, comment) '
-        'VALUES(?, ?, ?, ?, ?)'
-    )
-    if _database.save_to_database(sql, (sessionid, geometry_id, subclasses_id, label, comment))['success']:
-        groupingid = _database.cursor.lastrowid
+    if sessionid:
+        label = label.strip() if label else None
+        comment = comment.strip() if comment else None
+        sql = (
+            'INSERT INTO groupings '
+            '(sessions_id, geometry_id, subclasses_id, label, comment) '
+            'VALUES(?, ?, ?, ?, ?)'
+        )
+        if _database.save_to_database(sql, (sessionid, geometry_id, subclasses_id, label, comment))['success']:
+            groupingid = _database.cursor.lastrowid
+        else:
+            groupingid = 0
+            outcome['errors'].append('An error occurred while starting the new grouping.')
     else:
-        groupingid = 0
-        outcome['errors'].append('An error occurred while starting the new grouping.')
+        outcome['errors'].append('There is no active surveying session.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 

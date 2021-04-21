@@ -192,14 +192,13 @@ def delete_site(
 @app.post('/grouping/')
 def start_new_grouping(
         response: Response,
-        sessions_id: int,
         geometry_id: int,
         subclasses_id: int,
         label: str,
         comment: str=None
     ):
     """This function saves a new grouping to the database."""
-    outcome = core.survey.start_new_grouping(sessions_id, geometry_id, subclasses_id, label, comment)
+    outcome = core.survey.start_new_grouping(geometry_id, subclasses_id, label, comment)
     if not outcome['success']:
         response.status_code = 422
     return outcome
