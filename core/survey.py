@@ -46,6 +46,11 @@ def _save_new_session(data: tuple) -> int:
     return sessionid
 
 
+def get_geometries() -> list:
+    """This function returns the types of geometry saved in the database, for use by the application front end."""
+    return _database.read_from_database('SELECT * FROM geometry')
+
+
 def start_surveying_session_with_backsight(label: str, surveyor: str, sites_id: int, occupied_point_id: int, backsight_station_id: int, prism_height: float) -> dict:
     """This function starts a new surveying session with a backsight to a known point."""
     outcome = {'errors': _get_setup_errors(), 'result': ''}

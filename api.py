@@ -189,6 +189,12 @@ def delete_site(
 ## SURVEY ENDPOINTS ##
 ######################
 
+@app.get('/geometry/')
+def get_geometries():
+    """This function gets the geometries in the ShootPoints database, for use when creating a new grouping."""
+    return core.survey.get_geometries()
+
+
 @app.post('/grouping/')
 def start_new_grouping(
         response: Response,
