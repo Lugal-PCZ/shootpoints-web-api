@@ -107,6 +107,12 @@ def delete_subclass(
 ## PRISM ENDPOINTS ##
 #####################
 
+@app.get('/offsets/')
+def get_offset_types_and_directions():
+    """This function gets the types of prism offsets and their applicable directions."""
+    return core.prism.get_offset_types_and_directions()
+
+
 @app.get('/prism/')
 def get_prism_offsets(response: Response):
     """This function gets the prism offsets."""

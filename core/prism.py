@@ -45,6 +45,14 @@ _directions = {
 }
 
 
+def get_offset_types_and_directions() -> dict:
+    """This function returns the types of prism offsets and their applicable directions."""
+    directionsmenu = {}
+    for key, val in _directions.items():
+        directionsmenu[key.title()] = val
+    return directionsmenu
+
+
 def get_readable_offsets() -> dict:
     """This function returns the prism offsets in human-readable form."""
     readable_offsets = {'offsets': []}
@@ -114,7 +122,7 @@ def set_prism_offsets(**kwargs) -> dict:
     outcome = {'errors': [], 'result': ''}
     for key, val in kwargs.items():
         key = key.split('_')
-        offsettype = key[0]
+        offsettype = key[0].lower()
         if key[1] == 'distance' and offsettype in _directions:
             distance = kwargs[f'{key[0]}_distance']
             try:
