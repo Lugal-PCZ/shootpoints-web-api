@@ -1,7 +1,6 @@
 """This module handles reading from and writing to the ShootPoints database."""
 
 import sqlite3
-import os
 
 
 dbconn = sqlite3.connect('ShootPoints.db', check_same_thread=False)
@@ -9,7 +8,7 @@ dbconn.row_factory = sqlite3.Row
 cursor = dbconn.cursor()
 try:
     cursor.execute('SELECT 1 FROM stations')
-except:
+except sqlite3.OperationalError:
     # ShootPoints.db database is empty, so initialize it with the default schema.
     with open('blank_database.sql', 'r') as f:
         sql = f.read().split(';')

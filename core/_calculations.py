@@ -51,6 +51,21 @@ def _calculate_wedge_offset(measurement: dict, offset: float) -> tuple:
     return n_diff, e_diff
 
 
+def apply_atmospheric_correction(measurement: dict, pressure: int, temperature: int) -> dict:
+    """
+    This function calculates and applies the atmospheric correction to the given measurement,
+    air pressure in mmHg and air temperature in °C.
+    Note: the total station should be set to 0ppm (760mmHg at 15°C).
+    """
+    p = pressure * 106.036
+    t = temperature + 273.15
+    Ka = (279.66 - (p/t)) * pow(10, -6)
+    measurement['delta_n'] = round(measurement['delta_n'] * Ka, 3)
+    measurement['delta_e'] = round(measurement['delta_e'] * Ka, 3)
+    measurement['delta_z'] = round(measurement['delta_z'] * Ka, 3)
+    return measurement
+
+
 def apply_offsets_to_measurement(measurement: dict) -> dict:
     """
     This function applies the occupied station coordinates, instrument height,

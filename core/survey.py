@@ -6,12 +6,16 @@ from . import tripod
 from . import prism
 
 
+SESSIONTYPES = ['Backsight', 'Azimuth']
+
 backsighterrorlimit = 0.0
 totalstation = None
 sessionid = 0
 groupingid = 0
 activeshotdata = {}
 activeshotlabel = ''
+pressure = 760
+temperature = 15
 
 
 def _get_setup_errors() -> list:
@@ -48,7 +52,39 @@ def _save_new_session(data: tuple) -> int:
 
 def get_geometries() -> list:
     """This function returns the types of geometry saved in the database, for use by the application front end."""
-    return _database.read_from_database('SELECT * FROM geometry')
+    return _database.read_from_database('SELECT * FROM geometry')['results']
+
+
+def get_atmospheric_conditions() -> dict:
+    """This function returns the current air pressure and temperature, as most recently set by the surveyor."""
+    return {'pressure': pressure, 'temperature': temperature}
+
+
+def set_atmospheric_conditions(press: int, temp: int) -> dict:
+    """This function sets the current air pressure and temperature, for correcting the raw total station measurements."""
+    outcome = {'errors': [], 'result': ''}
+    global pressure
+    global temperature
+    try:
+        if 720 <= int(press) <= 800:
+            pressure = press
+        else:
+            outcome['errors'].append(f'The value given for atmospheric pressure ({press}) is outside the normal range (720mmHg to 800mmHg).')
+    except ValueError:
+        outcome['errors'].append(f'The value given for atmospheric pressure ({press}) is not numeric.')
+    try:
+        if -10 <= int(temp) <= 40:
+            temperature = temp
+        else:
+            outcome['errors'].append(f'The value given for air temperature ({temp}) is outside reasonable limits (-10°C to 40°C).')
+    except ValueError:
+        outcome['errors'].append(f'The value given for air temperature ({temp}) is not numeric.')
+    if not outcome['errors']:
+        data = (pressure, temperature)
+        sql = 'UPDATE atmosphere SET pressure = ?, temperature = ?'
+        _database.save_to_database(sql, data)
+    outcome['success'] = not outcome['errors']
+    return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
 def start_surveying_session_with_backsight(label: str, surveyor: str, sites_id: int, occupied_point_id: int, backsight_station_id: int, prism_height: float) -> dict:
@@ -206,6 +242,7 @@ def take_shot() -> dict:
         elif 'errors' in measurement:
             outcome['errors'] = measurement['errors']
         else:
+            outcome['result'] = _calculations.apply_atmospheric_correction(measurement['measurement'], pressure, temperature)
             outcome['result'] = _calculations.apply_offsets_to_measurement(measurement['measurement'])
             activeshotdata = outcome['result']
     outcome['success'] = not outcome['errors']

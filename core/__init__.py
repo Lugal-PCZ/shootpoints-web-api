@@ -4,9 +4,9 @@ import configparser
 import shutil
 import glob
 import importlib
-import serial
 import math
 from datetime import datetime
+import serial
 
 
 from . import _database
@@ -143,8 +143,9 @@ def _load_application() -> dict:
                     'sta.elevation AS z, '
                     'sess.instrumentheight AS ih, '
                     'max(grp.id) AS gid, '
-                    'prism.* '
-                'FROM sessions sess, prism '
+                    'prism.*, '
+                    'atmosphere.* '
+                'FROM sessions sess, prism, atmosphere '
                 'JOIN stations sta ON sess.stations_id_occupied = sta.id '
                 'LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id '
                 'WHERE sess.id = ?'
@@ -161,6 +162,8 @@ def _load_application() -> dict:
                 'tangent_distance': session_info['tangent_distance'],
                 'wedge_distance': session_info['wedge_distance'],
             }
+            survey.pressure = session_info['pressure']
+            survey.temperature = session_info['temperature']
         except:
             pass
     loaders = [_load_configs_from_file, _load_total_station_model, _load_serial_port]

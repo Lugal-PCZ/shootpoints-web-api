@@ -4,12 +4,13 @@ from . import _database
 from . import _calculations
 
 
+COORDINATESYSTEMS = ['Site', 'UTM', 'Lat/Lon']
+
 occupied_point = {
     'n': 0.0,
     'e': 0.0,
     'z': 0.0,
 }
-
 instrument_height = 0.0
 
 

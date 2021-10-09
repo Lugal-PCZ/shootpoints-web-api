@@ -1,5 +1,10 @@
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
+CREATE TABLE `atmosphere` (
+  `pressure` integer NOT NULL DEFAULT 760
+,  `temperature` integer NOT NULL DEFAULT 15
+);
+INSERT INTO atmosphere VALUES(760,15);
 CREATE TABLE `classes` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) NOT NULL

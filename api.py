@@ -14,9 +14,9 @@ def homepage():
     return HTMLResponse(content='<a href="/docs">Click here for documentation of this API</a>')
 
 
-####################
-## CORE ENDPOINTS ##
-####################
+##################
+# CORE ENDPOINTS #
+##################
 
 @app.post('/config/')
 def set_configs(
@@ -38,9 +38,9 @@ def show_summary():
     return core.summarize_application_state()
 
 
-###############################
-## CLASSIFICATIONS ENDPOINTS ##
-###############################
+#############################
+# CLASSIFICATIONS ENDPOINTS #
+#############################
 
 @app.get('/class/')
 def get_all_classes_and_subclasses(response: Response):
@@ -103,9 +103,9 @@ def delete_subclass(
     return outcome
 
 
-#####################
-## PRISM ENDPOINTS ##
-#####################
+###################
+# PRISM ENDPOINTS #
+###################
 
 @app.get('/offsets/')
 def get_offset_types_and_directions():
@@ -135,9 +135,9 @@ def set_prism_offsets(
     return outcome
 
 
-#####################
-## SITES ENDPOINTS ##
-#####################
+###################
+# SITES ENDPOINTS #
+###################
 
 @app.get('/site/')
 def get_all_sites(response: Response):
@@ -185,9 +185,29 @@ def delete_site(
     return outcome
 
 
-######################
-## SURVEY ENDPOINTS ##
-######################
+####################
+# SURVEY ENDPOINTS #
+####################
+
+@app.get('/atmosphere/')
+def get_atmospheric_conditions():
+    """This function gets the pressure and temperature, as last set and saved to the ShootPoints database."""
+    return core.survey.get_atmospheric_conditions()
+
+
+@app.post('/atmosphere/')
+def set_atmospheric_conditions(
+        response: Response,
+        pressure: int,
+        temperature: int
+    ):
+    """This function sets the pressure and temperature, for use in atmospheric corrections when taking shots."""
+    outcome = core.survey.set_atmospheric_conditions(pressure, temperature)
+    if not outcome['success']:
+        response.status_code = 422
+    return outcome
+
+
 
 @app.get('/geometry/')
 def get_geometries():
@@ -217,7 +237,7 @@ def start_surveying_session(
         surveyor: str,
         sites_id: int,
         occupied_point_id: int,
-        sessiontype: str=Query(..., enum=['Backsight', 'Azimuth']),
+        sessiontype: str=Query(..., enum=core.survey.SESSIONTYPES),
         backsight_station_id: int=0,
         prism_height: float=0.0,
         instrument_height: float=0.0,
@@ -256,9 +276,9 @@ def save_last_shot(
     return outcome
 
 
-#############################
-## TOTAL STATION ENDPOINTS ##
-#############################
+###########################
+# TOTAL STATION ENDPOINTS #
+###########################
 
 @app.get('/cancel/')
 def cancel_shot():
@@ -267,12 +287,12 @@ def cancel_shot():
     return outcome
 
 
-######################
-## TRIPOD ENDPOINTS ##
-######################
+####################
+# TRIPOD ENDPOINTS #
+####################
 
 @app.get('/station/{sites_id}')
-def get_all_station_at_site(
+def get_all_stations_at_site(
         response: Response,
         sites_id: int
     ):
@@ -301,7 +321,7 @@ def save_survey_station(
         response: Response,
         sites_id: int,
         name: str,
-        coordinatesystem: str = Query(..., enum=['Site', 'UTM', 'Lat/Lon']),
+        coordinatesystem: str = Query(..., enum=core.tripod.COORDINATESYSTEMS),
         northing: float=None,
         easting: float=None,
         elevation: float=None,
