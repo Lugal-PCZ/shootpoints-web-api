@@ -35,7 +35,7 @@ def set_configs(
     limit: int = 0,
 ):
     outcome = core.save_config_file(port, make, model, limit)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -55,7 +55,7 @@ def show_summary():
 def get_all_classes_and_subclasses(response: Response):
     """This function returns all the classes and subclasses in the database."""
     outcome = core.classifications.get_all_classes_and_subclasses()
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -64,7 +64,7 @@ def get_all_classes_and_subclasses(response: Response):
 def create_new_class(response: Response, name: str, description: str = None):
     """This function saves a new class to the database."""
     outcome = core.classifications.create_new_class(name, description)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -76,7 +76,7 @@ def delete_class(
 ):
     """This function deletes the indicated class from the database."""
     outcome = core.classifications.delete_class(id)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -90,7 +90,7 @@ def create_new_subclass(
 ):
     """This function saves a new subclass to the database."""
     outcome = core.classifications.create_new_subclass(classes_id, name, description)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -99,7 +99,7 @@ def create_new_subclass(
 def delete_subclass(response: Response, classes_id: int, id: int):
     """This function deletes the indicated subclass from the database."""
     outcome = core.classifications.delete_subclass(classes_id, id)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -127,7 +127,7 @@ def set_prism_offsets(response: Response, offsets: dict):
     # TODO: Update this endpoint to take each type of offset and construct the offsets dictionary
     """This function sets the prism offsets."""
     outcome = core.prism.set_prism_offsets(**offsets)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -141,7 +141,7 @@ def set_prism_offsets(response: Response, offsets: dict):
 def get_all_sites(response: Response):
     """This function gets all the sites in the database."""
     outcome = core.sites.get_all_sites()
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -150,7 +150,7 @@ def get_all_sites(response: Response):
 def get_site(response: Response, id: int):
     """This function gets the site indicated."""
     outcome = core.sites.get_site(id)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -163,7 +163,7 @@ def create_new_site(
 ):
     """This function saves a new site to the database."""
     outcome = core.sites.save_site(name, description)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -175,7 +175,7 @@ def delete_site(
 ):
     """This function deletes the indicated site from the database."""
     outcome = core.sites.delete_site(id)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -199,7 +199,7 @@ def set_atmospheric_conditions(
 ):
     """This function sets the pressure and temperature, for use in atmospheric corrections when taking shots."""
     outcome = core.survey.set_atmospheric_conditions(pressure, temperature)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -220,7 +220,7 @@ def start_new_grouping(
 ):
     """This function saves a new grouping to the database."""
     outcome = core.survey.start_new_grouping(geometry_id, subclasses_id, label, comment)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -258,7 +258,7 @@ def start_surveying_session(
         outcome = core.survey.start_surveying_session_with_azimuth(
             label, surveyor, sites_id, occupied_point_id, instrument_height, azimuth
         )
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -267,7 +267,7 @@ def start_surveying_session(
 def take_shot(response: Response):
     """This function tells the total station to start measuring a point."""
     outcome = core.survey.take_shot()
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -281,7 +281,7 @@ def save_last_shot(
     """This function saves the last shot to the database."""
     # Note: the front end should not prompt the user for label or comment in cases where groupings.geometry_id = 1 (= isolate point).
     outcome = core.survey.save_last_shot(label, comment)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -313,7 +313,7 @@ def get_coordinate_systems():
 def get_all_stations_at_site(response: Response, sites_id: int):
     """This function gets all the stations in the database at the indicated site."""
     outcome = core.tripod.get_all_station_at_site(sites_id)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -322,7 +322,7 @@ def get_all_stations_at_site(response: Response, sites_id: int):
 def get_station(response: Response, sites_id: int, id: int):
     """This function gets the station indicated."""
     outcome = core.tripod.get_station(sites_id, id)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -358,7 +358,7 @@ def save_survey_station(
             "elevation": elevation,
         }
     outcome = core.tripod.save_station(sites_id, name, coordinatesystem, coordinates)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
 
@@ -371,6 +371,6 @@ def delete_station(
 ):
     """This function deletes the indicated station from the database."""
     outcome = core.tripod.delete_station(sites_id, id)
-    if not outcome["success"]:
+    if "errors" in outcome:
         response.status_code = 422
     return outcome
