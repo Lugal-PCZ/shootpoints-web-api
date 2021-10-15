@@ -10,7 +10,11 @@ def get_all_sites() -> dict:
     if query["success"]:
         outcome["sites"] = query["results"]
     outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {
+        key: val
+        for key, val in outcome.items()
+        if val or key == "success" or key == "sites"
+    }
 
 
 def get_site(id: int) -> dict:

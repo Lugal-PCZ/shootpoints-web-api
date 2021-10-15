@@ -144,7 +144,11 @@ def get_all_station_at_site(sites_id: int) -> dict:
     if query["success"]:
         outcome["stations"] = query["results"]
     outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {
+        key: val
+        for key, val in outcome.items()
+        if val or key == "success" or key == "stations"
+    }
 
 
 def get_station(sites_id: int, id: int) -> dict:
