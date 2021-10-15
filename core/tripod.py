@@ -50,6 +50,7 @@ def _validate_utm_coordinates(northing: float, easting: float, utmzone: str, err
     else:
         if not 100000 <= easting <= 999999:
             errors.append(f'Easting given ({easting}) is out of range (100000–999999m).')
+    utmzonenumber = 0
     try:
         utmzone = str(utmzone).upper()
         utmzonenumber = int(utmzone[:-1])
@@ -116,10 +117,8 @@ def get_all_station_at_site(sites_id: int) -> dict:
     # TODO: check for valid sites_id before continuing
     outcome = {'errors': [], 'stations': {}}
     query = _database.read_from_database('SELECT * FROM stations WHERE sites_id = ?', (sites_id,))
-    if query['success'] and len(query['results']) > 0:
+    if query['success']:
         outcome['stations'] = query['results']
-    else:
-        outcome['errors'].append(f'No stations were found at site {sites_id}.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
@@ -137,7 +136,7 @@ def get_station(sites_id: int, id: int) -> dict:
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
 
-def save_station(sites_id: int, name: str, coordinatesystem: str, coordinates: dict, description: str=None) -> dict:
+def save_station(sites_id: int, name: str, coordinatesystem: str, coordinates: dict, description: str = None) -> dict:
     """This function creates a new station record in the database with the given name and coordinates."""
     outcome = {'errors': [], 'result': ''}
     _validate_elevation(coordinates['elevation'], outcome['errors'])

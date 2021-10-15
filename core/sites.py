@@ -7,10 +7,8 @@ def get_all_sites() -> dict:
     """"This function returns the names and descriptions of all the sites in the database."""
     outcome = {'errors': [], 'sites': {}}
     query = _database.read_from_database('SELECT * FROM sites')
-    if query['success'] and len(query['results']) > 0:
+    if query['success']:
         outcome['sites'] = query['results']
-    else:
-        outcome['errors'].append(f'No sites were found in the database.')
     outcome['success'] = not outcome['errors']
     return {key: val for key, val in outcome.items() if val or key == 'success'}
 
@@ -20,7 +18,7 @@ def get_site(id: int) ->dict:
     outcome = {'errors': [], 'site': {}}
     query = _database.read_from_database('SELECT * FROM sites WHERE id = ?', (id,))
     if query['success'] and len(query['results']) > 0:
-        outcome['site' ] = query['results'][0]
+        outcome['site'] = query['results'][0]
     else:
         outcome['errors'].append(f'Site id {id} was not found in the database.')
     outcome['success'] = not outcome['errors']

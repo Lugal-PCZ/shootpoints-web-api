@@ -2,11 +2,14 @@
 
 from fastapi import FastAPI, Response, Query
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 import core
 
 
 app = FastAPI()
+app.mount("/frontend", StaticFiles(directory="../shootpoints-web-frontend"), name="frontend")
+
 
 @app.get('/')
 def homepage():
@@ -18,7 +21,7 @@ def homepage():
 # CORE ENDPOINTS #
 ##################
 
-@app.post('/config/')
+@app.put('/config/', status_code=201)
 def set_configs(
         response: Response,
         port: str=None,
@@ -51,7 +54,7 @@ def get_all_classes_and_subclasses(response: Response):
     return outcome
 
 
-@app.post('/class/')
+@app.post('/class/', status_code=201)
 def create_new_class(
         response: Response,
         name: str,
@@ -67,7 +70,7 @@ def create_new_class(
 @app.delete('/class/{id}')
 def delete_class(
         response: Response,
-        id: int
+        id: int,
     ):
     """This function deletes the indicated class from the database."""
     outcome = core.classifications.delete_class(id)
@@ -76,12 +79,12 @@ def delete_class(
     return outcome
 
 
-@app.post('/class/{classes_id}')
+@app.post('/class/{classes_id}', status_code=201)
 def create_new_subclass(
         response: Response,
         classes_id: int,
         name: str,
-        description: str=None
+        description: str = None,
     ):
     """This function saves a new subclass to the database."""
     outcome = core.classifications.create_new_subclass(classes_id, name, description)
@@ -117,12 +120,10 @@ def get_offset_types_and_directions():
 def get_prism_offsets(response: Response):
     """This function gets the prism offsets."""
     outcome = core.prism.get_readable_offsets()
-    if not outcome['offsets']:
-        response.status_code = 422
     return outcome
 
 
-@app.post('/prism/')
+@app.put('/prism/', status_code=201)
 def set_prism_offsets(
         response: Response,
         offsets: dict
@@ -160,11 +161,11 @@ def get_site(
     return outcome
 
 
-@app.post('/site/')
+@app.post('/site/', status_code=201)
 def create_new_site(
         response: Response,
         name: str,
-        description: str=None
+        description: str = None,
     ):
     """This function saves a new site to the database."""
     outcome = core.sites.save_site(name, description)
@@ -195,11 +196,11 @@ def get_atmospheric_conditions():
     return core.survey.get_atmospheric_conditions()
 
 
-@app.post('/atmosphere/')
+@app.put('/atmosphere/', status_code=201)
 def set_atmospheric_conditions(
         response: Response,
         pressure: int,
-        temperature: int
+        temperature: int,
     ):
     """This function sets the pressure and temperature, for use in atmospheric corrections when taking shots."""
     outcome = core.survey.set_atmospheric_conditions(pressure, temperature)
@@ -215,13 +216,13 @@ def get_geometries():
     return core.survey.get_geometries()
 
 
-@app.post('/grouping/')
+@app.post('/grouping/', status_code=201)
 def start_new_grouping(
         response: Response,
         geometry_id: int,
         subclasses_id: int,
         label: str,
-        comment: str=None
+        comment: str = None,
     ):
     """This function saves a new grouping to the database."""
     outcome = core.survey.start_new_grouping(geometry_id, subclasses_id, label, comment)
@@ -230,18 +231,24 @@ def start_new_grouping(
     return outcome
 
 
-@app.post('/session/{sites_id}')
+@app.get('/session/types/')
+def get_session_types():
+    """This function gets the possible ShootPoint session types."""
+    return core.survey.SESSIONTYPES
+
+
+@app.post('/session/{sites_id}', status_code=201)
 def start_surveying_session(
         response: Response,
         label: str,
         surveyor: str,
         sites_id: int,
         occupied_point_id: int,
-        sessiontype: str=Query(..., enum=core.survey.SESSIONTYPES),
-        backsight_station_id: int=0,
-        prism_height: float=0.0,
-        instrument_height: float=0.0,
-        azimuth: float=0.0000  # dd.mmss format
+        sessiontype: str = Query(..., enum=get_session_types()),
+        backsight_station_id: int = 0,
+        prism_height: float = 0.0,
+        instrument_height: float = 0.0,
+        azimuth: float = 0.0000,  # dd.mmss format
     ):
     """This function saves a new surveying session to the database."""
     if sessiontype == 'Backsight':
@@ -262,11 +269,11 @@ def take_shot(response: Response):
     return outcome
 
 
-@app.post('/shot/')
+@app.post('/shot/', status_code=201)
 def save_last_shot(
         response: Response,
-        label: str=None,
-        comment: str=None
+        label: str = None,
+        comment: str = None,
     ):
     """This function saves the last shot to the database."""
     # Note: the front end should not prompt the user for label or comment in cases where groupings.geometry_id = 1 (= isolate point).
@@ -290,6 +297,12 @@ def cancel_shot():
 ####################
 # TRIPOD ENDPOINTS #
 ####################
+
+@app.get('/station/coordinatesystems/')
+def get_coordinate_systems():
+    """This function gets the available coordinate systems for ShootPoints."""
+    return core.tripod.COORDINATESYSTEMS
+
 
 @app.get('/station/{sites_id}')
 def get_all_stations_at_site(
@@ -316,19 +329,19 @@ def get_station(
     return outcome
 
 
-@app.post('/station/{sites_id}')
+@app.post('/station/{sites_id}', status_code=201)
 def save_survey_station(
         response: Response,
         sites_id: int,
         name: str,
-        coordinatesystem: str = Query(..., enum=core.tripod.COORDINATESYSTEMS),
-        northing: float=None,
-        easting: float=None,
-        elevation: float=None,
-        utmzone: str=None,
-        latitude: float=None,
-        longitude: float=None,
-        description: str=None,
+        coordinatesystem: str = Query(..., enum=get_coordinate_systems()),
+        northing: float = None,
+        easting: float = None,
+        elevation: float = None,
+        utmzone: str = None,
+        latitude: float = None,
+        longitude: float = None,
+        description: str = None,
     ):
     """This function saves a new survey station to the database."""
     if coordinatesystem == 'Site':
@@ -344,10 +357,10 @@ def save_survey_station(
 
 
 @app.delete('/station/{sites_id}/{id}')
-def delete_class(
+def delete_station(
         response: Response,
         sites_id: int,
-        id: int
+        id: int,
     ):
     """This function deletes the indicated station from the database."""
     outcome = core.tripod.delete_station(sites_id, id)

@@ -134,7 +134,7 @@ def take_measurement() -> dict:
                 delta_z = round(float(measurement[23:34])/10000, 3)
                 outcome['measurement'] = {'delta_n': delta_n, 'delta_e': delta_e, 'delta_z': delta_z}
             else:
-                errors.append(f'Unexpected data format: {measurement}.')
+                outcome['errors'].append(f'Unexpected data format: {measurement}.')
         except:
             if _canceled:
                 return # Short circuit this function, returning nothing.

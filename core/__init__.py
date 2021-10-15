@@ -191,7 +191,7 @@ def save_config_file(port: str='', make: str='', model: str='', limit: int=0) ->
     if model:
         configs['TOTAL STATION']['model'] = model
     if limit:
-        configs['BACKSIGHT ERROR']['limit'] = limit
+        configs['BACKSIGHT ERROR']['limit'] = str(limit)
     with open('configs.ini', 'w') as f:
         configs.write(f)
     outcome = _load_application()
@@ -213,7 +213,7 @@ def summarize_application_state() -> dict:
         'total_station': 'N/A',
         'num_stations_in_db': _database.read_from_database('SELECT count(*) FROM stations')['results'][0]['count(*)'],
         'num_sessions_in_db': _database.read_from_database('SELECT count(*) FROM sessions')['results'][0]['count(*)'],
-        'current_session': {}, #id, occupied point, IH
+        'current_session': {},
         'prism_offsets': {},
         'num_points_in_db': 0,
         'num_points_in_current_session': 0,

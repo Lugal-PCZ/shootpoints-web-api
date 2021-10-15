@@ -9,7 +9,7 @@ def get_all_classes_and_subclasses() -> dict:
     classes = _database.read_from_database('SELECT * FROM classes ORDER BY name')
     if classes['success']:
         for each_class in classes['results']:
-            subclasses = _database.read_from_database('SELECT id, name FROM subclasses WHERE classes_id = ? ORDER BY name', (each_class['id'],))
+            subclasses = _database.read_from_database('SELECT id, name, description FROM subclasses WHERE classes_id = ? ORDER BY name', (each_class['id'],))
             if subclasses['success']:
                 each_class['subclasses'] = subclasses['results']
                 outcome['results'].append(each_class)

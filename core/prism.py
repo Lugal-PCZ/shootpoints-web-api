@@ -142,12 +142,12 @@ def set_prism_offsets(**kwargs) -> dict:
         sql = (
             'UPDATE prism '
             'SET '
-                'vertical_distance = ?, '
-                'latitude_distance = ?, '
-                'longitude_distance = ?, '
-                'radial_distance = ?, '
-                'tangent_distance = ?, '
-                'wedge_distance = ?'
+            '    vertical_distance = ?, '
+            '    latitude_distance = ?, '
+            '    longitude_distance = ?, '
+            '    radial_distance = ?, '
+            '    tangent_distance = ?, '
+            '    wedge_distance = ?'
         )
         _database.save_to_database(sql, data)
         readable_offsets = get_readable_offsets()['offsets']
