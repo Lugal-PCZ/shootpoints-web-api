@@ -1,7 +1,7 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
 
-from . import _database
-from . import _calculations
+from . import database
+from . import calculations
 
 
 COORDINATESYSTEMS = ["Site", "UTM", "Lat/Lon"]
@@ -96,20 +96,20 @@ def _validate_uniqueness_of_station(
 ) -> None:
     """This function verifies that the station name is unique at this site, as is its northing and easting."""
     try:
-        sitename = _database.read_from_database(
+        sitename = database.read_from_database(
             "SELECT name FROM sites WHERE id = ?", (sites_id,)
         )["results"][0]["name"]
     except:
         sitename = None
     if sitename:
-        if _database.read_from_database(
+        if database.read_from_database(
             "SELECT count(*) FROM stations WHERE sites_id = ? AND upper(name) = ?",
             (sites_id, name.upper()),
         )["results"][0]["count(*)"]:
             errors.append(
                 f"The station name “{name}” is not unique at site “{sitename}.”"
             )
-        if _database.read_from_database(
+        if database.read_from_database(
             "SELECT count(*) FROM stations WHERE sites_id = ? AND (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)",
             (sites_id, northing, easting),
         )["results"][0]["count(*)"]:
@@ -138,36 +138,30 @@ def get_all_station_at_site(sites_id: int) -> dict:
     """This function returns all the stations at the indicated site."""
     # TODO: check for valid sites_id before continuing
     outcome = {"errors": [], "stations": {}}
-    query = _database.read_from_database(
+    query = database.read_from_database(
         "SELECT * FROM stations WHERE sites_id = ?", (sites_id,)
     )
-    if query["success"]:
+    if not "errors" in query:
         outcome["stations"] = query["results"]
-    outcome["success"] = not outcome["errors"]
-    return {
-        key: val
-        for key, val in outcome.items()
-        if val or key == "success" or key == "stations"
-    }
+    return {key: val for key, val in outcome.items() if val or key == "stations"}
 
 
 def get_station(sites_id: int, id: int) -> dict:
     """ "This function returns the name and coordinates of the indicated station."""
     # TODO: check for valid sites_id before continuing
     outcome = {"errors": [], "station": {}}
-    query = _database.read_from_database(
+    query = database.read_from_database(
         "SELECT * FROM stations WHERE sites_id = ? AND id = ?",
         (
             sites_id,
             id,
         ),
     )
-    if query["success"] and len(query["results"]) > 0:
+    if not "errors" in query and len(query["results"]) > 0:
         outcome["station"] = query["results"][0]
     else:
         outcome["errors"].append(f"Station id {id} was not found at site {sites_id}.")
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def save_station(
@@ -203,7 +197,7 @@ def save_station(
             northing = float(coordinates["northing"])
             easting = float(coordinates["easting"])
             elevation = float(coordinates["elevation"])
-            latitude, longitude = _calculations.convert_utm_to_latlon(
+            latitude, longitude = calculations._convert_utm_to_latlon(
                 northing,
                 easting,
                 coordinates["utmzone"][:-1],
@@ -217,7 +211,7 @@ def save_station(
             latitude = float(coordinates["latitude"])
             longitude = float(coordinates["longitude"])
             elevation = float(coordinates["elevation"])
-            northing, easting, utmzone = _calculations.convert_latlon_to_utm(
+            northing, easting, utmzone = calculations._convert_latlon_to_utm(
                 latitude, longitude
             )
     else:
@@ -247,34 +241,33 @@ def save_station(
                 longitude,
                 description,
             )
-            if _database.save_to_database(sql, newstation)["success"]:
+            if not "errors" in database.save_to_database(sql, newstation):
                 outcome["result"] = f"Station “{name}” saved to the database."
             else:
                 outcome["errors"].append(
                     f"Station “{name}” could not be saved to the database."
                 )
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def delete_station(sites_id: int, id: int) -> dict:
     """This function deletes the indicated station from the database."""
     outcome = {"errors": [], "results": ""}
-    exists = _database.read_from_database(
+    exists = database.read_from_database(
         "SELECT name FROM stations WHERE sites_id = ? AND id = ?",
         (
             sites_id,
             id,
         ),
     )
-    if exists["success"]:
+    if not "errors" in exists:
         if exists[
             "results"
         ]:  # This is an empty list if there are no matches for the above query.
             name = exists["results"][0]["name"]
             sql = "DELETE FROM stations WHERE id = ?"
-            deleted = _database.delete_from_database(sql, (id,))
-            if deleted["success"]:
+            deleted = database.delete_from_database(sql, (id,))
+            if not "errors" in deleted:
                 outcome[
                     "result"
                 ] = f"Station “{name}” successfully deleted from the database."
@@ -293,5 +286,4 @@ def delete_station(sites_id: int, id: int) -> dict:
             )
     else:
         outcome["errors"] = exists["errors"]
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}

@@ -18,7 +18,7 @@ def _calculate_radial_offset(measurement: dict, offset: float) -> tuple:
 
 def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
     """This function calculates the northing and easting change due to left/right prism offsets tangential the circle's radius at the prism."""
-    azimuth_to_prism = calculate_azimuth(
+    azimuth_to_prism = _calculate_azimuth(
         (0, 0), (measurement["delta_n"], measurement["delta_e"])
     )
     distance_to_prism = math.hypot(measurement["delta_n"], measurement["delta_e"])
@@ -52,7 +52,7 @@ def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
 
 def _calculate_wedge_offset(measurement: dict, offset: float) -> tuple:
     """This function calculates the northing and easting change due to cw/ccw wedge prism offsets on the circle's radius."""
-    azimuth_to_prism = calculate_azimuth(
+    azimuth_to_prism = _calculate_azimuth(
         (0, 0), (measurement["delta_n"], measurement["delta_e"])
     )
     distance_to_prism = math.hypot(measurement["delta_n"], measurement["delta_e"])
@@ -78,7 +78,7 @@ def _calculate_wedge_offset(measurement: dict, offset: float) -> tuple:
     return n_diff, e_diff
 
 
-def apply_atmospheric_correction(
+def _apply_atmospheric_correction(
     measurement: dict, pressure: int, temperature: int
 ) -> dict:
     """
@@ -95,7 +95,7 @@ def apply_atmospheric_correction(
     return measurement
 
 
-def apply_offsets_to_measurement(measurement: dict) -> dict:
+def _apply_offsets_to_measurement(measurement: dict) -> dict:
     """
     This function applies the occupied station coordinates, instrument height,
     and prism offsets to the measurement returned from the total station (which
@@ -138,7 +138,7 @@ def apply_offsets_to_measurement(measurement: dict) -> dict:
     return measurement
 
 
-def calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
+def _calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
     """This function returns the azimuth in decimal degrees between two points (aN, aE) and (bN, bE)."""
     delta_n = point_b[0] - point_a[0]
     delta_e = point_b[1] - point_a[1]
@@ -148,7 +148,7 @@ def calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
     return azimuth
 
 
-def convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
+def _convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
     """This function converts latitude/longitude coordinates to UTM."""
     easting, northing, zonenumber, zoneletter = utm.from_latlon(latitude, longitude)
     northing = round(northing, 3)
@@ -156,7 +156,7 @@ def convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
     return (northing, easting, f"{zonenumber}{zoneletter}")
 
 
-def convert_utm_to_latlon(
+def _convert_utm_to_latlon(
     northing: float, easting: float, zonenumber: int, zoneletter: str
 ) -> tuple:
     """This function converts UTM coordinates to latitude/longitude."""
@@ -164,7 +164,7 @@ def convert_utm_to_latlon(
     return (latitude, longitude)
 
 
-def calculate_backsight_variance(
+def _calculate_backsight_variance(
     occupied_northing: float,
     occupied_easting: float,
     backsight_northing: float,

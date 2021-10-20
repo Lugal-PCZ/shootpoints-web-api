@@ -14,8 +14,7 @@ def set_mode_hr() -> dict:
     """This function sets the total station to V/H mode with Horizontal Right."""
     outcome = {"errors": [], "result": ""}
     outcome["result"] = "Mode set to Horizontal Right."
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
@@ -53,8 +52,7 @@ def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
         )
     if not outcome["errors"]:
         outcome["result"] = f"Azimuth set to {degrees}° {minutes}' {seconds}\""
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def take_measurement() -> dict:
@@ -77,12 +75,11 @@ def take_measurement() -> dict:
         "delta_e": delta_e,
         "delta_z": delta_z,
     }
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def cancel_measurement() -> dict:
     """This function cancels a measurement in progress."""
     global _canceled
     _canceled = True
-    return {"success": True, "notification": "Measurement canceled by user."}
+    return {"notification": "Measurement canceled by user."}

@@ -10,7 +10,7 @@ try:
     cursor.execute("SELECT 1 FROM stations")
 except sqlite3.OperationalError:
     # ShootPoints.db database is empty, so initialize it with the default schema.
-    with open("blank_database.sql", "r") as f:
+    with open("blankdatabase.sql", "r") as f:
         sql = f.read().split(";")
         _ = [cursor.execute(query) for query in sql]
         dbconn.commit()
@@ -31,8 +31,7 @@ def save_to_database(sql: str, data: tuple) -> dict:
         outcome["errors"].append(
             "The given sql does not appear to be an INSERT or UPDATE query."
         )
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def read_from_database(sql: str, params: tuple = ()) -> dict:
@@ -46,12 +45,7 @@ def read_from_database(sql: str, params: tuple = ()) -> dict:
             outcome["errors"].append(str(err))
     else:
         outcome["errors"].append("The given sql does not appear to be a SELECT query.")
-    outcome["success"] = not outcome["errors"]
-    return {
-        key: val
-        for key, val in outcome.items()
-        if val or key == "success" or key == "results"
-    }
+    return {key: val for key, val in outcome.items() if val or key == "results"}
 
 
 def delete_from_database(sql: str, params: tuple) -> dict:
@@ -70,12 +64,7 @@ def delete_from_database(sql: str, params: tuple) -> dict:
             outcome["errors"].append(str(err))
     else:
         outcome["errors"].append("The given sql does not appear to be a DELETE query.")
-    outcome["success"] = not outcome["errors"]
-    return {
-        key: val
-        for key, val in outcome.items()
-        if val or key == "success" or key == "results"
-    }
+    return {key: val for key, val in outcome.items() if val or key == "results"}
 
 
 def _record_setup_error(error: str) -> None:

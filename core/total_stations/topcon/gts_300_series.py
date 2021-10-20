@@ -63,8 +63,7 @@ def set_mode_hr() -> dict:
         outcome["errors"].append("A communication error occurred.")
     else:
         outcome["result"] = "Mode set to Horizontal Right."
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
@@ -102,7 +101,7 @@ def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
         )
     if not outcome["errors"]:
         setmodehr = set_mode_hr()
-        if setmodehr["success"]:
+        if not "errors" in setmodehr:
             azimuth = (degrees * 10000) + (minutes * 100) + seconds
             command = f"J+{azimuth}d"
             bcc = _calculate_bcc(command)
@@ -119,8 +118,7 @@ def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
                 outcome["errors"].append("A communication error occurred.")
         else:
             outcome["errors"].extend(setmodehr["errors"])
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def take_measurement() -> dict:
@@ -158,8 +156,7 @@ def take_measurement() -> dict:
                 return  # Short circuit this function, returning nothing.
             else:
                 outcome["errors"].append("Measurement failed.")
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def cancel_measurement() -> None:
@@ -168,4 +165,4 @@ def cancel_measurement() -> None:
     _canceled = True  # Flag to short circuit _wait_for_ack() and take_measurement().
     set_mode_hr()  # Issue harmless command that interrupts the GTS.
     _canceled = False  # Reset flag.
-    return {"success": True, "notification": "Measurement canceled by user."}
+    return {"notification": "Measurement canceled by user."}

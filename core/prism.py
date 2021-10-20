@@ -23,7 +23,7 @@ from the occupied station.
     wedge_distance < 0 = Counter-Clockwise
 """
 
-from . import _database
+from . import database
 
 
 offsets = {
@@ -130,6 +130,7 @@ def _validate_prism_offset(
                 errors.append(
                     f"The {offsettype.title()} Offset direction entered ({direction}) was invalid. It must be {_directions[offsettype][0]} or {_directions[offsettype][1]}."
                 )
+            # TODO: cache all the offsets and write them all at once, otherwise what's in this global might not match what's in the DB
             offsets[f"{offsettype}_distance"] = distance
         except KeyError:
             errors.append(
@@ -173,11 +174,15 @@ def set_prism_offsets(**kwargs) -> dict:
             "    tangent_distance = ?, "
             "    wedge_distance = ?"
         )
-        _database.save_to_database(sql, data)
-        readable_offsets = get_readable_offsets()["offsets"]
-        if len(readable_offsets):
-            outcome["result"] = f'Prism offsets are now {", ".join(readable_offsets)}.'
+        saved = database.save_to_database(sql, data)
+        if not "errors" in saved:
+            readable_offsets = get_readable_offsets()["offsets"]
+            if len(readable_offsets):
+                outcome[
+                    "result"
+                ] = f'Prism offsets are now {", ".join(readable_offsets)}.'
+            else:
+                outcome["result"] = "Prism offsets are 0 in all directions."
         else:
-            outcome["result"] = "Prism offsets are 0 in all directions."
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+            outcome["errors"] = saved["errors"]
+    return {key: val for key, val in outcome.items() if val}

@@ -1,7 +1,7 @@
 """This module contains functions for handling the surveying session and associated data."""
 
-from . import _database
-from . import _calculations
+from . import database
+from . import calculations
 from . import tripod
 from . import prism
 
@@ -19,7 +19,7 @@ temperature = 15
 
 
 def _get_setup_errors() -> list:
-    outcome = _database.read_from_database("SELECT * FROM setuperrors")
+    outcome = database.read_from_database("SELECT * FROM setuperrors")
     errors = []
     try:
         for each in outcome["results"]:
@@ -40,8 +40,9 @@ def _save_new_session(data: tuple) -> int:
         "(label, started, surveyor, sites_id, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight) "
         "VALUES(?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)"
     )
-    if _database.save_to_database(sql, data)["success"]:
-        sessionid = _database.cursor.lastrowid
+    saved = database.save_to_database(sql, data)
+    if not "errors" in saved:
+        sessionid = database.cursor.lastrowid
     else:
         sessionid = 0
     groupingid = 0
@@ -52,7 +53,7 @@ def _save_new_session(data: tuple) -> int:
 
 def get_geometries() -> list:
     """This function returns the types of geometry saved in the database, for use by the application front end."""
-    return _database.read_from_database("SELECT * FROM geometry")["results"]
+    return database.read_from_database("SELECT * FROM geometry")["results"]
 
 
 def get_atmospheric_conditions() -> dict:
@@ -90,9 +91,8 @@ def set_atmospheric_conditions(press: int, temp: int) -> dict:
     if not outcome["errors"]:
         data = (pressure, temperature)
         sql = "UPDATE atmosphere SET pressure = ?, temperature = ?"
-        _database.save_to_database(sql, data)
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+        database.save_to_database(sql, data)
+    return {key: val for key, val in outcome.items() if val}
 
 
 def start_surveying_session_with_backsight(
@@ -111,14 +111,14 @@ def start_surveying_session_with_backsight(
                 f"The Occupied Point and Backsight Station are the same (id = {occupied_point_id})."
             )
         occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
-        if occupiedpoint["success"]:
+        if not "errors" in occupiedpoint:
             occupied_n = occupiedpoint["station"]["northing"]
             occupied_e = occupiedpoint["station"]["easting"]
             occupied_z = occupiedpoint["station"]["elevation"]
         else:
             outcome["errors"].extend(occupiedpoint["errors"])
         backsightstation = tripod.get_station(sites_id, backsight_station_id)
-        if backsightstation["success"]:
+        if not "errors" in backsightstation:
             backsight_n = backsightstation["station"]["northing"]
             backsight_e = backsightstation["station"]["easting"]
             backsight_z = backsightstation["station"]["elevation"]
@@ -134,7 +134,7 @@ def start_surveying_session_with_backsight(
             newoffsets["vertical_direction"] = "Down"
             prism.set_prism_offsets(**newoffsets)
         if not outcome["errors"]:
-            azimuth = _calculations.calculate_azimuth(
+            azimuth = calculations._calculate_azimuth(
                 (occupied_n, occupied_e), (backsight_n, backsight_e)
             )
             degrees, remainder = divmod(azimuth, 1)
@@ -142,10 +142,10 @@ def start_surveying_session_with_backsight(
             seconds = round(remainder * 60)
             degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
             setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
-            if setazimuth["success"]:
+            if not "errors" in setazimuth:
                 measurement = totalstation.take_measurement()
-                if measurement["success"]:
-                    variance = _calculations.calculate_backsight_variance(
+                if not "errors" in measurement:
+                    variance = calculations._calculate_backsight_variance(
                         occupied_n,
                         occupied_e,
                         backsight_n,
@@ -191,8 +191,7 @@ def start_surveying_session_with_backsight(
                 outcome["errors"].append(
                     "A problem occurred while saving the new session to the database."
                 )
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def start_surveying_session_with_azimuth(
@@ -207,7 +206,7 @@ def start_surveying_session_with_azimuth(
     outcome = {"errors": _get_setup_errors(), "result": ""}
     if not outcome["errors"]:
         occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
-        if occupiedpoint["success"]:
+        if not "errors" in occupiedpoint:
             occupied_n = occupiedpoint["station"]["northing"]
             occupied_e = occupiedpoint["station"]["easting"]
             occupied_z = occupiedpoint["station"]["elevation"]
@@ -219,7 +218,7 @@ def start_surveying_session_with_azimuth(
             seconds = round(remainder * 100)
             degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
             setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
-            if setazimuth["success"]:
+            if not "errors" in setazimuth:
                 data = (
                     label,
                     surveyor,
@@ -243,8 +242,7 @@ def start_surveying_session_with_azimuth(
                     )
             else:
                 outcome["errors"].extend(setazimuth["errors"])
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def start_new_grouping(
@@ -261,10 +259,11 @@ def start_new_grouping(
             "(sessions_id, geometry_id, subclasses_id, label, comment) "
             "VALUES(?, ?, ?, ?, ?)"
         )
-        if _database.save_to_database(
+        saved = database.save_to_database(
             sql, (sessionid, geometry_id, subclasses_id, label, comment)
-        )["success"]:
-            groupingid = _database.cursor.lastrowid
+        )
+        if not "errors" in saved:
+            groupingid = database.cursor.lastrowid
         else:
             groupingid = 0
             outcome["errors"].append(
@@ -272,8 +271,7 @@ def start_new_grouping(
             )
     else:
         outcome["errors"].append("There is no active surveying session.")
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def take_shot() -> dict:
@@ -295,15 +293,14 @@ def take_shot() -> dict:
         elif "errors" in measurement:
             outcome["errors"] = measurement["errors"]
         else:
-            outcome["result"] = _calculations.apply_atmospheric_correction(
+            outcome["result"] = calculations._apply_atmospheric_correction(
                 measurement["measurement"], pressure, temperature
             )
-            outcome["result"] = _calculations.apply_offsets_to_measurement(
+            outcome["result"] = calculations._apply_offsets_to_measurement(
                 measurement["measurement"]
             )
             activeshotdata = outcome["result"]
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def save_last_shot(label: str = None, comment: str = None) -> dict:
@@ -324,7 +321,7 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
         label = label.strip() if label else None
         comment = comment.strip() if comment else None
         if (
-            _database.read_from_database(
+            database.read_from_database(
                 "SELECT geometry_id FROM groupings WHERE id = ?", (groupingid,)
             )["results"][0]["geometry_id"]
             == 1
@@ -353,11 +350,12 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
             "(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, label, comment) "
             "VALUES(CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
-        if _database.save_to_database(sql, data)["success"]:
+        saved = database.save_to_database(sql, data)
+        if not "errors" in saved:
             activeshotdata = {}
             activeshotlabel = label
             if (
-                _database.read_from_database(
+                database.read_from_database(
                     "SELECT geometry_id FROM groupings WHERE id = ?", (groupingid,)
                 )["results"][0]["geometry_id"]
                 == 1
@@ -365,5 +363,4 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
                 groupingid = 0  # The active shot is an isolated point, so reset the groupingid to 0
         else:
             outcome["errors"].append("An error occurred while saving the last shot.")
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}

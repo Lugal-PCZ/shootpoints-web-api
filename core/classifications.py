@@ -1,27 +1,26 @@
 """This module contains functions for reading, creating, and removing classes and subclasses of archaeological survey data."""
 
-from . import _database
+from . import database
 
 
 def get_all_classes_and_subclasses() -> dict:
     """This function returns all the classes and subclasses in the database."""
     outcome = {"errors": [], "results": []}
-    classes = _database.read_from_database("SELECT * FROM classes ORDER BY name")
-    if classes["success"]:
+    classes = database.read_from_database("SELECT * FROM classes ORDER BY name")
+    if not "errors" in classes:
         for each_class in classes["results"]:
-            subclasses = _database.read_from_database(
+            subclasses = database.read_from_database(
                 "SELECT id, name, description FROM subclasses WHERE classes_id = ? ORDER BY name",
                 (each_class["id"],),
             )
-            if subclasses["success"]:
+            if not "errors" in subclasses:
                 each_class["subclasses"] = subclasses["results"]
                 outcome["results"].append(each_class)
             else:
                 outcome["errors"] = subclasses["errors"]
     else:
         outcome["errors"] = classes["errors"]
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val or key == "results"}
 
 
 def create_new_class(name: str, description: str = None) -> dict:
@@ -30,13 +29,12 @@ def create_new_class(name: str, description: str = None) -> dict:
     name = name.strip().title()
     description = description.strip() if description else None
     sql = "INSERT INTO classes (name, description) VALUES(?, ?)"
-    newclass = _database.save_to_database(sql, (name, description))
-    if newclass["success"]:
+    newclass = database.save_to_database(sql, (name, description))
+    if not "errors" in newclass:
         outcome["result"] = f"Class “{name}” saved to the database."
     else:
         outcome["errors"] = newclass["errors"]
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def create_new_subclass(classes_id: int, name: str, description: str = None) -> dict:
@@ -45,29 +43,26 @@ def create_new_subclass(classes_id: int, name: str, description: str = None) -> 
     name = name.strip().title()
     description = description.strip() if description else None
     sql = "INSERT INTO subclasses (classes_id, name, description) VALUES(?, ?, ?)"
-    newclass = _database.save_to_database(sql, (classes_id, name, description))
-    if newclass["success"]:
+    newclass = database.save_to_database(sql, (classes_id, name, description))
+    if not "errors" in newclass:
         outcome["result"] = f"Sublass “{name}” saved to the database."
     else:
         outcome["errors"] = newclass["errors"]
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def delete_class(id: int) -> dict:
     """This function deletes the indicated class from the database."""
     outcome = {"errors": [], "results": ""}
-    exists = _database.read_from_database(
-        "SELECT name FROM classes WHERE id = ?", (id,)
-    )
-    if exists["success"]:
+    exists = database.read_from_database("SELECT name FROM classes WHERE id = ?", (id,))
+    if not "errors" in exists:
         if exists[
             "results"
         ]:  # This is an empty list if there are no matches for the above query.
             name = exists["results"][0]["name"]
             sql = "DELETE FROM classes WHERE id = ?"
-            deleted = _database.delete_from_database(sql, (id,))
-            if deleted["success"]:
+            deleted = database.delete_from_database(sql, (id,))
+            if not "errors" in deleted:
                 outcome[
                     "result"
                 ] = f"Class “{name}” successfully deleted from the database."
@@ -84,28 +79,27 @@ def delete_class(id: int) -> dict:
             outcome["errors"].append(f"Class id {id} does not exist.")
     else:
         outcome["errors"] = exists["errors"]
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def delete_subclass(classes_id: int, id: int) -> dict:
     """This function deletes the indicated subclass from the database."""
     outcome = {"errors": [], "results": ""}
-    exists = _database.read_from_database(
+    exists = database.read_from_database(
         "SELECT name FROM subclasses WHERE classes_id = ? AND id = ?",
         (
             classes_id,
             id,
         ),
     )
-    if exists["success"]:
+    if not "errors" in exists:
         if exists[
             "results"
         ]:  # This is an empty list if there are no matches for the above query.
             name = exists["results"][0]["name"]
             sql = "DELETE FROM subclasses WHERE id = ?"
-            deleted = _database.delete_from_database(sql, (id,))
-            if deleted["success"]:
+            deleted = database.delete_from_database(sql, (id,))
+            if not "errors" in deleted:
                 outcome[
                     "result"
                 ] = f"Subclass “{name}” successfully deleted from the database."
@@ -124,5 +118,4 @@ def delete_subclass(classes_id: int, id: int) -> dict:
             )
     else:
         outcome["errors"] = exists["errors"]
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}

@@ -4,16 +4,15 @@ import configparser
 import shutil
 import glob
 import importlib
-import math
 from datetime import datetime
 import serial
 
 
-from . import _database
-from . import _calculations
+from . import calculations
 from . import classifications
-from . import sites
+from . import database
 from . import prism
+from . import sites
 from . import survey
 from . import tripod
 
@@ -57,10 +56,9 @@ def _load_configs_from_file() -> dict:
             configs.write(f)
         error = "The config.ini file was not found, so one was created from the example file. Update your configs before proceeding."
         outcome["errors"].append(error)
-        _database._record_setup_error(error)
+        database._record_setup_error(error)
     survey.backsighterrorlimit = configs["BACKSIGHT ERROR"]["limit"]
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def _load_total_station_model() -> dict:
@@ -89,11 +87,10 @@ def _load_total_station_model() -> dict:
         except ModuleNotFoundError:
             error = f"File total_stations/{make}/{model}.py does not exist. Specify the correct total station make and model in configs.ini before proceeding."
             outcome["errors"].append(error)
-            _database._record_setup_error(error)
+            database._record_setup_error(error)
     if not outcome["errors"]:
         survey.totalstation = totalstation
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def _load_serial_port() -> dict:
@@ -137,9 +134,8 @@ def _load_serial_port() -> dict:
                 f"Serial port {serialport} could not be opened. Check your serial adapter and cable connections before proceeding"
             )
     for each in outcome["errors"]:
-        _database._record_setup_error(each)
-    outcome["success"] = not outcome["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+        database._record_setup_error(each)
+    return {key: val for key, val in outcome.items() if val}
 
 
 def _load_application() -> dict:
@@ -150,7 +146,7 @@ def _load_application() -> dict:
         not configs
     ):  # This app is being loaded fresh or reloaded, so check to see if there's current state saved in the database, and use that to set the module variables.
         try:
-            survey.sessionid = _database.read_from_database(
+            survey.sessionid = database.read_from_database(
                 "SELECT id FROM sessions ORDER BY started DESC LIMIT 1"
             )["results"][0]["id"]
             sql = (
@@ -167,7 +163,7 @@ def _load_application() -> dict:
                 "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
                 "WHERE sess.id = ?"
             )
-            session_info = _database.read_from_database(sql, (survey.sessionid,))[
+            session_info = database.read_from_database(sql, (survey.sessionid,))[
                 "results"
             ][0]
             tripod.occupied_point = {
@@ -196,10 +192,9 @@ def _load_application() -> dict:
             outcome["results"].append(loaderoutcome["result"])
         elif "errors" in loaderoutcome:
             outcome["errors"].extend(loaderoutcome["errors"])
-    outcome["success"] = not outcome["errors"]
-    if outcome["success"]:
-        _database._clear_setup_errors()
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    if not "errors" in outcome:
+        database._clear_setup_errors()
+    return {key: val for key, val in outcome.items() if val}
 
 
 def save_config_file(
@@ -220,10 +215,10 @@ def save_config_file(
     with open("configs.ini", "w") as f:
         configs.write(f)
     outcome = _load_application()
-    if outcome["success"]:
+    if not "errors" in outcome:
         del outcome["results"]
         outcome["result"] = "Configurations saved and reloaded."
-    return {key: val for key, val in outcome.items() if val or key == "success"}
+    return {key: val for key, val in outcome.items() if val}
 
 
 def summarize_application_state() -> dict:
@@ -236,10 +231,10 @@ def summarize_application_state() -> dict:
         "setup_errors": None,
         "serial_port": "N/A",
         "total_station": "N/A",
-        "num_stations_in_db": _database.read_from_database(
+        "num_stations_in_db": database.read_from_database(
             "SELECT count(*) FROM stations"
         )["results"][0]["count(*)"],
-        "num_sessions_in_db": _database.read_from_database(
+        "num_sessions_in_db": database.read_from_database(
             "SELECT count(*) FROM sessions"
         )["results"][0]["count(*)"],
         "current_session": {},
@@ -275,19 +270,19 @@ def summarize_application_state() -> dict:
         "WHERE sess.id = ?"
     )
     try:
-        summary["current_session"] = _database.read_from_database(
+        summary["current_session"] = database.read_from_database(
             sql, (survey.sessionid,)
         )["results"][0]
         summary["prism_offsets"] = prism.get_readable_offsets()
-        summary["num_points_in_db"] = _database.read_from_database(
+        summary["num_points_in_db"] = database.read_from_database(
             "SELECT count(*) FROM shots"
         )["results"][0]["count(*)"]
-        summary["num_points_in_current_session"] = _database.read_from_database(
+        summary["num_points_in_current_session"] = database.read_from_database(
             "SELECT count(*) FROM shots sh JOIN groupings grp ON sh.groupings_id = grp.id WHERE grp.sessions_id = ?",
             (survey.sessionid,),
         )["results"][0]["count(*)"]
         summary["current_grouping_id"] = survey.groupingid
-        summary["num_points_in_current_grouping"] = _database.read_from_database(
+        summary["num_points_in_current_grouping"] = database.read_from_database(
             "SELECT count(*) FROM shots sh JOIN groupings grp ON sh.groupings_id = grp.id WHERE grp.id = ?",
             (survey.groupingid,),
         )["results"][0]["count(*)"]
