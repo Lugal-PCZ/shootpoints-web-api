@@ -146,19 +146,33 @@ def _load_application() -> dict:
         not configs
     ):  # This app is being loaded fresh or reloaded, so check to see if there's current state saved in the database, and use that to set the module variables.
         try:
+            prism_info = database.read_from_database("SELECT * FROM prism")["results"][
+                0
+            ]
+            prism.offsets = {
+                "vertical_distance": prism_info["vertical_distance"],
+                "latitude_distance": prism_info["latitude_distance"],
+                "longitude_distance": prism_info["longitude_distance"],
+                "radial_distance": prism_info["radial_distance"],
+                "tangent_distance": prism_info["tangent_distance"],
+                "wedge_distance": prism_info["wedge_distance"],
+            }
+            atmosphere_info = database.read_from_database("SELECT * FROM atmosphere")[
+                "results"
+            ][0]
+            survey.pressure = atmosphere_info["pressure"]
+            survey.temperature = atmosphere_info["temperature"]
             survey.sessionid = database.read_from_database(
                 "SELECT id FROM sessions ORDER BY started DESC LIMIT 1"
             )["results"][0]["id"]
             sql = (
                 "SELECT "
-                "sta.northing AS n, "
-                "sta.easting AS e, "
-                "sta.elevation AS z, "
-                "sess.instrumentheight AS ih, "
-                "max(grp.id) AS gid, "
-                "prism.*, "
-                "atmosphere.* "
-                "FROM sessions sess, prism, atmosphere "
+                "  sta.northing AS n, "
+                "  sta.easting AS e, "
+                "  sta.elevation AS z, "
+                "  sess.instrumentheight AS ih, "
+                "  max(grp.id) AS gid, "
+                "FROM sessions sess "
                 "JOIN stations sta ON sess.stations_id_occupied = sta.id "
                 "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
                 "WHERE sess.id = ?"
@@ -173,16 +187,6 @@ def _load_application() -> dict:
             }
             tripod.instrument_height = session_info["ih"]
             survey.groupingid = session_info["gid"]
-            prism.offsets = {
-                "vertical_distance": session_info["vertical_distance"],
-                "latitude_distance": session_info["latitude_distance"],
-                "longitude_distance": session_info["longitude_distance"],
-                "radial_distance": session_info["radial_distance"],
-                "tangent_distance": session_info["tangent_distance"],
-                "wedge_distance": session_info["wedge_distance"],
-            }
-            survey.pressure = session_info["pressure"]
-            survey.temperature = session_info["temperature"]
         except:
             pass
     loaders = [_load_configs_from_file, _load_total_station_model, _load_serial_port]
@@ -237,8 +241,9 @@ def summarize_application_state() -> dict:
         "num_sessions_in_db": database.read_from_database(
             "SELECT count(*) FROM sessions"
         )["results"][0]["count(*)"],
+        "prism_offsets": prism.get_readable_offsets(),
+        "atmospheric_conditions": survey.get_atmospheric_conditions(),
         "current_session": {},
-        "prism_offsets": {},
         "num_points_in_db": 0,
         "num_points_in_current_session": 0,
         "current_grouping_id": 0,
@@ -257,14 +262,14 @@ def summarize_application_state() -> dict:
             ] = f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']}"
     sql = (
         "SELECT "
-        "sess.id, "
-        "sess.label, "
-        "sess.started, "
-        "sess.stations_id_occupied, "
-        "sta.northing, "
-        "sta.easting, "
-        "sta.elevation, "
-        "sess.instrumentheight "
+        "  sess.id, "
+        "  sess.label, "
+        "  sess.started, "
+        "  sess.stations_id_occupied, "
+        "  sta.northing, "
+        "  sta.easting, "
+        "  sta.elevation, "
+        "  sess.instrumentheight "
         "FROM sessions sess "
         "JOIN stations sta ON sess.stations_id_occupied = sta.id "
         "WHERE sess.id = ?"
@@ -273,7 +278,6 @@ def summarize_application_state() -> dict:
         summary["current_session"] = database.read_from_database(
             sql, (survey.sessionid,)
         )["results"][0]
-        summary["prism_offsets"] = prism.get_readable_offsets()
         summary["num_points_in_db"] = database.read_from_database(
             "SELECT count(*) FROM shots"
         )["results"][0]["count(*)"]

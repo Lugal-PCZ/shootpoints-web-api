@@ -123,10 +123,24 @@ def get_prism_offsets(response: Response):
 
 
 @app.put("/prism/", status_code=201)
-def set_prism_offsets(response: Response, offsets: dict):
-    # TODO: Update this endpoint to take each type of offset and construct the offsets dictionary
+def set_prism_offsets(
+    response: Response,
+    vertical_distance: int = None,
+    latitude_distance: int = None,
+    longitude_distance: int = None,
+    radial_distance: int = None,
+    tangent_distance: int = None,
+    wedge_distance: int = None,
+):
     """This function sets the prism offsets."""
-    outcome = core.prism.set_prism_offsets(**offsets)
+    outcome = core.prism.set_prism_offsets(
+        vertical_distance,
+        latitude_distance,
+        longitude_distance,
+        radial_distance,
+        tangent_distance,
+        wedge_distance,
+    )
     if "errors" in outcome:
         response.status_code = 422
     return outcome

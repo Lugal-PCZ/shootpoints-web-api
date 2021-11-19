@@ -112,70 +112,33 @@ def get_readable_offsets() -> dict:
     return readable_offsets
 
 
-def _validate_prism_offset(
-    offsettype: str, distance: str, direction: str, errors: list
-) -> None:
-    """This function verifies the sanity of the given prism offset."""
-    global offsets
-    try:
-        distance = float(distance)
-        try:
-            if distance == 0:
-                pass
-            elif direction.upper() == _directions[offsettype][0].upper():
-                distance = abs(distance)
-            elif direction.upper() == _directions[offsettype][1].upper():
-                distance = -abs(distance)
-            else:
-                errors.append(
-                    f"The {offsettype.title()} Offset direction entered ({direction}) was invalid. It must be {_directions[offsettype][0]} or {_directions[offsettype][1]}."
-                )
-            # TODO: cache all the offsets and write them all at once, otherwise what's in this global might not match what's in the DB
-            offsets[f"{offsettype}_distance"] = distance
-        except KeyError:
-            errors.append(
-                f"No direction was given for the {offsettype.title()} Offset."
-            )
-    except ValueError:
-        errors.append(
-            f"The {offsettype.title()} Offset distance entered ({distance}) is not numerical."
-        )
-
-
-def set_prism_offsets(**kwargs) -> dict:
+def set_prism_offsets(
+    vertical_distance: int = None,
+    latitude_distance: int = None,
+    longitude_distance: int = None,
+    radial_distance: int = None,
+    tangent_distance: int = None,
+    wedge_distance: int = None,
+) -> dict:
     """This function sets the prism offsets and saves them to the database."""
+    global offsets
+    saved_args = locals()
     outcome = {"errors": [], "result": ""}
-    for key, val in kwargs.items():
-        key = key.split("_")
-        offsettype = key[0].lower()
-        if key[1] == "distance" and offsettype in _directions:
-            distance = kwargs[f"{key[0]}_distance"]
-            try:
-                direction = kwargs[f"{key[0]}_direction"]
-            except KeyError:
-                direction = ""
-            _validate_prism_offset(offsettype, distance, direction, outcome["errors"])
+    newoffsets = {}
+    for key, val in saved_args.items():
+        if val != None:
+            if key not in offsets.keys():
+                outcome["errors"].append(f"“{key}” is not a valid offset.")
+            else:
+                newoffsets[f"{key} = ?"] = val
     if not outcome["errors"]:
-        data = (
-            offsets["vertical_distance"],
-            offsets["latitude_distance"],
-            offsets["longitude_distance"],
-            offsets["radial_distance"],
-            offsets["tangent_distance"],
-            offsets["wedge_distance"],
-        )
-        sql = (
-            "UPDATE prism "
-            "SET "
-            "    vertical_distance = ?, "
-            "    latitude_distance = ?, "
-            "    longitude_distance = ?, "
-            "    radial_distance = ?, "
-            "    tangent_distance = ?, "
-            "    wedge_distance = ?"
-        )
+        sql = f"UPDATE prism SET {', '.join(newoffsets.keys())}"
+        data = list(newoffsets.values())
         saved = database.save_to_database(sql, data)
         if not "errors" in saved:
+            for key, val in saved_args.items():
+                if val != None:
+                    offsets[key] = val
             readable_offsets = get_readable_offsets()["offsets"]
             if len(readable_offsets):
                 outcome[
