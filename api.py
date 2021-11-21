@@ -125,12 +125,12 @@ def get_prism_offsets(response: Response):
 @app.put("/prism/", status_code=201)
 def set_prism_offsets(
     response: Response,
-    vertical_distance: int = None,
-    latitude_distance: int = None,
-    longitude_distance: int = None,
-    radial_distance: int = None,
-    tangent_distance: int = None,
-    wedge_distance: int = None,
+    vertical_distance: float = None,
+    latitude_distance: float = None,
+    longitude_distance: float = None,
+    radial_distance: float = None,
+    tangent_distance: float = None,
+    wedge_distance: float = None,
 ):
     """This function sets the prism offsets."""
     outcome = core.prism.set_prism_offsets(
