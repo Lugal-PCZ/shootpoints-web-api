@@ -10,7 +10,7 @@ try:
     cursor.execute("SELECT 1 FROM stations")
 except sqlite3.OperationalError:
     # ShootPoints.db database is empty, so initialize it with the default schema.
-    with open("blankdatabase.sql", "r") as f:
+    with open("blank_database.sql", "r") as f:
         sql = f.read().split(";")
         _ = [cursor.execute(query) for query in sql]
         dbconn.commit()

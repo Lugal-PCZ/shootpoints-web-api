@@ -90,7 +90,7 @@ def set_atmospheric_conditions(press: int, temp: int) -> dict:
         )
     if not outcome["errors"]:
         data = (pressure, temperature)
-        sql = "UPDATE atmosphere SET pressure = ?, temperature = ?"
+        sql = "UPDATE savedstate SET pressure = ?, temperature = ?"
         database.save_to_database(sql, data)
     return {key: val for key, val in outcome.items() if val}
 

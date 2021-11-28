@@ -146,22 +146,19 @@ def _load_application() -> dict:
         not configs
     ):  # This app is being loaded fresh or reloaded, so check to see if there's current state saved in the database, and use that to set the module variables.
         try:
-            prism_info = database.read_from_database("SELECT * FROM prism")["results"][
-                0
-            ]
-            prism.offsets = {
-                "vertical_distance": prism_info["vertical_distance"],
-                "latitude_distance": prism_info["latitude_distance"],
-                "longitude_distance": prism_info["longitude_distance"],
-                "radial_distance": prism_info["radial_distance"],
-                "tangent_distance": prism_info["tangent_distance"],
-                "wedge_distance": prism_info["wedge_distance"],
-            }
-            atmosphere_info = database.read_from_database("SELECT * FROM atmosphere")[
+            saved_state = database.read_from_database("SELECT * FROM savedstate")[
                 "results"
             ][0]
-            survey.pressure = atmosphere_info["pressure"]
-            survey.temperature = atmosphere_info["temperature"]
+            prism.offsets = {
+                "vertical_distance": saved_state["vertical_distance"],
+                "latitude_distance": saved_state["latitude_distance"],
+                "longitude_distance": saved_state["longitude_distance"],
+                "radial_distance": saved_state["radial_distance"],
+                "tangent_distance": saved_state["tangent_distance"],
+                "wedge_distance": saved_state["wedge_distance"],
+            }
+            survey.pressure = saved_state["pressure"]
+            survey.temperature = saved_state["temperature"]
             survey.sessionid = database.read_from_database(
                 "SELECT id FROM sessions ORDER BY started DESC LIMIT 1"
             )["results"][0]["id"]
