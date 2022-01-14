@@ -43,7 +43,7 @@ def set_configs(
 @app.get("/summary/")
 def show_summary():
     """This function gives summary data about the current state of ShootPoints."""
-    return core.summarize_application_state()
+    return core.summarize_current_state()
 
 
 #############################
@@ -239,12 +239,6 @@ def start_new_grouping(
     return outcome
 
 
-@app.get("/session/types/")
-def get_session_types():
-    """This function gets the possible ShootPoint session types."""
-    return core.survey.SESSIONTYPES
-
-
 @app.post("/session/{sites_id}", status_code=201)
 def start_surveying_session(
     response: Response,
@@ -252,7 +246,7 @@ def start_surveying_session(
     surveyor: str,
     sites_id: int,
     occupied_point_id: int,
-    sessiontype: str = Query(..., enum=get_session_types()),
+    sessiontype: str = Query(..., enum=["Backsight", "Azimuth"]),
     backsight_station_id: int = 0,
     prism_height: float = 0.0,
     instrument_height: float = 0.0,
@@ -317,12 +311,6 @@ def cancel_shot():
 ####################
 
 
-@app.get("/station/coordinatesystems/")
-def get_coordinate_systems():
-    """This function gets the available coordinate systems for ShootPoints."""
-    return core.tripod.COORDINATESYSTEMS
-
-
 @app.get("/station/{sites_id}")
 def get_all_stations_at_site(response: Response, sites_id: int):
     """This function gets all the stations in the database at the indicated site."""
@@ -346,7 +334,7 @@ def save_survey_station(
     response: Response,
     sites_id: int,
     name: str,
-    coordinatesystem: str = Query(..., enum=get_coordinate_systems()),
+    coordinatesystem: str = Query(..., enum=["Site", "UTM", "Lat/Lon"]),
     northing: float = None,
     easting: float = None,
     elevation: float = None,

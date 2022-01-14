@@ -222,7 +222,7 @@ def save_config_file(
     return {key: val for key, val in outcome.items() if val}
 
 
-def summarize_application_state() -> dict:
+def summarize_current_state() -> dict:
     """
     This function returns the state of the global variables and
     summary data from the ShootPoints database.
@@ -230,21 +230,15 @@ def summarize_application_state() -> dict:
     summary = {
         "current_time": datetime.strftime(datetime.now(), "%-I:%M %p, %A %B %-d, %Y"),
         "setup_errors": None,
-        "serial_port": "N/A",
-        "total_station": "N/A",
-        "num_stations_in_db": database.read_from_database(
-            "SELECT count(*) FROM stations"
-        )["results"][0]["count(*)"],
-        "num_sessions_in_db": database.read_from_database(
-            "SELECT count(*) FROM sessions"
-        )["results"][0]["count(*)"],
-        "prism_offsets": prism.get_readable_offsets(),
+        "serial_port": None,
+        "total_station": None,
         "atmospheric_conditions": survey.get_atmospheric_conditions(),
-        "current_session": {},
-        "num_points_in_db": 0,
-        "num_points_in_current_session": 0,
-        "current_grouping_id": 0,
-        "num_points_in_current_grouping": 0,
+        "prism_offsets": None,
+        "num_sessions_in_db": 0,
+        "current_session": None,
+        "num_points_in_current_session": None,
+        "current_grouping_id": None,
+        "num_points_in_current_grouping": None,
     }
     setuperrors = survey._get_setup_errors()
     if setuperrors:
@@ -257,6 +251,11 @@ def summarize_application_state() -> dict:
             summary[
                 "total_station"
             ] = f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']}"
+    if prism.get_readable_offsets()["offsets"]:
+        summary["prism_offsets"] = prism.get_readable_offsets()["offsets"]
+    summary["num_sessions_in_db"] = database.read_from_database(
+        "SELECT count(*) FROM sessions"
+    )["results"][0]["count(*)"]
     sql = (
         "SELECT "
         "  sess.id, "
@@ -275,9 +274,6 @@ def summarize_application_state() -> dict:
         summary["current_session"] = database.read_from_database(
             sql, (survey.sessionid,)
         )["results"][0]
-        summary["num_points_in_db"] = database.read_from_database(
-            "SELECT count(*) FROM shots"
-        )["results"][0]["count(*)"]
         summary["num_points_in_current_session"] = database.read_from_database(
             "SELECT count(*) FROM shots sh JOIN groupings grp ON sh.groupings_id = grp.id WHERE grp.sessions_id = ?",
             (survey.sessionid,),

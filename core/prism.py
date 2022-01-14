@@ -45,12 +45,12 @@ _directions = {
 }
 
 
-def get_offset_types_and_directions() -> dict:
+def get_offset_types_and_directions() -> list:
     """This function returns the types of prism offsets and their applicable directions."""
-    directionsmenu = {}
+    offsets = []
     for key, val in _directions.items():
-        directionsmenu[key.title()] = val
-    return directionsmenu
+        offsets.append({"name": key.title(), "directions": val})
+    return offsets
 
 
 def get_readable_offsets() -> dict:
