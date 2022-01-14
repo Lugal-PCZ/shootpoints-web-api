@@ -67,9 +67,7 @@ def set_atmospheric_conditions(press: int, temp: int) -> dict:
     global pressure
     global temperature
     try:
-        if 720 <= int(press) <= 800:
-            pressure = press
-        else:
+        if not 720 <= int(press) <= 800:
             outcome["errors"].append(
                 f"The value given for atmospheric pressure ({press}) is outside the normal range (720mmHg to 800mmHg)."
             )
@@ -78,9 +76,7 @@ def set_atmospheric_conditions(press: int, temp: int) -> dict:
             f"The value given for atmospheric pressure ({press}) is not numeric."
         )
     try:
-        if -10 <= int(temp) <= 40:
-            temperature = temp
-        else:
+        if not -10 <= int(temp) <= 40:
             outcome["errors"].append(
                 f"The value given for air temperature ({temp}) is outside reasonable limits (-10°C to 40°C)."
             )
@@ -89,9 +85,13 @@ def set_atmospheric_conditions(press: int, temp: int) -> dict:
             f"The value given for air temperature ({temp}) is not numeric."
         )
     if not outcome["errors"]:
-        data = (pressure, temperature)
         sql = "UPDATE savedstate SET pressure = ?, temperature = ?"
-        database.save_to_database(sql, data)
+        database.save_to_database(sql, (press, temp))
+        pressure = press
+        temperature = temp
+        outcome[
+            "result"
+        ] = f"Atmospheric pressure is now set to {press}mmHg and temperature to {temp}°C."
     return {key: val for key, val in outcome.items() if val}
 
 
