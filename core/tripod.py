@@ -136,31 +136,35 @@ def _validate_instrument_height(height: float, errors: list) -> dict:
 
 def get_all_station_at_site(sites_id: int) -> dict:
     """This function returns all the stations at the indicated site."""
-    # TODO: check for valid sites_id before continuing
     outcome = {"errors": [], "stations": {}}
-    query = database.read_from_database(
-        "SELECT * FROM stations WHERE sites_id = ?", (sites_id,)
-    )
-    if not "errors" in query:
-        outcome["stations"] = query["results"]
+    if len(database.read_from_database("SELECT id FROM sites WHERE id = ?", (sites_id,))["results"]) > 0:
+        query = database.read_from_database(
+            "SELECT * FROM stations WHERE sites_id = ?", (sites_id,)
+        )
+        if not "errors" in query:
+            outcome["stations"] = query["results"]
+    else:
+        outcome["errors"].append(f"There is no site with id {sites_id}.")
     return {key: val for key, val in outcome.items() if val or key == "stations"}
 
 
 def get_station(sites_id: int, id: int) -> dict:
     """ "This function returns the name and coordinates of the indicated station."""
-    # TODO: check for valid sites_id before continuing
     outcome = {"errors": [], "station": {}}
-    query = database.read_from_database(
-        "SELECT * FROM stations WHERE sites_id = ? AND id = ?",
-        (
-            sites_id,
-            id,
-        ),
-    )
-    if not "errors" in query and len(query["results"]) > 0:
-        outcome["station"] = query["results"][0]
+    if len(database.read_from_database("SELECT id FROM sites WHERE id = ?", (sites_id,))["results"]) > 0:
+        query = database.read_from_database(
+            "SELECT * FROM stations WHERE sites_id = ? AND id = ?",
+            (
+                sites_id,
+                id,
+            ),
+        )
+        if not "errors" in query and len(query["results"]) > 0:
+            outcome["station"] = query["results"][0]
+        else:
+            outcome["errors"].append(f"Station id {id} was not found at site {sites_id}.")
     else:
-        outcome["errors"].append(f"Station id {id} was not found at site {sites_id}.")
+        outcome["errors"].append(f"There is no site with id {sites_id}.")
     return {key: val for key, val in outcome.items() if val}
 
 
