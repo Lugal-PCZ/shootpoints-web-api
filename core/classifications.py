@@ -85,37 +85,42 @@ def delete_class(id: int) -> dict:
 def delete_subclass(classes_id: int, id: int) -> dict:
     """This function deletes the indicated subclass from the database."""
     outcome = {"errors": [], "results": ""}
-    exists = database.read_from_database(
-        "SELECT name FROM subclasses WHERE classes_id = ? AND id = ?",
-        (
-            classes_id,
-            id,
-        ),
-    )
-    if not "errors" in exists:
-        if exists[
-            "results"
-        ]:  # This is an empty list if there are no matches for the above query.
-            name = exists["results"][0]["name"]
-            sql = "DELETE FROM subclasses WHERE id = ?"
-            deleted = database.delete_from_database(sql, (id,))
-            if not "errors" in deleted:
-                outcome[
-                    "result"
-                ] = f"Subclass “{name}” successfully deleted from the database."
-            else:
-                outcome["errors"] = deleted["errors"]
-            try:
-                if outcome["errors"][0] == "FOREIGN KEY constraint failed":
-                    outcome["errors"][
-                        0
-                    ] = f"Subclass “{name}” could not be deleted because it is the subclass of one or more groupings."
-            except IndexError:
-                pass
-        else:
-            outcome["errors"].append(
-                f"Subclass id {id} does not exist or is not a subclass of class id {classes_id}."
-            )
+    if id == 1:
+        outcome["errors"].append(
+            "The Survey Station subclass (id 1) cannot be deleted."
+        )
     else:
-        outcome["errors"] = exists["errors"]
+        exists = database.read_from_database(
+            "SELECT name FROM subclasses WHERE classes_id = ? AND id = ?",
+            (
+                classes_id,
+                id,
+            ),
+        )
+        if not "errors" in exists:
+            if exists[
+                "results"
+            ]:  # This is an empty list if there are no matches for the above query.
+                name = exists["results"][0]["name"]
+                sql = "DELETE FROM subclasses WHERE id = ?"
+                deleted = database.delete_from_database(sql, (id,))
+                if not "errors" in deleted:
+                    outcome[
+                        "result"
+                    ] = f"Subclass “{name}” successfully deleted from the database."
+                else:
+                    outcome["errors"] = deleted["errors"]
+                try:
+                    if outcome["errors"][0] == "FOREIGN KEY constraint failed":
+                        outcome["errors"][
+                            0
+                        ] = f"Subclass “{name}” could not be deleted because it is the subclass of one or more groupings."
+                except IndexError:
+                    pass
+            else:
+                outcome["errors"].append(
+                    f"Subclass id {id} does not exist or is not a subclass of class id {classes_id}."
+                )
+        else:
+            outcome["errors"] = exists["errors"]
     return {key: val for key, val in outcome.items() if val}

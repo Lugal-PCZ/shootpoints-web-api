@@ -27,7 +27,7 @@ CREATE TABLE `groupings` (
 ,  `geometry_id` integer NOT NULL
 ,  `subclasses_id` integer NOT NULL
 ,  `label` varchar(30) NOT NULL
-,  `comment` text
+,  `description` varchar(200) DEFAULT NULL
 ,  CONSTRAINT `groupings_ibfk_1` FOREIGN KEY (`sessions_id`) REFERENCES `sessions` (`id`)
 ,  CONSTRAINT `groupings_ibfk_2` FOREIGN KEY (`geometry_id`) REFERENCES `geometry` (`id`)
 ,  CONSTRAINT `groupings_ibfk_3` FOREIGN KEY (`subclasses_id`) REFERENCES `subclasses` (`id`)
@@ -110,11 +110,11 @@ CREATE TABLE `subclasses` (
 ,  UNIQUE (`classes_id`,`name`)
 ,  CONSTRAINT `subclasses_ibfk_1` FOREIGN KEY (`classes_id`) REFERENCES `classes` (`id`)
 );
-INSERT INTO subclasses VALUES(1,2,'Wall','Vertical, human-made, constructions, enclosing, dividing, or delimiting space.');
-INSERT INTO subclasses VALUES(2,2,'Floor','Prepared surfaces upon which human activities took place.');
-INSERT INTO subclasses VALUES(3,1,'Trench','Excavation units.');
-INSERT INTO subclasses VALUES(4,1,'Survey Station','Discrete surveying control points.');
-INSERT INTO subclasses VALUES(5,1,'Topography','Ground surface.');
+INSERT INTO subclasses VALUES(1,1,'Survey Station','Discrete surveying control points.');
+INSERT INTO subclasses VALUES(2,1,'Trench','Excavation units.');
+INSERT INTO subclasses VALUES(3,2,'Wall','Vertical, human-made, constructions, enclosing, dividing, or delimiting space.');
+INSERT INTO subclasses VALUES(4,2,'Floor','Prepared surfaces upon which human activities took place.');
+INSERT INTO subclasses VALUES(5,4,'Topography','Ground surface.');
 DELETE FROM sqlite_sequence;
 INSERT INTO sqlite_sequence VALUES('classes',4);
 INSERT INTO sqlite_sequence VALUES('geometry',4);

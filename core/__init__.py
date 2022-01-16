@@ -168,7 +168,7 @@ def _load_application() -> dict:
                 "  sta.easting AS e, "
                 "  sta.elevation AS z, "
                 "  sess.instrumentheight AS ih, "
-                "  max(grp.id) AS gid, "
+                "  max(grp.id) AS gid "
                 "FROM sessions sess "
                 "JOIN stations sta ON sess.stations_id_occupied = sta.id "
                 "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "

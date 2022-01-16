@@ -61,7 +61,7 @@ def take_measurement() -> dict:
     global _canceled
     if _canceled:
         _canceled = not _canceled
-    delay = 5
+    delay = 4
     for i in range(delay - 1):
         _sleep(i)
         if _canceled:

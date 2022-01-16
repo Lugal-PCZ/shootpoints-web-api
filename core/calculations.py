@@ -9,6 +9,8 @@ from . import prism
 
 def _calculate_radial_offset(measurement: dict, offset: float) -> tuple:
     """This function calculates the northing and easting change due to toward/away radial prism offsets."""
+    if not offset:
+        return 0, 0
     horizontal_distance = math.hypot(measurement["delta_n"], measurement["delta_e"])
     proportion = offset / horizontal_distance
     n_diff = measurement["delta_n"] * proportion
@@ -18,6 +20,8 @@ def _calculate_radial_offset(measurement: dict, offset: float) -> tuple:
 
 def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
     """This function calculates the northing and easting change due to left/right prism offsets tangential the circle's radius at the prism."""
+    if not offset:
+        return 0, 0
     azimuth_to_prism = _calculate_azimuth(
         (0, 0), (measurement["delta_n"], measurement["delta_e"])
     )
@@ -52,6 +56,8 @@ def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
 
 def _calculate_wedge_offset(measurement: dict, offset: float) -> tuple:
     """This function calculates the northing and easting change due to cw/ccw wedge prism offsets on the circle's radius."""
+    if not offset:
+        return 0, 0
     azimuth_to_prism = _calculate_azimuth(
         (0, 0), (measurement["delta_n"], measurement["delta_e"])
     )
@@ -89,9 +95,9 @@ def _apply_atmospheric_correction(
     p = pressure * 106.036
     t = temperature + 273.15
     Ka = (279.66 - (p / t)) * pow(10, -6)
-    measurement["delta_n"] = round(measurement["delta_n"] * Ka, 3)
-    measurement["delta_e"] = round(measurement["delta_e"] * Ka, 3)
-    measurement["delta_z"] = round(measurement["delta_z"] * Ka, 3)
+    measurement["delta_n"] += round(measurement["delta_n"] * Ka, 3)
+    measurement["delta_e"] += round(measurement["delta_e"] * Ka, 3)
+    measurement["delta_z"] += round(measurement["delta_z"] * Ka, 3)
     return measurement
 
 

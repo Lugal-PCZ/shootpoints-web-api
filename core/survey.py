@@ -51,6 +51,42 @@ def _save_new_session(data: tuple) -> int:
     return sessionid
 
 
+def _save_new_station() -> dict:
+    """This function checks if the last shot was a survey station, and if so saves it to the stations database table."""
+    outcome = None
+    currentgrouping = database.read_from_database(
+        "SELECT * FROM groupings WHERE id = ?",
+        (groupingid,),
+    )["results"][0]
+    if (
+        currentgrouping["subclasses_id"] == 1
+    ):  # Survey Station is pre-defined to have subclass id 1
+        sql = (
+            "SELECT "
+            "  sta.* "
+            "FROM sessions sess "
+            "JOIN stations sta ON sess.stations_id_occupied = sta.id "
+            "WHERE sess.id = ?"
+        )
+        occupiedstation = database.read_from_database(sql, (sessionid,))["results"][0]
+        coordinatesystem = "UTM"
+        if not occupiedstation["utmzone"]:
+            coordinatesystem = "Site"
+        outcome = tripod.save_station(
+            occupiedstation["sites_id"],
+            currentgrouping["label"],
+            coordinatesystem,
+            {
+                "northing": activeshotdata["calculated_n"],
+                "easting": activeshotdata["calculated_e"],
+                "elevation": activeshotdata["calculated_z"],
+                "utmzone": occupiedstation["utmzone"],
+            },
+            currentgrouping["description"],
+        )
+    return outcome
+
+
 def get_geometries() -> list:
     """This function returns the types of geometry saved in the database, for use by the application front end."""
     return database.read_from_database("SELECT * FROM geometry")["results"]
@@ -264,6 +300,8 @@ def start_new_grouping(
         )
         if not "errors" in saved:
             groupingid = database.cursor.lastrowid
+            outcome["result"] = f"Grouping ID {groupingid} started."
+
         else:
             groupingid = 0
             outcome["errors"].append(
@@ -306,8 +344,8 @@ def take_shot() -> dict:
 def save_last_shot(label: str = None, comment: str = None) -> dict:
     """This function saves the data from the last shot to the database.
 
-    Note: isolated points (groupings_id = 0) should only have label and comment
-    for the grouping, and not for the shot.
+    Note: isolated points (geometry_id = 1) should only have the label and description
+    applied to the grouping, and not for the shot.
     """
     outcome = {"errors": [], "result": ""}
     global groupingid
@@ -352,8 +390,18 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
         )
         saved = database.save_to_database(sql, data)
         if not "errors" in saved:
+            outcome[
+                "result"
+            ] = "The last shot was saved to the shots table in the database."
+            newstation = _save_new_station()
+            if "errors" in newstation:
+                outcome["errors"].append(newstation["errors"][0])
+            else:
+                outcome[
+                    "result"
+                ] = "The last shot was saved to the database and added to the stations table."
             activeshotdata = {}
-            activeshotlabel = label
+            activeshotlabel = label  # Note: this is so that when a group like topo points is being shot, each shot label can be pre-populated on the front-end.
             if (
                 database.read_from_database(
                     "SELECT geometry_id FROM groupings WHERE id = ?", (groupingid,)
