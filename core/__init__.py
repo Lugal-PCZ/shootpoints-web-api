@@ -227,6 +227,7 @@ def summarize_current_state() -> dict:
     This function returns the state of the global variables and
     summary data from the ShootPoints database.
     """
+    # TODO: add current configs to the summary
     summary = {
         "current_time": datetime.strftime(datetime.now(), "%-I:%M %p, %A %B %-d, %Y"),
         "setup_errors": None,

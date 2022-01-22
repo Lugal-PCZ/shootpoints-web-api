@@ -112,7 +112,7 @@ CREATE TABLE `subclasses` (
 );
 INSERT INTO subclasses VALUES(1,1,'Survey Station','Discrete surveying control points.');
 INSERT INTO subclasses VALUES(2,1,'Trench','Excavation units.');
-INSERT INTO subclasses VALUES(3,2,'Wall','Vertical, human-made, constructions, enclosing, dividing, or delimiting space.');
+INSERT INTO subclasses VALUES(3,2,'Wall','Vertical, human-made, constructions that enclose, divide, or delimit space.');
 INSERT INTO subclasses VALUES(4,2,'Floor','Prepared surfaces upon which human activities took place.');
 INSERT INTO subclasses VALUES(5,4,'Topography','Ground surface.');
 DELETE FROM sqlite_sequence;

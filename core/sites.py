@@ -6,7 +6,7 @@ from . import database
 def get_all_sites() -> dict:
     """ "This function returns the names and descriptions of all the sites in the database."""
     outcome = {"errors": [], "sites": {}}
-    query = database.read_from_database("SELECT * FROM sites")
+    query = database.read_from_database("SELECT * FROM sites ORDER BY name")
     if not "errors" in query:
         outcome["sites"] = query["results"]
     return {key: val for key, val in outcome.items() if val or key == "sites"}

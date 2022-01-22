@@ -184,7 +184,7 @@ def get_station(sites_id: int, id: int) -> dict:
     return {key: val for key, val in outcome.items() if val}
 
 
-def save_station(
+def save_new_station(
     sites_id: int,
     name: str,
     coordinatesystem: str,

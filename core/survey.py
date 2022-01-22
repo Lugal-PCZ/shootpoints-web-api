@@ -72,7 +72,7 @@ def _save_new_station() -> dict:
         coordinatesystem = "UTM"
         if not occupiedstation["utmzone"]:
             coordinatesystem = "Site"
-        outcome = tripod.save_station(
+        outcome = tripod.save_new_station(
             occupiedstation["sites_id"],
             currentgrouping["label"],
             coordinatesystem,
@@ -282,26 +282,25 @@ def start_surveying_session_with_azimuth(
 
 
 def start_new_grouping(
-    geometry_id: int, subclasses_id: int, label: str, comment: str = None
+    geometry_id: int, subclasses_id: int, label: str, description: str = None
 ) -> dict:
     """This function begins recording a grouping of total station measurements."""
     outcome = {"errors": [], "result": ""}
     global groupingid
     if sessionid:
         label = label.strip() if label else None
-        comment = comment.strip() if comment else None
+        description = description.strip() if description else None
         sql = (
             "INSERT INTO groupings "
-            "(sessions_id, geometry_id, subclasses_id, label, comment) "
+            "(sessions_id, geometry_id, subclasses_id, label, description) "
             "VALUES(?, ?, ?, ?, ?)"
         )
         saved = database.save_to_database(
-            sql, (sessionid, geometry_id, subclasses_id, label, comment)
+            sql, (sessionid, geometry_id, subclasses_id, label, description)
         )
         if not "errors" in saved:
             groupingid = database.cursor.lastrowid
             outcome["result"] = f"Grouping ID {groupingid} started."
-
         else:
             groupingid = 0
             outcome["errors"].append(

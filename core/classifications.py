@@ -3,21 +3,26 @@
 from . import database
 
 
-def get_all_classes_and_subclasses() -> dict:
-    """This function returns all the classes and subclasses in the database."""
+def get_all_classes() -> dict:
+    """This function returns all the classes in the database."""
     outcome = {"errors": [], "results": []}
     classes = database.read_from_database("SELECT * FROM classes ORDER BY name")
     if not "errors" in classes:
-        for each_class in classes["results"]:
-            subclasses = database.read_from_database(
-                "SELECT id, name, description FROM subclasses WHERE classes_id = ? ORDER BY name",
-                (each_class["id"],),
-            )
-            if not "errors" in subclasses:
-                each_class["subclasses"] = subclasses["results"]
-                outcome["results"].append(each_class)
-            else:
-                outcome["errors"] = subclasses["errors"]
+        outcome["classes"] = classes["results"]
+    else:
+        outcome["errors"] = classes["errors"]
+    return {key: val for key, val in outcome.items() if val or key == "results"}
+
+
+def get_subclasses(classes_id: int) -> dict:
+    """This function returns all the subclasses in the database for the indicated class."""
+    outcome = {"errors": [], "results": []}
+    subclasses = database.read_from_database(
+        "SELECT id, name, description FROM subclasses WHERE classes_id = ? ORDER BY name",
+        (classes_id,),
+    )
+    if not "errors" in subclasses:
+        outcome["subclasses"] = subclasses["results"]
     else:
         outcome["errors"] = classes["errors"]
     return {key: val for key, val in outcome.items() if val or key == "results"}

@@ -1,24 +1,18 @@
 """This module contains the API for ShootPoints."""
-
-from fastapi import FastAPI, Response, Query
-from fastapi.responses import HTMLResponse
+# TODO: decide if you need to be consistent about save new/create new (e.g., save_new_station vs create_new_site)
+from fastapi import FastAPI, Form, Response, Query
 from fastapi.staticfiles import StaticFiles
 
 import core
 
 
 app = FastAPI()
+
 app.mount(
-    "/frontend", StaticFiles(directory="../shootpoints-web-frontend"), name="frontend"
+    "/webapp",
+    StaticFiles(directory="../shootpoints-web-frontend", html="index.html"),
+    name="webapp",
 )
-
-
-@app.get("/")
-def homepage():
-    """This is the homepage for the ShootPoints Web API."""
-    return HTMLResponse(
-        content='<a href="/docs">Click here for documentation of this API</a>'
-    )
 
 
 ##################
@@ -29,10 +23,10 @@ def homepage():
 @app.put("/config/", status_code=201)
 def set_configs(
     response: Response,
-    port: str = None,
-    make: str = None,
-    model: str = None,
-    limit: int = 0,
+    port: str = Form(None),
+    make: str = Form(None),
+    model: str = Form(None),
+    limit: int = Form(0),
 ):
     outcome = core.save_config_file(port, make, model, limit)
     if "errors" in outcome:
@@ -52,9 +46,21 @@ def show_summary():
 
 
 @app.get("/class/")
-def get_all_classes_and_subclasses(response: Response):
-    """This function returns all the classes and subclasses in the database."""
-    outcome = core.classifications.get_all_classes_and_subclasses()
+def get_classes(response: Response):
+    """This function returns all the classes in the database."""
+    outcome = core.classifications.get_all_classes()
+    if "errors" in outcome:
+        response.status_code = 422
+    return outcome
+
+
+@app.get("/subclass/")
+def get_subclasses(response: Response, classes_id: int):
+    """This function returns all the subclasses of the indicated class in the database."""
+    if not classes_id:
+        outcome = {"results": []}
+    else:
+        outcome = core.classifications.get_subclasses(classes_id)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
@@ -172,8 +178,8 @@ def get_site(response: Response, id: int):
 @app.post("/site/", status_code=201)
 def create_new_site(
     response: Response,
-    name: str,
-    description: str = None,
+    name: str = Form(...),
+    description: str = Form(None),
 ):
     """This function saves a new site to the database."""
     outcome = core.sites.save_site(name, description)
@@ -182,10 +188,10 @@ def create_new_site(
     return outcome
 
 
-@app.delete("/site/{id}")
+@app.delete("/site/")
 def delete_site(
     response: Response,
-    id: int,
+    id: int = Form(...),
 ):
     """This function deletes the indicated site from the database."""
     outcome = core.sites.delete_site(id)
@@ -230,10 +236,12 @@ def start_new_grouping(
     geometry_id: int,
     subclasses_id: int,
     label: str,
-    comment: str = None,
+    description: str = None,
 ):
     """This function saves a new grouping to the database."""
-    outcome = core.survey.start_new_grouping(geometry_id, subclasses_id, label, comment)
+    outcome = core.survey.start_new_grouping(
+        geometry_id, subclasses_id, label, description
+    )
     if "errors" in outcome:
         response.status_code = 422
     return outcome
@@ -311,15 +319,19 @@ def cancel_shot():
 ####################
 
 
-@app.get("/station/{sites_id}")
-def get_all_stations_at_site(response: Response, sites_id: int):
+@app.get("/station/")
+def get_stations(response: Response, sites_id: int):
     """This function gets all the stations in the database at the indicated site."""
-    outcome = core.tripod.get_all_station_at_site(sites_id)
+    if not sites_id:
+        outcome = {"results": []}
+    else:
+        outcome = core.tripod.get_all_station_at_site(sites_id)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
 
 
+# TODO: decide if you need the following, and delete it if you don't
 @app.get("/station/{sites_id}/{id}")
 def get_station(response: Response, sites_id: int, id: int):
     """This function gets the station indicated."""
@@ -329,19 +341,19 @@ def get_station(response: Response, sites_id: int, id: int):
     return outcome
 
 
-@app.post("/station/{sites_id}", status_code=201)
-def save_survey_station(
+@app.post("/station/", status_code=201)
+def save_new_station(
     response: Response,
-    sites_id: int,
-    name: str,
-    coordinatesystem: str = Query(..., enum=["Site", "UTM", "Lat/Lon"]),
-    northing: float = None,
-    easting: float = None,
-    elevation: float = None,
-    utmzone: str = None,
-    latitude: float = None,
-    longitude: float = None,
-    description: str = None,
+    sites_id: int = Form(...),
+    name: str = Form(...),
+    coordinatesystem: str = Form(...),
+    northing: float = Form(None),
+    easting: float = Form(None),
+    elevation: float = Form(None),
+    utmzone: str = Form(None),
+    latitude: float = Form(None),
+    longitude: float = Form(None),
+    description: str = Form(None),
 ):
     """This function saves a new survey station to the database."""
     if coordinatesystem == "Site":
@@ -359,7 +371,13 @@ def save_survey_station(
             "longitude": longitude,
             "elevation": elevation,
         }
-    outcome = core.tripod.save_station(sites_id, name, coordinatesystem, coordinates)
+    outcome = core.tripod.save_new_station(
+        sites_id,
+        name,
+        coordinatesystem,
+        coordinates,
+        description,
+    )
     if "errors" in outcome:
         response.status_code = 422
     return outcome
