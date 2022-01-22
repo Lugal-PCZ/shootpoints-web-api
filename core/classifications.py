@@ -28,7 +28,7 @@ def get_subclasses(classes_id: int) -> dict:
     return {key: val for key, val in outcome.items() if val or key == "results"}
 
 
-def create_new_class(name: str, description: str = None) -> dict:
+def save_new_class(name: str, description: str = None) -> dict:
     """This function saves a new class to the database."""
     outcome = {"errors": [], "results": ""}
     name = name.strip().title()
@@ -42,7 +42,7 @@ def create_new_class(name: str, description: str = None) -> dict:
     return {key: val for key, val in outcome.items() if val}
 
 
-def create_new_subclass(classes_id: int, name: str, description: str = None) -> dict:
+def save_new_subclass(classes_id: int, name: str, description: str = None) -> dict:
     """This function saves a new subclass to the database."""
     outcome = {"errors": [], "results": ""}
     name = name.strip().title()

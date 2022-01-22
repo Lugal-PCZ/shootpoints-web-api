@@ -1,5 +1,4 @@
 """This module contains the API for ShootPoints."""
-# TODO: decide if you need to be consistent about save new/create new (e.g., save_new_station vs create_new_site)
 from fastapi import FastAPI, Form, Response, Query
 from fastapi.staticfiles import StaticFiles
 
@@ -67,9 +66,9 @@ def get_subclasses(response: Response, classes_id: int):
 
 
 @app.post("/class/", status_code=201)
-def create_new_class(response: Response, name: str, description: str = None):
+def save_new_class(response: Response, name: str, description: str = None):
     """This function saves a new class to the database."""
-    outcome = core.classifications.create_new_class(name, description)
+    outcome = core.classifications.save_new_class(name, description)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
@@ -88,14 +87,14 @@ def delete_class(
 
 
 @app.post("/class/{classes_id}", status_code=201)
-def create_new_subclass(
+def save_new_subclass(
     response: Response,
     classes_id: int,
     name: str,
     description: str = None,
 ):
     """This function saves a new subclass to the database."""
-    outcome = core.classifications.create_new_subclass(classes_id, name, description)
+    outcome = core.classifications.save_new_subclass(classes_id, name, description)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
@@ -176,7 +175,7 @@ def get_site(response: Response, id: int):
 
 
 @app.post("/site/", status_code=201)
-def create_new_site(
+def save_new_site(
     response: Response,
     name: str = Form(...),
     description: str = Form(None),
@@ -325,17 +324,7 @@ def get_stations(response: Response, sites_id: int):
     if not sites_id:
         outcome = {"results": []}
     else:
-        outcome = core.tripod.get_all_station_at_site(sites_id)
-    if "errors" in outcome:
-        response.status_code = 422
-    return outcome
-
-
-# TODO: decide if you need the following, and delete it if you don't
-@app.get("/station/{sites_id}/{id}")
-def get_station(response: Response, sites_id: int, id: int):
-    """This function gets the station indicated."""
-    outcome = core.tripod.get_station(sites_id, id)
+        outcome = core.tripod.get_stations(sites_id)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
