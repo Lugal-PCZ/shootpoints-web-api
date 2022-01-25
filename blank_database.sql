@@ -2,7 +2,7 @@ PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
 CREATE TABLE `classes` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `name` varchar(30) NOT NULL
+,  `name` varchar(30) COLLATE NOCASE NOT NULL
 ,  `description` varchar(200) DEFAULT NULL
 ,  UNIQUE (`name`)
 );
@@ -12,7 +12,7 @@ INSERT INTO classes VALUES(3,'Artifact','Objects made, modified, or used by peop
 INSERT INTO classes VALUES(4,'Feature','Natural formations or immovable, non-architectural, human creations.');
 CREATE TABLE `geometry` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `name` varchar(30) NOT NULL
+,  `name` varchar(30) COLLATE NOCASE NOT NULL
 ,  `sequential` integer NOT NULL DEFAULT '0'
 ,  `description` varchar(200) NOT NULL
 ,  UNIQUE (`name`)
@@ -65,7 +65,7 @@ CREATE TABLE `shots` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `groupings_id` integer NOT NULL
 ,  `label` varchar(30) DEFAULT NULL
-,  `comment` text COLLATE BINARY DEFAULT NULL
+,  `comment` text DEFAULT NULL
 ,  `timestamp` timestamp NOT NULL DEFAULT current_timestamp
 ,  `delta_n` float NOT NULL
 ,  `delta_e` float NOT NULL
@@ -83,14 +83,14 @@ CREATE TABLE `shots` (
 );
 CREATE TABLE `sites` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `name` varchar(30) NOT NULL
+,  `name` varchar(30) COLLATE NOCASE NOT NULL
 ,  `description` varchar(200) DEFAULT NULL
 ,  UNIQUE (`name`)
 );
 CREATE TABLE `stations` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `sites_id` integer NOT NULL
-,  `name` varchar(30) NOT NULL
+,  `name` varchar(30) COLLATE NOCASE NOT NULL
 ,  `northing` float NOT NULL
 ,  `easting` float NOT NULL
 ,  `elevation` float NOT NULL
@@ -105,7 +105,7 @@ CREATE TABLE `stations` (
 CREATE TABLE `subclasses` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `classes_id` integer NOT NULL
-,  `name` varchar(30) NOT NULL
+,  `name` varchar(30) COLLATE NOCASE NOT NULL
 ,  `description` varchar(200) DEFAULT NULL
 ,  UNIQUE (`classes_id`,`name`)
 ,  CONSTRAINT `subclasses_ibfk_1` FOREIGN KEY (`classes_id`) REFERENCES `classes` (`id`)
