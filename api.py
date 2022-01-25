@@ -20,7 +20,7 @@ app.mount(
 
 
 @app.put("/config/", status_code=201)
-def set_configs(
+async def set_configs(
     response: Response,
     port: str = Form(None),
     make: str = Form(None),
@@ -34,7 +34,7 @@ def set_configs(
 
 
 @app.get("/summary/")
-def show_summary():
+async def show_summary():
     """This function gives summary data about the current state of ShootPoints."""
     return core.summarize_current_state()
 
@@ -45,7 +45,7 @@ def show_summary():
 
 
 @app.get("/class/")
-def get_classes(response: Response):
+async def get_classes(response: Response):
     """This function returns all the classes in the database."""
     outcome = core.classifications.get_all_classes()
     if "errors" in outcome:
@@ -54,7 +54,7 @@ def get_classes(response: Response):
 
 
 @app.get("/subclass/")
-def get_subclasses(response: Response, classes_id: int):
+async def get_subclasses(response: Response, classes_id: int):
     """This function returns all the subclasses of the indicated class in the database."""
     if not classes_id:
         outcome = {"results": []}
@@ -66,7 +66,9 @@ def get_subclasses(response: Response, classes_id: int):
 
 
 @app.post("/class/", status_code=201)
-def save_new_class(response: Response, name: str, description: str = None):
+async def save_new_class(
+    response: Response, name: str = Form(...), description: str = Form(None)
+):
     """This function saves a new class to the database."""
     outcome = core.classifications.save_new_class(name, description)
     if "errors" in outcome:
@@ -74,24 +76,24 @@ def save_new_class(response: Response, name: str, description: str = None):
     return outcome
 
 
-@app.delete("/class/{id}")
-def delete_class(
+@app.delete("/class/")
+async def delete_class(
     response: Response,
-    id: int,
+    classes_id: int = Form(...),
 ):
     """This function deletes the indicated class from the database."""
-    outcome = core.classifications.delete_class(id)
+    outcome = core.classifications.delete_class(classes_id)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
 
 
-@app.post("/class/{classes_id}", status_code=201)
-def save_new_subclass(
+@app.post("/subclass/", status_code=201)
+async def save_new_subclass(
     response: Response,
-    classes_id: int,
-    name: str,
-    description: str = None,
+    classes_id: int = Form(...),
+    name: str = Form(...),
+    description: str = Form(None),
 ):
     """This function saves a new subclass to the database."""
     outcome = core.classifications.save_new_subclass(classes_id, name, description)
@@ -100,10 +102,12 @@ def save_new_subclass(
     return outcome
 
 
-@app.delete("/class/{classes_id}/{id}")
-def delete_subclass(response: Response, classes_id: int, id: int):
+@app.delete("/subclass/")
+async def delete_subclass(
+    response: Response, classes_id: int = Form(...), subclasses_id: int = Form(...)
+):
     """This function deletes the indicated subclass from the database."""
-    outcome = core.classifications.delete_subclass(classes_id, id)
+    outcome = core.classifications.delete_subclass(classes_id, subclasses_id)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
@@ -115,20 +119,20 @@ def delete_subclass(response: Response, classes_id: int, id: int):
 
 
 @app.get("/offsets/")
-def get_offset_types_and_directions():
+async def get_offset_types_and_directions():
     """This function gets the types of prism offsets and their applicable directions."""
     return core.prism.get_offset_types_and_directions()
 
 
 @app.get("/prism/")
-def get_prism_offsets(response: Response):
+async def get_prism_offsets(response: Response):
     """This function gets the prism offsets."""
     outcome = core.prism.get_readable_offsets()
     return outcome
 
 
 @app.put("/prism/", status_code=201)
-def set_prism_offsets(
+async def set_prism_offsets(
     response: Response,
     vertical_distance: float = None,
     latitude_distance: float = None,
@@ -157,7 +161,7 @@ def set_prism_offsets(
 
 
 @app.get("/site/")
-def get_all_sites(response: Response):
+async def get_all_sites(response: Response):
     """This function gets all the sites in the database."""
     outcome = core.sites.get_all_sites()
     if "errors" in outcome:
@@ -165,17 +169,18 @@ def get_all_sites(response: Response):
     return outcome
 
 
-@app.get("/site/{id}")
-def get_site(response: Response, id: int):
+# TODO: decide if the following endpoint is necessary
+@app.get("/site/")
+async def get_site(response: Response, sites_id: int = Form(...)):
     """This function gets the site indicated."""
-    outcome = core.sites.get_site(id)
+    outcome = core.sites.get_site(sites_id)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
 
 
 @app.post("/site/", status_code=201)
-def save_new_site(
+async def save_new_site(
     response: Response,
     name: str = Form(...),
     description: str = Form(None),
@@ -188,12 +193,12 @@ def save_new_site(
 
 
 @app.delete("/site/")
-def delete_site(
+async def delete_site(
     response: Response,
-    id: int = Form(...),
+    sites_id: int = Form(...),
 ):
     """This function deletes the indicated site from the database."""
-    outcome = core.sites.delete_site(id)
+    outcome = core.sites.delete_site(sites_id)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
@@ -205,13 +210,13 @@ def delete_site(
 
 
 @app.get("/atmosphere/")
-def get_atmospheric_conditions():
+async def get_atmospheric_conditions():
     """This function gets the pressure and temperature, as last set and saved to the ShootPoints database."""
     return core.survey.get_atmospheric_conditions()
 
 
 @app.put("/atmosphere/", status_code=201)
-def set_atmospheric_conditions(
+async def set_atmospheric_conditions(
     response: Response,
     pressure: int,
     temperature: int,
@@ -224,13 +229,13 @@ def set_atmospheric_conditions(
 
 
 @app.get("/geometry/")
-def get_geometries():
+async def get_geometries():
     """This function gets the geometries in the ShootPoints database, for use when creating a new grouping."""
     return core.survey.get_geometries()
 
 
 @app.post("/grouping/", status_code=201)
-def start_new_grouping(
+async def start_new_grouping(
     response: Response,
     geometry_id: int,
     subclasses_id: int,
@@ -247,7 +252,7 @@ def start_new_grouping(
 
 
 @app.post("/session/{sites_id}", status_code=201)
-def start_surveying_session(
+async def start_surveying_session(
     response: Response,
     label: str,
     surveyor: str,
@@ -279,7 +284,7 @@ def start_surveying_session(
 
 
 @app.get("/shot/")
-def take_shot(response: Response):
+async def take_shot(response: Response):
     """This function tells the total station to start measuring a point."""
     outcome = core.survey.take_shot()
     if "errors" in outcome:
@@ -288,7 +293,7 @@ def take_shot(response: Response):
 
 
 @app.post("/shot/", status_code=201)
-def save_last_shot(
+async def save_last_shot(
     response: Response,
     label: str = None,
     comment: str = None,
@@ -307,7 +312,7 @@ def save_last_shot(
 
 
 @app.get("/cancel/")
-def cancel_shot():
+async def cancel_shot():
     """This function stops a measurement in progress."""
     outcome = core.totalstation.cancel_measurement()
     return outcome
@@ -319,7 +324,7 @@ def cancel_shot():
 
 
 @app.get("/station/")
-def get_stations(response: Response, sites_id: int):
+async def get_stations(response: Response, sites_id: int):
     """This function gets all the stations in the database at the indicated site."""
     if not sites_id:
         outcome = {"results": []}
@@ -331,7 +336,7 @@ def get_stations(response: Response, sites_id: int):
 
 
 @app.post("/station/", status_code=201)
-def save_new_station(
+async def save_new_station(
     response: Response,
     sites_id: int = Form(...),
     name: str = Form(...),
@@ -372,14 +377,14 @@ def save_new_station(
     return outcome
 
 
-@app.delete("/station/{sites_id}/{id}")
-def delete_station(
+@app.delete("/station/")
+async def delete_station(
     response: Response,
-    sites_id: int,
-    id: int,
+    sites_id: int = Form(...),
+    stations_id: int = Form(...),
 ):
     """This function deletes the indicated station from the database."""
-    outcome = core.tripod.delete_station(sites_id, id)
+    outcome = core.tripod.delete_station(sites_id, stations_id)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
