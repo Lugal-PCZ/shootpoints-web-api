@@ -27,6 +27,7 @@ async def set_configs(
     model: str = Form(None),
     limit: int = Form(0),
 ):
+    # TODO: provide sensible options for the front-end to select
     outcome = core.save_config_file(port, make, model, limit)
     if "errors" in outcome:
         response.status_code = 422
@@ -251,18 +252,18 @@ async def start_new_grouping(
     return outcome
 
 
-@app.post("/session/{sites_id}", status_code=201)
-async def start_surveying_session(
+@app.post("/session/", status_code=201)
+async def start_new_surveying_session(
     response: Response,
-    label: str,
-    surveyor: str,
-    sites_id: int,
-    occupied_point_id: int,
-    sessiontype: str = Query(..., enum=["Backsight", "Azimuth"]),
-    backsight_station_id: int = 0,
-    prism_height: float = 0.0,
-    instrument_height: float = 0.0,
-    azimuth: float = 0.0000,  # dd.mmss format
+    label: str = Form(...),
+    surveyor: str = Form(...),
+    sites_id: int = Form(...),
+    occupied_point_id: int = Form(...),
+    sessiontype: str = Form(...),
+    backsight_station_id: int = Form(0),
+    prism_height: float = Form(0.0),
+    instrument_height: float = Form(0.0),
+    azimuth: float = Form(0.0000),  # ddd.mmss format
 ):
     """This function saves a new surveying session to the database."""
     if sessiontype == "Backsight":

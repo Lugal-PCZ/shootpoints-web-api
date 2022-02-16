@@ -222,7 +222,9 @@ def start_surveying_session_with_backsight(
                     "z": occupied_z,
                 }
                 tripod.instrument_height = instrument_height
-                outcome["result"] = f"Session {sessionid} started."
+                outcome[
+                    "result"
+                ] = f"Session {sessionid} started. Please confirm the current atmospheric conditions, and update them if necessary."
             else:
                 outcome["errors"].append(
                     "A problem occurred while saving the new session to the database."
@@ -271,7 +273,9 @@ def start_surveying_session_with_azimuth(
                         "z": occupied_z,
                     }
                     tripod.instrument_height = instrument_height
-                    outcome["result"] = f"Session {sessionid} started."
+                    outcome[
+                        "result"
+                    ] = f"Session {sessionid} started. Please confirm the current atmospheric conditions, and update them if necessary."
                 else:
                     outcome["errors"].append(
                         f"A problem occurred while saving the new session to the database."
