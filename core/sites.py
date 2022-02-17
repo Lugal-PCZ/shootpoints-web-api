@@ -12,17 +12,6 @@ def get_all_sites() -> dict:
     return {key: val for key, val in outcome.items() if val or key == "sites"}
 
 
-def get_site(id: int) -> dict:
-    """ "This function returns the name and description of the indicated site."""
-    outcome = {"errors": [], "site": {}}
-    query = database.read_from_database("SELECT * FROM sites WHERE id = ?", (id,))
-    if not "errors" in query and len(query["results"]) > 0:
-        outcome["site"] = query["results"][0]
-    else:
-        outcome["errors"].append(f"Site id {id} was not found in the database.")
-    return {key: val for key, val in outcome.items() if val}
-
-
 def save_site(name: str, description: str = None) -> dict:
     """This function creates a new site record in the database with the given name and description."""
     outcome = {"errors": [], "result": ""}

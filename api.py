@@ -170,16 +170,6 @@ async def get_all_sites(response: Response):
     return outcome
 
 
-# TODO: decide if the following endpoint is necessary
-@app.get("/site/")
-async def get_site(response: Response, sites_id: int = Form(...)):
-    """This function gets the site indicated."""
-    outcome = core.sites.get_site(sites_id)
-    if "errors" in outcome:
-        response.status_code = 422
-    return outcome
-
-
 @app.post("/site/", status_code=201)
 async def save_new_site(
     response: Response,
