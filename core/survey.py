@@ -41,7 +41,7 @@ def _save_new_session(data: tuple) -> int:
         "VALUES(?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)"
     )
     saved = database.save_to_database(sql, data)
-    if not "errors" in saved:
+    if "errors" not in saved:
         sessionid = database.cursor.lastrowid
     else:
         sessionid = 0
@@ -147,14 +147,14 @@ def start_surveying_session_with_backsight(
                 f"The Occupied Point and Backsight Station are the same (id = {occupied_point_id})."
             )
         occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
-        if not "errors" in occupiedpoint:
+        if "errors" not in occupiedpoint:
             occupied_n = occupiedpoint["station"]["northing"]
             occupied_e = occupiedpoint["station"]["easting"]
             occupied_z = occupiedpoint["station"]["elevation"]
         else:
             outcome["errors"].extend(occupiedpoint["errors"])
         backsightstation = tripod.get_station(sites_id, backsight_station_id)
-        if not "errors" in backsightstation:
+        if "errors" not in backsightstation:
             backsight_n = backsightstation["station"]["northing"]
             backsight_e = backsightstation["station"]["easting"]
             backsight_z = backsightstation["station"]["elevation"]
@@ -178,9 +178,9 @@ def start_surveying_session_with_backsight(
             seconds = round(remainder * 60)
             degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
             setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
-            if not "errors" in setazimuth:
+            if "errors" not in setazimuth:
                 measurement = totalstation.take_measurement()
-                if not "errors" in measurement:
+                if "errors" not in measurement:
                     variance = calculations._calculate_backsight_variance(
                         occupied_n,
                         occupied_e,
@@ -244,7 +244,7 @@ def start_surveying_session_with_azimuth(
     outcome = {"errors": _get_setup_errors(), "result": ""}
     if not outcome["errors"]:
         occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
-        if not "errors" in occupiedpoint:
+        if "errors" not in occupiedpoint:
             occupied_n = occupiedpoint["station"]["northing"]
             occupied_e = occupiedpoint["station"]["easting"]
             occupied_z = occupiedpoint["station"]["elevation"]
@@ -256,7 +256,7 @@ def start_surveying_session_with_azimuth(
             seconds = round(remainder * 100)
             degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
             setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
-            if not "errors" in setazimuth:
+            if "errors" not in setazimuth:
                 data = (
                     label,
                     surveyor,
@@ -302,7 +302,7 @@ def start_new_grouping(
         saved = database.save_to_database(
             sql, (sessionid, geometry_id, subclasses_id, label, description)
         )
-        if not "errors" in saved:
+        if "errors" not in saved:
             groupingid = database.cursor.lastrowid
             outcome["result"] = f"Grouping ID {groupingid} started."
         else:
@@ -392,7 +392,7 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
             "VALUES(CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
         saved = database.save_to_database(sql, data)
-        if not "errors" in saved:
+        if "errors" not in saved:
             outcome[
                 "result"
             ] = "The last shot was saved to the shots table in the database."

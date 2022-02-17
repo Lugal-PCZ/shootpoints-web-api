@@ -148,7 +148,7 @@ def get_stations(sites_id: int) -> dict:
         query = database.read_from_database(
             "SELECT * FROM stations WHERE sites_id = ?", (sites_id,)
         )
-        if not "errors" in query:
+        if "errors" not in query:
             outcome["stations"] = query["results"]
     else:
         outcome["errors"].append(f"There is no site with id {sites_id}.")
@@ -233,7 +233,7 @@ def save_new_station(
                 longitude,
                 description,
             )
-            if not "errors" in database.save_to_database(sql, newstation):
+            if "errors" not in database.save_to_database(sql, newstation):
                 outcome["result"] = f"Station “{name}” saved to the database."
             else:
                 outcome["errors"].append(
@@ -252,14 +252,14 @@ def delete_station(sites_id: int, id: int) -> dict:
             id,
         ),
     )
-    if not "errors" in exists:
+    if "errors" not in exists:
         if exists[
             "results"
         ]:  # This is an empty list if there are no matches for the above query.
             name = exists["results"][0]["name"]
             sql = "DELETE FROM stations WHERE id = ?"
             deleted = database.delete_from_database(sql, (id,))
-            if not "errors" in deleted:
+            if "errors" not in deleted:
                 outcome[
                     "result"
                 ] = f"Station “{name}” successfully deleted from the database."

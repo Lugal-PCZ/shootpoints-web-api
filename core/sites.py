@@ -7,7 +7,7 @@ def get_all_sites() -> dict:
     """ "This function returns the names and descriptions of all the sites in the database."""
     outcome = {"errors": [], "sites": {}}
     query = database.read_from_database("SELECT * FROM sites ORDER BY name")
-    if not "errors" in query:
+    if "errors" not in query:
         outcome["sites"] = query["results"]
     return {key: val for key, val in outcome.items() if val or key == "sites"}
 
@@ -30,7 +30,7 @@ def save_site(name: str, description: str = None) -> dict:
                 description,
             ),
         )
-        if not "errors" in saved:
+        if "errors" not in saved:
             outcome["result"] = f"Site “{name}” saved to the database."
         else:
             outcome["errors"].append(
@@ -43,14 +43,14 @@ def delete_site(id: int) -> dict:
     """This function deletes the indicated site from the database."""
     outcome = {"errors": [], "results": ""}
     exists = database.read_from_database("SELECT name FROM sites WHERE id = ?", (id,))
-    if not "errors" in exists:
+    if "errors" not in exists:
         if exists[
             "results"
         ]:  # This is an empty list if there are no matches for the above query.
             name = exists["results"][0]["name"]
             sql = "DELETE FROM sites WHERE id = ?"
             deleted = database.delete_from_database(sql, (id,))
-            if not "errors" in deleted:
+            if "errors" not in deleted:
                 outcome[
                     "result"
                 ] = f"Site “{name}” successfully deleted from the database."

@@ -135,7 +135,7 @@ def set_prism_offsets(
         sql = f"UPDATE savedstate SET {', '.join(newoffsets.keys())}"
         data = list(newoffsets.values())
         saved = database.save_to_database(sql, data)
-        if not "errors" in saved:
+        if "errors" not in saved:
             for key, val in saved_args.items():
                 if val != None:
                     offsets[key] = val

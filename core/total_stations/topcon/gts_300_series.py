@@ -101,7 +101,7 @@ def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
         )
     if not outcome["errors"]:
         setmodehr = set_mode_hr()
-        if not "errors" in setmodehr:
+        if "errors" not in setmodehr:
             azimuth = (degrees * 10000) + (minutes * 100) + seconds
             command = f"J+{azimuth}d"
             bcc = _calculate_bcc(command)
