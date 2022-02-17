@@ -89,7 +89,11 @@ def _save_new_station() -> dict:
 
 def get_geometries() -> list:
     """This function returns the types of geometry saved in the database, for use by the application front end."""
-    return database.read_from_database("SELECT * FROM geometry")["results"]
+    outcome = {"errors": [], "sites": {}}
+    query = database.read_from_database("SELECT * FROM geometry")
+    if "errors" not in query:
+        outcome["geometries"] = query["results"]
+    return {key: val for key, val in outcome.items() if val or key == "geometries"}
 
 
 def get_atmospheric_conditions() -> dict:
@@ -166,8 +170,7 @@ def start_surveying_session_with_backsight(
             )
         else:
             newoffsets = {each_offset: 0 for each_offset in prism.offsets}
-            newoffsets["vertical_distance"] = prism_height
-            newoffsets["vertical_direction"] = "Down"
+            newoffsets["vertical_distance"] = prism_height * -1
             prism.set_prism_offsets(**newoffsets)
         if not outcome["errors"]:
             azimuth = calculations._calculate_azimuth(
@@ -189,7 +192,7 @@ def start_surveying_session_with_backsight(
                         measurement["measurement"]["delta_n"],
                         measurement["measurement"]["delta_e"],
                     )
-                    if variance >= backsighterrorlimit:
+                    if variance >= float(backsighterrorlimit):
                         outcome["errors"].append(
                             f"The measured distance between the Occupied Point and the Backsight Station ({variance}cm) exceeds the limit set in configs.ini ({backsighterrorlimit}cm)."
                         )
