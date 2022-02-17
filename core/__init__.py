@@ -193,7 +193,7 @@ def _load_application() -> dict:
             outcome["results"].append(loaderoutcome["result"])
         elif "errors" in loaderoutcome:
             outcome["errors"].extend(loaderoutcome["errors"])
-    if not "errors" in outcome:
+    if len(outcome["errors"]) == 0:
         database._clear_setup_errors()
     return {key: val for key, val in outcome.items() if val}
 
@@ -216,7 +216,7 @@ def save_config_file(
     with open("configs.ini", "w") as f:
         configs.write(f)
     outcome = _load_application()
-    if not "errors" in outcome:
+    if "errors" not in outcome:
         del outcome["results"]
         outcome["result"] = "Configurations saved and reloaded."
     return {key: val for key, val in outcome.items() if val}
