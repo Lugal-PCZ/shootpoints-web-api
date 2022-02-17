@@ -155,6 +155,35 @@ def get_stations(sites_id: int) -> dict:
     return {key: val for key, val in outcome.items() if val or key == "stations"}
 
 
+def get_station(sites_id: int, id: int) -> dict:
+    """ "This function returns the name and coordinates of the indicated station."""
+    outcome = {"errors": [], "station": {}}
+    if (
+        len(
+            database.read_from_database(
+                "SELECT id FROM sites WHERE id = ?", (sites_id,)
+            )["results"]
+        )
+        > 0
+    ):
+        query = database.read_from_database(
+            "SELECT * FROM stations WHERE sites_id = ? AND id = ?",
+            (
+                sites_id,
+                id,
+            ),
+        )
+        if "errors" not in query and len(query["results"]) > 0:
+            outcome["station"] = query["results"][0]
+        else:
+            outcome["errors"].append(
+                f"Station id {id} was not found at site {sites_id}."
+            )
+    else:
+        outcome["errors"].append(f"There is no site with id {sites_id}.")
+    return {key: val for key, val in outcome.items() if val}
+
+
 def save_new_station(
     sites_id: int,
     name: str,
