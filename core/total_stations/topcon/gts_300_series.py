@@ -153,7 +153,7 @@ def take_measurement() -> dict:
                 outcome["errors"].append(f"Unexpected data format: {measurement}.")
         except:
             if _canceled:
-                return  # Short circuit this function, returning nothing.
+                return {"notification": "Measurement canceled by user."}
             else:
                 outcome["errors"].append("Measurement failed.")
     return {key: val for key, val in outcome.items() if val}
@@ -165,4 +165,4 @@ def cancel_measurement() -> None:
     _canceled = True  # Flag to short circuit _wait_for_ack() and take_measurement().
     set_mode_hr()  # Issue harmless command that interrupts the GTS.
     _canceled = False  # Reset flag.
-    return {"notification": "Measurement canceled by user."}
+    return
