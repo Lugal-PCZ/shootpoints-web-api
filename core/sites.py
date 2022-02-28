@@ -20,7 +20,7 @@ def save_site(name: str, description: str = None) -> dict:
     if database.read_from_database(
         "SELECT count(*) FROM sites WHERE upper(name) = ?", (name.upper(),)
     )["results"][0]["count(*)"]:
-        outcome["errors"].append(f"The site name “{name}” is not unique.")
+        outcome["errors"].append(f"The site name “{name}” is already taken.")
     if not outcome["errors"]:
         sql = f"INSERT INTO sites (name, description) VALUES (?, ?)"
         saved = database.save_to_database(
@@ -60,7 +60,7 @@ def delete_site(id: int) -> dict:
                 if outcome["errors"][0] == "FOREIGN KEY constraint failed":
                     outcome["errors"][
                         0
-                    ] = f"Site “{name}” could not be deleted because one or more stations are at this site."
+                    ] = f"Site “{name}” could not be deleted because it contains one or more stations."
             except IndexError:
                 pass
         else:

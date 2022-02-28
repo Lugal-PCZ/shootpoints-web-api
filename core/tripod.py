@@ -107,7 +107,7 @@ def _validate_uniqueness_of_station(
             (sites_id, name.upper()),
         )["results"][0]["count(*)"]:
             errors.append(
-                f"The station name “{name}” is not unique at site “{sitename}.”"
+                f"The station name “{name}” is already taken at site “{sitename}.”"
             )
         if database.read_from_database(
             "SELECT count(*) FROM stations WHERE sites_id = ? AND (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)",
@@ -123,15 +123,13 @@ def _validate_uniqueness_of_station(
 def _validate_instrument_height(height: float, errors: list) -> dict:
     """This function checks the sanity of the instrument height above the occupied point."""
     try:
-        height = float(height)
+        height = round(float(height), 3)
         if height < 0:
-            errors.append(f"Instrument height entered ({height}m) is negative.")
+            errors.append(f"The instrument height ({height}m) is negative.")
         elif height >= 2:
-            errors.append(
-                f"Instrument height entered ({height}m) is unrealistically high."
-            )
+            errors.append(f"The instrument height ({height}m) is unrealistically high.")
     except ValueError:
-        errors.append(f"Instrument height entered ({height}m) is not numeric.")
+        errors.append(f"The instrument height ({height}m) is not numeric.")
 
 
 def get_stations(sites_id: int) -> dict:
