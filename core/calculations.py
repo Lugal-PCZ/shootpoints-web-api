@@ -95,9 +95,12 @@ def _apply_atmospheric_correction(
     p = pressure * 106.036
     t = temperature + 273.15
     Ka = (279.66 - (p / t)) * pow(10, -6)
-    measurement["delta_n"] += round(measurement["delta_n"] * Ka, 3)
-    measurement["delta_e"] += round(measurement["delta_e"] * Ka, 3)
-    measurement["delta_z"] += round(measurement["delta_z"] * Ka, 3)
+    measurement["delta_n"] += measurement["delta_n"] * Ka
+    measurement["delta_e"] += measurement["delta_e"] * Ka
+    measurement["delta_z"] += measurement["delta_z"] * Ka
+    measurement["delta_n"] = round(measurement["delta_n"], 3)
+    measurement["delta_e"] = round(measurement["delta_e"], 3)
+    measurement["delta_z"] = round(measurement["delta_z"], 3)
     return measurement
 
 
@@ -183,4 +186,4 @@ def _calculate_backsight_variance(
         occupied_northing - backsight_northing, occupied_easting - backsight_easting
     )
     measured_distance = math.hypot(delta_n, delta_e)
-    return abs(expected_distance - measured_distance) * 100
+    return round(abs(expected_distance - measured_distance) * 100)

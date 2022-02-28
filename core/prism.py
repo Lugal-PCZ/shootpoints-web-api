@@ -53,7 +53,7 @@ def get_offset_types_and_directions() -> list:
     return offsets
 
 
-def get_readable_offsets() -> dict:
+def get_readable_prism_offsets() -> dict:
     """This function returns the prism offsets in human-readable form."""
     readable_offsets = {"offsets": []}
     for key, val in offsets.items():
@@ -112,6 +112,10 @@ def get_readable_offsets() -> dict:
     return readable_offsets
 
 
+def get_raw_prism_offsets() -> dict:
+    return offsets
+
+
 def set_prism_offsets(
     vertical_distance: int = None,
     latitude_distance: int = None,
@@ -139,7 +143,7 @@ def set_prism_offsets(
             for key, val in saved_args.items():
                 if val != None:
                     offsets[key] = val
-            readable_offsets = get_readable_offsets()["offsets"]
+            readable_offsets = get_readable_prism_offsets()["offsets"]
             if len(readable_offsets):
                 outcome[
                     "result"

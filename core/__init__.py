@@ -252,8 +252,8 @@ def summarize_current_state() -> dict:
             summary[
                 "total_station"
             ] = f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']}"
-    if prism.get_readable_offsets()["offsets"]:
-        summary["prism_offsets"] = prism.get_readable_offsets()["offsets"]
+    if prism.get_readable_prism_offsets()["offsets"]:
+        summary["prism_offsets"] = prism.get_readable_prism_offsets()["offsets"]
     summary["num_sessions_in_db"] = database.read_from_database(
         "SELECT count(*) FROM sessions"
     )["results"][0]["count(*)"]

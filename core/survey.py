@@ -101,11 +101,11 @@ def get_atmospheric_conditions() -> dict:
     return {"pressure": pressure, "temperature": temperature}
 
 
-def set_atmospheric_conditions(press: int, temp: int) -> dict:
+def set_atmospheric_conditions(temp: int, press: int) -> dict:
     """This function sets the current air pressure and temperature, for correcting the raw total station measurements."""
     outcome = {"errors": [], "result": ""}
-    global pressure
     global temperature
+    global pressure
     try:
         if not 720 <= int(press) <= 800:
             outcome["errors"].append(
@@ -131,7 +131,7 @@ def set_atmospheric_conditions(press: int, temp: int) -> dict:
         temperature = temp
         outcome[
             "result"
-        ] = f"Atmospheric pressure is now set to {press}mmHg and temperature to {temp}°C."
+        ] = f"Ambient temperature is now set to {temp}°C and atmospheric pressure is now set to {press}mmHg."
     return {key: val for key, val in outcome.items() if val}
 
 
@@ -168,10 +168,6 @@ def start_surveying_session_with_backsight(
             outcome["errors"].append(
                 f"An invalid prism height ({prism_height}m) was entered."
             )
-        else:
-            newoffsets = {each_offset: 0 for each_offset in prism.offsets}
-            newoffsets["vertical_distance"] = prism_height * -1
-            prism.set_prism_offsets(**newoffsets)
         if not outcome["errors"]:
             azimuth = calculations._calculate_azimuth(
                 (occupied_n, occupied_e), (backsight_n, backsight_e)
@@ -225,9 +221,12 @@ def start_surveying_session_with_backsight(
                     "z": occupied_z,
                 }
                 tripod.instrument_height = instrument_height
+                newoffsets = {each_offset: 0 for each_offset in prism.offsets}
+                newoffsets["vertical_distance"] = prism_height * -1
+                prism.set_prism_offsets(**newoffsets)
                 outcome[
                     "result"
-                ] = f"Session {sessionid} started. Please confirm the current atmospheric conditions, and update them if necessary."
+                ] = f"Session {sessionid} started. Please confirm that the measured instrument height ({instrument_height}m) is accurate before proceeding."
             else:
                 outcome["errors"].append(
                     "A problem occurred while saving the new session to the database."
@@ -276,9 +275,7 @@ def start_surveying_session_with_azimuth(
                         "z": occupied_z,
                     }
                     tripod.instrument_height = instrument_height
-                    outcome[
-                        "result"
-                    ] = f"Session {sessionid} started. Please confirm the current atmospheric conditions, and update them if necessary."
+                    outcome["result"] = f"Session {sessionid} started."
                 else:
                     outcome["errors"].append(
                         f"A problem occurred while saving the new session to the database."

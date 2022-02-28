@@ -1,5 +1,5 @@
 """This module contains the API for ShootPoints."""
-from fastapi import FastAPI, Form, Response, Query
+from fastapi import FastAPI, Form, Response
 from fastapi.staticfiles import StaticFiles
 
 import core
@@ -27,7 +27,7 @@ async def set_configs(
     model: str = Form(None),
     limit: int = Form(0),
 ):
-    # TODO: provide sensible options for the front-end to select
+    # TODO: provide sensible options for the front-end to select from
     outcome = core.save_config_file(port, make, model, limit)
     if "errors" in outcome:
         response.status_code = 422
@@ -57,10 +57,8 @@ async def get_classes(response: Response):
 @app.get("/subclass/")
 async def get_subclasses(response: Response, classes_id: int):
     """This function returns all the subclasses of the indicated class in the database."""
-    if not classes_id:
-        outcome = {"results": []}
-    else:
-        outcome = core.classifications.get_subclasses(classes_id)
+    # TODO: Figure out how to deal w/ cases where classes_ is passed empty from the webapp
+    outcome = core.classifications.get_subclasses(classes_id)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
@@ -126,30 +124,43 @@ async def get_offset_types_and_directions():
 
 
 @app.get("/prism/")
-async def get_prism_offsets(response: Response):
+async def get_readable_prism_offsets(response: Response):
     """This function gets the prism offsets."""
-    outcome = core.prism.get_readable_offsets()
+    outcome = ", ".join(core.prism.get_readable_prism_offsets()["offsets"])
+    return outcome
+
+
+@app.get("/prism_raw/")
+async def get_raw_prism_offsets(response: Response):
+    """This function gets the prism offsets."""
+    outcome = core.prism.get_raw_prism_offsets()
     return outcome
 
 
 @app.put("/prism/", status_code=201)
 async def set_prism_offsets(
     response: Response,
-    vertical_distance: float = None,
-    latitude_distance: float = None,
-    longitude_distance: float = None,
-    radial_distance: float = None,
-    tangent_distance: float = None,
-    wedge_distance: float = None,
+    vertical_distance: float = Form(None),
+    vertical_direction: int = Form(...),
+    latitude_distance: float = Form(None),
+    latitude_direction: int = Form(...),
+    longitude_distance: float = Form(None),
+    longitude_direction: int = Form(...),
+    radial_distance: float = Form(None),
+    radial_direction: int = Form(...),
+    tangent_distance: float = Form(None),
+    tangent_direction: int = Form(...),
+    wedge_distance: float = Form(None),
+    wedge_direction: int = Form(...),
 ):
     """This function sets the prism offsets."""
     outcome = core.prism.set_prism_offsets(
-        vertical_distance,
-        latitude_distance,
-        longitude_distance,
-        radial_distance,
-        tangent_distance,
-        wedge_distance,
+        vertical_distance * vertical_direction,
+        latitude_distance * latitude_direction,
+        longitude_distance * longitude_direction,
+        radial_distance * radial_direction,
+        tangent_distance * tangent_direction,
+        wedge_distance * wedge_direction,
     )
     if "errors" in outcome:
         response.status_code = 422
@@ -209,11 +220,11 @@ async def get_atmospheric_conditions():
 @app.put("/atmosphere/", status_code=201)
 async def set_atmospheric_conditions(
     response: Response,
-    pressure: int,
-    temperature: int,
+    temperature: int = Form(...),
+    pressure: int = Form(...),
 ):
     """This function sets the pressure and temperature, for use in atmospheric corrections when taking shots."""
-    outcome = core.survey.set_atmospheric_conditions(pressure, temperature)
+    outcome = core.survey.set_atmospheric_conditions(temperature, pressure)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
@@ -275,7 +286,7 @@ async def start_new_surveying_session(
 
 
 @app.get("/shot/")
-async def take_shot(response: Response):
+def take_shot(response: Response):
     """This function tells the total station to start measuring a point."""
     outcome = core.survey.take_shot()
     if "errors" in outcome:
@@ -303,7 +314,7 @@ async def save_last_shot(
 
 
 @app.get("/cancel/")
-async def cancel_shot():
+def cancel_shot():
     """This function stops a measurement in progress."""
     outcome = core.totalstation.cancel_measurement()
     return outcome
@@ -317,10 +328,8 @@ async def cancel_shot():
 @app.get("/station/")
 async def get_stations(response: Response, sites_id: int):
     """This function gets all the stations in the database at the indicated site."""
-    if not sites_id:
-        outcome = {"results": []}
-    else:
-        outcome = core.tripod.get_stations(sites_id)
+    # TODO: Figure out how to deal w/ cases where sites_id is passed empty from the webapp
+    outcome = core.tripod.get_stations(sites_id)
     if "errors" in outcome:
         response.status_code = 422
     return outcome
