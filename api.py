@@ -2,6 +2,7 @@
 from fastapi import FastAPI, Form, Response
 from fastapi.staticfiles import StaticFiles
 
+
 import core
 
 
@@ -27,7 +28,6 @@ async def set_configs(
     model: str = Form(None),
     limit: int = Form(0),
 ):
-    # TODO: provide sensible options for the front-end to select from
     outcome = core.save_config_file(port, make, model, limit)
     if "errors" in outcome:
         response.status_code = 422
@@ -54,10 +54,9 @@ async def get_classes(response: Response):
     return outcome
 
 
-@app.get("/subclass/")
+@app.get("/subclass/{classes_id}")
 async def get_subclasses(response: Response, classes_id: int):
     """This function returns all the subclasses of the indicated class in the database."""
-    # TODO: Figure out how to deal w/ cases where classes_ is passed empty from the webapp
     outcome = core.classifications.get_subclasses(classes_id)
     if "errors" in outcome:
         response.status_code = 422
@@ -164,6 +163,8 @@ async def set_prism_offsets(
     )
     if "errors" in outcome:
         response.status_code = 422
+    else:
+        outcome["result"] = "Prism offsets updated."
     return outcome
 
 
@@ -227,6 +228,8 @@ async def set_atmospheric_conditions(
     outcome = core.survey.set_atmospheric_conditions(temperature, pressure)
     if "errors" in outcome:
         response.status_code = 422
+    else:
+        outcome["result"] = "Atmospheric conditions updated."
     return outcome
 
 
@@ -325,10 +328,9 @@ def cancel_shot():
 ####################
 
 
-@app.get("/station/")
+@app.get("/station/{sites_id}")
 async def get_stations(response: Response, sites_id: int):
     """This function gets all the stations in the database at the indicated site."""
-    # TODO: Figure out how to deal w/ cases where sites_id is passed empty from the webapp
     outcome = core.tripod.get_stations(sites_id)
     if "errors" in outcome:
         response.status_code = 422
