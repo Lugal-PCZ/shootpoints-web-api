@@ -30,7 +30,7 @@ async def set_configs(
 ):
     outcome = core.save_config_file(port, make, model, limit)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -50,7 +50,7 @@ async def get_classes(response: Response):
     """This function returns all the classes in the database."""
     outcome = core.classifications.get_all_classes()
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -59,7 +59,7 @@ async def get_subclasses(response: Response, classes_id: int):
     """This function returns all the subclasses of the indicated class in the database."""
     outcome = core.classifications.get_subclasses(classes_id)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -70,7 +70,7 @@ async def save_new_class(
     """This function saves a new class to the database."""
     outcome = core.classifications.save_new_class(name, description)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -82,7 +82,7 @@ async def delete_class(
     """This function deletes the indicated class from the database."""
     outcome = core.classifications.delete_class(classes_id)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -96,7 +96,7 @@ async def save_new_subclass(
     """This function saves a new subclass to the database."""
     outcome = core.classifications.save_new_subclass(classes_id, name, description)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -107,7 +107,7 @@ async def delete_subclass(
     """This function deletes the indicated subclass from the database."""
     outcome = core.classifications.delete_subclass(classes_id, subclasses_id)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -162,7 +162,7 @@ async def set_prism_offsets(
         wedge_distance * wedge_direction,
     )
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     else:
         outcome["result"] = "Prism offsets updated."
     return outcome
@@ -178,7 +178,7 @@ async def get_all_sites(response: Response):
     """This function gets all the sites in the database."""
     outcome = core.sites.get_all_sites()
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -191,7 +191,7 @@ async def save_new_site(
     """This function saves a new site to the database."""
     outcome = core.sites.save_site(name, description)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -203,7 +203,7 @@ async def delete_site(
     """This function deletes the indicated site from the database."""
     outcome = core.sites.delete_site(sites_id)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -227,7 +227,7 @@ async def set_atmospheric_conditions(
     """This function sets the pressure and temperature, for use in atmospheric corrections when taking shots."""
     outcome = core.survey.set_atmospheric_conditions(temperature, pressure)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     else:
         outcome["result"] = "Atmospheric conditions updated."
     return outcome
@@ -252,7 +252,7 @@ async def start_new_grouping(
         geometry_id, subclasses_id, label, description
     )
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -284,7 +284,7 @@ async def start_new_surveying_session(
             label, surveyor, sites_id, occupied_point_id, instrument_height, azimuth
         )
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -293,7 +293,7 @@ def take_shot(response: Response):
     """This function tells the total station to start measuring a point."""
     outcome = core.survey.take_shot()
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -307,7 +307,7 @@ async def save_last_shot(
     # Note: the front end should not prompt the user for label or comment in cases where groupings.geometry_id = 1 (= isolate point).
     outcome = core.survey.save_last_shot(label, comment)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -333,7 +333,7 @@ async def get_stations(response: Response, sites_id: int):
     """This function gets all the stations in the database at the indicated site."""
     outcome = core.tripod.get_stations(sites_id)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -375,7 +375,7 @@ async def save_new_station(
         description,
     )
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
 
 
@@ -388,5 +388,5 @@ async def delete_station(
     """This function deletes the indicated station from the database."""
     outcome = core.tripod.delete_station(sites_id, stations_id)
     if "errors" in outcome:
-        response.status_code = 422
+        response.status_code = 400
     return outcome
