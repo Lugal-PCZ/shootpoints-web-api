@@ -226,7 +226,7 @@ def start_surveying_session_with_backsight(
                 prism.set_prism_offsets(**newoffsets)
                 outcome[
                     "result"
-                ] = f"Session {sessionid} started. Please confirm that the measured instrument height ({instrument_height}m) is accurate before proceeding."
+                ] = f"New session started. Please confirm that the measured instrument height ({instrument_height}m) is accurate before proceeding."
             else:
                 outcome["errors"].append(
                     "A problem occurred while saving the new session to the database."
@@ -275,7 +275,7 @@ def start_surveying_session_with_azimuth(
                         "z": occupied_z,
                     }
                     tripod.instrument_height = instrument_height
-                    outcome["result"] = f"Session {sessionid} started."
+                    outcome["result"] = f"New session started."
                 else:
                     outcome["errors"].append(
                         f"A problem occurred while saving the new session to the database."
@@ -304,7 +304,7 @@ def start_new_grouping(
         )
         if "errors" not in saved:
             groupingid = database.cursor.lastrowid
-            outcome["result"] = f"Grouping ID {groupingid} started."
+            outcome["result"] = f"New grouping started."
         else:
             groupingid = 0
             outcome["errors"].append(
