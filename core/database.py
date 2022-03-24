@@ -67,6 +67,18 @@ def delete_from_database(sql: str, params: tuple) -> dict:
     return {key: val for key, val in outcome.items() if val or key == "results"}
 
 
+def get_setup_errors() -> list:
+    """This function returns any setup errors logged on app load."""
+    outcome = read_from_database("SELECT * FROM setuperrors")
+    errors = []
+    try:
+        for each in outcome["results"]:
+            errors.append(each["error"])
+    except:
+        pass
+    return errors
+
+
 def _record_setup_error(error: str) -> None:
     sql = "INSERT INTO setuperrors (error) VALUES (?)"
     try:

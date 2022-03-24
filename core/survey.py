@@ -18,17 +18,6 @@ pressure = 760
 temperature = 15
 
 
-def _get_setup_errors() -> list:
-    outcome = database.read_from_database("SELECT * FROM setuperrors")
-    errors = []
-    try:
-        for each in outcome["results"]:
-            errors.append(each["error"])
-    except:
-        pass
-    return errors
-
-
 def _save_new_session(data: tuple) -> int:
     """This function saves the surveying session information to the database."""
     global sessionid
@@ -144,7 +133,7 @@ def start_surveying_session_with_backsight(
     prism_height: float,
 ) -> dict:
     """This function starts a new surveying session with a backsight to a known point."""
-    outcome = {"errors": _get_setup_errors(), "result": ""}
+    outcome = {"errors": database.get_setup_errors(), "result": ""}
     if not outcome["errors"]:
         if occupied_point_id == backsight_station_id:
             outcome["errors"].append(
@@ -243,7 +232,7 @@ def start_surveying_session_with_azimuth(
     azimuth: float,
 ) -> dict:
     """This function starts a new surveying session with an azimuth to a landmark."""
-    outcome = {"errors": _get_setup_errors(), "result": ""}
+    outcome = {"errors": database.get_setup_errors(), "result": ""}
     if not outcome["errors"]:
         occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
         if "errors" not in occupiedpoint:

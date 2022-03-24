@@ -34,12 +34,6 @@ async def set_configs(
     return outcome
 
 
-@app.get("/summary/")
-async def show_summary():
-    """This function gives summary data about the current state of ShootPoints."""
-    return core.summarize_current_state()
-
-
 #############################
 # CLASSIFICATIONS ENDPOINTS #
 #############################
@@ -109,6 +103,17 @@ async def delete_subclass(
     if "errors" in outcome:
         response.status_code = 400
     return outcome
+
+
+######################
+# DATABASE ENDPOINTS #
+######################
+
+
+@app.get("/setuperrors/")
+async def get_setup_errors():
+    """This function returns any ShootPoints setup errors."""
+    return core.database.get_setup_errors()
 
 
 ###################

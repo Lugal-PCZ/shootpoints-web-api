@@ -222,71 +222,70 @@ def save_config_file(
     return {key: val for key, val in outcome.items() if val}
 
 
-def summarize_current_state() -> dict:
-    """
-    This function returns the state of the global variables and
-    summary data from the ShootPoints database.
-    """
-    # TODO: add current configs to the summary
-    summary = {
-        "current_time": datetime.strftime(datetime.now(), "%-I:%M %p, %A %B %-d, %Y"),
-        "setup_errors": None,
-        "serial_port": None,
-        "total_station": None,
-        "atmospheric_conditions": survey.get_atmospheric_conditions(),
-        "prism_offsets": None,
-        "num_sessions_in_db": 0,
-        "current_session": None,
-        "num_points_in_current_session": None,
-        "current_grouping_id": None,
-        "num_points_in_current_grouping": None,
-    }
-    setuperrors = survey._get_setup_errors()
-    if setuperrors:
-        summary["setup_errors"] = setuperrors
-    if configs["SERIAL"]["port"] == "demo":
-        summary["total_station"] = "demo"
-    elif serialport:
-        summary["serial_port"] = configs["SERIAL"]["port"]
-        if totalstation:
-            summary[
-                "total_station"
-            ] = f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']}"
-    if prism.get_readable_prism_offsets()["offsets"]:
-        summary["prism_offsets"] = prism.get_readable_prism_offsets()["offsets"]
-    summary["num_sessions_in_db"] = database.read_from_database(
-        "SELECT count(*) FROM sessions"
-    )["results"][0]["count(*)"]
-    sql = (
-        "SELECT "
-        "  sess.id, "
-        "  sess.label, "
-        "  sess.started, "
-        "  sess.stations_id_occupied, "
-        "  sta.northing, "
-        "  sta.easting, "
-        "  sta.elevation, "
-        "  sess.instrumentheight "
-        "FROM sessions sess "
-        "JOIN stations sta ON sess.stations_id_occupied = sta.id "
-        "WHERE sess.id = ?"
-    )
-    try:
-        summary["current_session"] = database.read_from_database(
-            sql, (survey.sessionid,)
-        )["results"][0]
-        summary["num_points_in_current_session"] = database.read_from_database(
-            "SELECT count(*) FROM shots sh JOIN groupings grp ON sh.groupings_id = grp.id WHERE grp.sessions_id = ?",
-            (survey.sessionid,),
-        )["results"][0]["count(*)"]
-        summary["current_grouping_id"] = survey.groupingid
-        summary["num_points_in_current_grouping"] = database.read_from_database(
-            "SELECT count(*) FROM shots sh JOIN groupings grp ON sh.groupings_id = grp.id WHERE grp.id = ?",
-            (survey.groupingid,),
-        )["results"][0]["count(*)"]
-    except:
-        pass
-    return summary
+# def summarize_current_state() -> dict:
+#     """
+#     This function returns the state of the global variables and
+#     summary data from the ShootPoints database.
+#     """
+#     summary = {
+#         "current_time": datetime.strftime(datetime.now(), "%-I:%M %p, %A %B %-d, %Y"),
+#         "setup_errors": None,
+#         "serial_port": None,
+#         "total_station": None,
+#         "atmospheric_conditions": survey.get_atmospheric_conditions(),
+#         "prism_offsets": None,
+#         "num_sessions_in_db": 0,
+#         "current_session": None,
+#         "num_points_in_current_session": None,
+#         "current_grouping_id": None,
+#         "num_points_in_current_grouping": None,
+#     }
+#     setuperrors = database.get_setup_errors()
+#     if setuperrors:
+#         summary["setup_errors"] = setuperrors
+#     if configs["SERIAL"]["port"] == "demo":
+#         summary["total_station"] = "demo"
+#     elif serialport:
+#         summary["serial_port"] = configs["SERIAL"]["port"]
+#         if totalstation:
+#             summary[
+#                 "total_station"
+#             ] = f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']}"
+#     if prism.get_readable_prism_offsets()["offsets"]:
+#         summary["prism_offsets"] = prism.get_readable_prism_offsets()["offsets"]
+#     summary["num_sessions_in_db"] = database.read_from_database(
+#         "SELECT count(*) FROM sessions"
+#     )["results"][0]["count(*)"]
+#     sql = (
+#         "SELECT "
+#         "  sess.id, "
+#         "  sess.label, "
+#         "  sess.started, "
+#         "  sess.stations_id_occupied, "
+#         "  sta.northing, "
+#         "  sta.easting, "
+#         "  sta.elevation, "
+#         "  sess.instrumentheight "
+#         "FROM sessions sess "
+#         "JOIN stations sta ON sess.stations_id_occupied = sta.id "
+#         "WHERE sess.id = ?"
+#     )
+#     try:
+#         summary["current_session"] = database.read_from_database(
+#             sql, (survey.sessionid,)
+#         )["results"][0]
+#         summary["num_points_in_current_session"] = database.read_from_database(
+#             "SELECT count(*) FROM shots sh JOIN groupings grp ON sh.groupings_id = grp.id WHERE grp.sessions_id = ?",
+#             (survey.sessionid,),
+#         )["results"][0]["count(*)"]
+#         summary["current_grouping_id"] = survey.groupingid
+#         summary["num_points_in_current_grouping"] = database.read_from_database(
+#             "SELECT count(*) FROM shots sh JOIN groupings grp ON sh.groupings_id = grp.id WHERE grp.id = ?",
+#             (survey.groupingid,),
+#         )["results"][0]["count(*)"]
+#     except:
+#         pass
+#     return summary
 
 
 print(_load_application())
