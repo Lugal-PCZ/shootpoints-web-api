@@ -427,12 +427,13 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
                 "result"
             ] = "The last shot was saved to the shots table in the database."
             newstation = _save_new_station()
-            if "errors" in newstation:
-                outcome["errors"].append(newstation["errors"][0])
-            else:
-                outcome[
-                    "result"
-                ] = "The last shot was saved to the database and added to the stations table."
+            if newstation:
+                if "errors" in newstation:
+                    outcome["errors"].append(newstation["errors"][0])
+                else:
+                    outcome[
+                        "result"
+                    ] = "The last shot was saved to the database and added to the stations table."
             activeshotdata = {}
             activeshotlabel = label  # Note: this is so that when a group like topo points is being shot, each shot label can be pre-populated on the front-end.
             if (

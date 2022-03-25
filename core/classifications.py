@@ -24,8 +24,8 @@ def get_subclasses(classes_id: int) -> dict:
     if "errors" not in subclasses:
         outcome["subclasses"] = subclasses["results"]
     else:
-        outcome["errors"] = classes["errors"]
-    return {key: val for key, val in outcome.items() if val or key == "results"}
+        outcome["errors"] = subclasses["errors"]
+    return {key: val for key, val in outcome.items() if val or key == "subclasses"}
 
 
 def save_new_class(name: str, description: str = None) -> dict:
