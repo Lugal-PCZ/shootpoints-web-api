@@ -62,8 +62,8 @@ def take_measurement() -> dict:
     if _canceled:
         _canceled = False
     delay = 4
-    for i in range(delay - 1):
-        _sleep(i)
+    for i in range(delay):
+        _sleep(1)
         if _canceled:
             _canceled = False
             return {"notification": "Measurement canceled by user."}
