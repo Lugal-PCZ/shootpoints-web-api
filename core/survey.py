@@ -274,6 +274,49 @@ def start_surveying_session_with_azimuth(
     return {key: val for key, val in outcome.items() if val}
 
 
+def get_current_session() -> dict:
+    """This function returns information about the current active surveying session."""
+    outcome = {"errors": [], "result": ""}
+    if sessionid:
+        sql = (
+            "SELECT "
+            "  sess.label, "
+            "  sess.started, "
+            "  sites.name AS sites_name, "
+            "  sta.name AS stations_name, "
+            "  printf('%.2f', sess.instrumentheight) AS instrumentheight "
+            "FROM sessions sess "
+            "JOIN stations sta ON sess.stations_id_occupied = sta.id "
+            "JOIN sites on sta.sites_id = sites.id "
+            "WHERE sess.id = ?"
+        )
+        outcome = database.read_from_database(sql, (sessionid,))["results"][0]
+    return {key: val for key, val in outcome.items()}
+
+
+def get_current_grouping() -> dict:
+    """This function returns information about the current active point grouping."""
+    outcome = {"errors": [], "result": ""}
+    if sessionid:
+        sql = (
+            "SELECT "
+            "  grp.label, "
+            "  geo.name AS geometry_name, "
+            "  cl.name AS classes_name, "
+            "  scl.name AS subclasses_name, "
+            "  grp.description, "
+            "  count(shots.id) as num_shots "
+            "FROM groupings grp "
+            "JOIN geometry geo ON grp.geometry_id = geo.id "
+            "JOIN subclasses scl ON grp.subclasses_id = scl.id "
+            "JOIN classes cl ON scl.classes_id = cl.id "
+            "LEFT OUTER JOIN shots ON grp.id = shots.groupings_id "
+            "WHERE grp.id = ?"
+        )
+        outcome = database.read_from_database(sql, (groupingid,))["results"][0]
+    return {key: val for key, val in outcome.items()}
+
+
 def start_new_grouping(
     geometry_id: int, subclasses_id: int, label: str, description: str = None
 ) -> dict:

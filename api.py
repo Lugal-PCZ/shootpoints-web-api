@@ -244,6 +244,12 @@ async def get_geometries():
     return core.survey.get_geometries()
 
 
+@app.get("/grouping/")
+async def get_current_grouping():
+    """This function gets basic information about the currently active point grouping."""
+    return core.survey.get_current_grouping()
+
+
 @app.post("/grouping/", status_code=201)
 async def start_new_grouping(
     response: Response,
@@ -261,6 +267,12 @@ async def start_new_grouping(
     return outcome
 
 
+@app.get("/session/")
+async def get_current_session():
+    """This function gets basic information about the currently active surveying session."""
+    return core.survey.get_current_session()
+
+
 @app.post("/session/", status_code=201)
 async def start_new_surveying_session(
     response: Response,
@@ -270,8 +282,8 @@ async def start_new_surveying_session(
     occupied_point_id: int = Form(...),
     sessiontype: str = Form(...),
     backsight_station_id: int = Form(0),
-    prism_height: float = Form(0.0),
-    instrument_height: float = Form(0.0),
+    prism_height: float = Form(0.00),
+    instrument_height: float = Form(0.00),
     azimuth: float = Form(0.0000),  # ddd.mmss format
 ):
     """This function saves a new surveying session to the database."""
