@@ -317,8 +317,8 @@ def take_shot(response: Response):
 @app.post("/shot/", status_code=201)
 async def save_last_shot(
     response: Response,
-    label: str = None,
-    comment: str = None,
+    label: str = Form(None),
+    comment: str = Form(None),
 ):
     """This function saves the last shot to the database."""
     # Note: the front end should not prompt the user for label or comment in cases where groupings.geometry_id = 1 (= isolate point).
