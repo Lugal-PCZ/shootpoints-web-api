@@ -26,8 +26,8 @@ def _save_new_session(data: tuple) -> int:
     global activeshotlabel
     sql = (
         "INSERT INTO sessions "
-        "(label, started, surveyor, sites_id, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight) "
-        "VALUES(?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)"
+        "(label, started, surveyor, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight) "
+        "VALUES(?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)"
     )
     saved = database.save_to_database(sql, data)
     if "errors" not in saved:
@@ -197,7 +197,6 @@ def start_surveying_session_with_backsight(
             data = (
                 label,
                 surveyor,
-                sites_id,
                 occupied_point_id,
                 backsight_station_id,
                 f"{degrees}° {minutes}' {seconds}\"",
@@ -251,7 +250,6 @@ def start_surveying_session_with_azimuth(
                 data = (
                     label,
                     surveyor,
-                    sites_id,
                     occupied_point_id,
                     None,  # There is no backsight station in this setup, but _save_new_session() expects a value.
                     f"{degrees}° {minutes}' {seconds}\"",

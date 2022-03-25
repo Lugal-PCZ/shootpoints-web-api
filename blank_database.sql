@@ -48,12 +48,10 @@ CREATE TABLE `sessions` (
 ,  `label` varchar(30) NOT NULL
 ,  `started` timestamp NULL DEFAULT current_timestamp
 ,  `surveyor` varchar(100) NOT NULL
-,  `sites_id` integer NOT NULL
 ,  `stations_id_occupied` integer NOT NULL
 ,  `stations_id_backsight` integer  DEFAULT NULL
 ,  `azimuth` varchar(12) NOT NULL DEFAULT '0°0''0"'
 ,  `instrumentheight` float NOT NULL
-,  CONSTRAINT `sessions_ibfk_1` FOREIGN KEY (`sites_id`) REFERENCES `sites` (`id`)
 ,  CONSTRAINT `sessions_ibfk_2` FOREIGN KEY (`stations_id_occupied`) REFERENCES `stations` (`id`)
 ,  CONSTRAINT `sessions_ibfk_3` FOREIGN KEY (`stations_id_backsight`) REFERENCES `stations` (`id`)
 );
