@@ -89,13 +89,13 @@ CREATE TABLE `stations` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `sites_id` integer NOT NULL
 ,  `name` varchar(30) COLLATE NOCASE NOT NULL
+,  `description` varchar(200) DEFAULT NULL
 ,  `northing` float NOT NULL
 ,  `easting` float NOT NULL
 ,  `elevation` float NOT NULL
 ,  `utmzone` varchar(3) DEFAULT ''
 ,  `latitude` float DEFAULT NULL
 ,  `longitude` float DEFAULT NULL
-,  `description` varchar(200) DEFAULT NULL
 ,  UNIQUE (`name`,`sites_id`)
 ,  UNIQUE (`northing`,`easting`,`sites_id`)
 ,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`sites_id`) REFERENCES `sites` (`id`)

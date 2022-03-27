@@ -13,7 +13,6 @@ totalstation = None
 sessionid = 0
 groupingid = 0
 activeshotdata = {}
-activeshotlabel = ""
 pressure = 760
 temperature = 15
 
@@ -23,7 +22,6 @@ def _save_new_session(data: tuple) -> int:
     global sessionid
     global groupingid
     global activeshotdata
-    global activeshotlabel
     sql = (
         "INSERT INTO sessions "
         "(label, started, surveyor, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight) "
@@ -36,7 +34,6 @@ def _save_new_session(data: tuple) -> int:
         sessionid = 0
     groupingid = 0
     activeshotdata = {}
-    activeshotlabel = ""
     return sessionid
 
 
@@ -157,6 +154,8 @@ def start_surveying_session_with_backsight(
             outcome["errors"].append(
                 f"An invalid prism height ({prism_height}m) was entered."
             )
+        else:
+            prism.set_prism_offsets(-prism_height, 0, 0, 0, 0, 0)
         if not outcome["errors"]:
             azimuth = calculations._calculate_azimuth(
                 (occupied_n, occupied_e), (backsight_n, backsight_e)
@@ -377,13 +376,12 @@ def take_shot() -> dict:
 def save_last_shot(label: str = None, comment: str = None) -> dict:
     """This function saves the data from the last shot to the database.
 
-    Note: isolated points (geometry_id = 1) should only have the label and description
-    applied to the grouping, and not for the shot.
+    Note: isolated points (geometry_id = 1) will take the label of their grouping,
+    but can also have a comment saved for the shot. This will be enforced on the front end.
     """
     outcome = {"errors": [], "result": ""}
     global groupingid
     global activeshotdata
-    global activeshotlabel
     if not activeshotdata:
         outcome["errors"].append(
             "Shot not saved because there is no unsaved shot data."
@@ -391,14 +389,6 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
     else:
         label = label.strip() if label else None
         comment = comment.strip() if comment else None
-        if (
-            database.read_from_database(
-                "SELECT geometry_id FROM groupings WHERE id = ?", (groupingid,)
-            )["results"][0]["geometry_id"]
-            == 1
-        ):
-            label = None  # Set label to None, if this is an isolated point.
-            comment = None  # Set comment to None, if this is an isolated point.
         data = (
             activeshotdata["delta_n"],
             activeshotdata["delta_e"],
@@ -423,9 +413,7 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
         )
         saved = database.save_to_database(sql, data)
         if "errors" not in saved:
-            outcome[
-                "result"
-            ] = "The last shot was saved to the shots table in the database."
+            outcome["result"] = "The last shot was saved to the database."
             newstation = _save_new_station()
             if newstation:
                 if "errors" in newstation:
@@ -435,7 +423,6 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
                         "result"
                     ] = "The last shot was saved to the database and added to the stations table."
             activeshotdata = {}
-            activeshotlabel = label  # Note: this is so that when a group like topo points is being shot, each shot label can be pre-populated on the front-end.
             if (
                 database.read_from_database(
                     "SELECT geometry_id FROM groupings WHERE id = ?", (groupingid,)
