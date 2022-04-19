@@ -396,6 +396,8 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
             activeshotdata["calculated_n"],
             activeshotdata["calculated_e"],
             activeshotdata["calculated_z"],
+            pressure,
+            temperature,
             prism.offsets["vertical_distance"],
             prism.offsets["latitude_distance"],
             prism.offsets["longitude_distance"],
@@ -408,8 +410,8 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
         )
         sql = (
             "INSERT INTO shots "
-            "(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, label, comment) "
-            "VALUES(CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, pressure, temperature, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, label, comment) "
+            "VALUES(CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
         saved = database.save_to_database(sql, data)
         if "errors" not in saved:

@@ -245,9 +245,9 @@ def save_new_station(
         )
         if not outcome["errors"]:
             sql = (
-                f"INSERT INTO stations "
-                f"(sites_id, name, northing, easting, elevation, utmzone, latitude, longitude, description) "
-                f"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                "INSERT INTO stations "
+                "(sites_id, name, northing, easting, elevation, utmzone, latitude, longitude, description) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
             )
             newstation = (
                 sites_id,

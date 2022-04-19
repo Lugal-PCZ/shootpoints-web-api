@@ -13,7 +13,7 @@ INSERT INTO classes VALUES(4,'Feature','Natural formations or immovable, non-arc
 CREATE TABLE `geometry` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) COLLATE NOCASE NOT NULL
-,  `sequential` integer NOT NULL DEFAULT '0'
+,  `sequential` integer NOT NULL DEFAULT 0
 ,  `description` varchar(200) NOT NULL
 ,  UNIQUE (`name`)
 );
@@ -33,12 +33,12 @@ CREATE TABLE `groupings` (
 ,  CONSTRAINT `groupings_ibfk_3` FOREIGN KEY (`subclasses_id`) REFERENCES `subclasses` (`id`)
 );
 CREATE TABLE `savedstate` (
-  `vertical_distance` float NOT NULL DEFAULT '0'
-,  `latitude_distance` float NOT NULL DEFAULT '0'
-,  `longitude_distance` float NOT NULL DEFAULT '0'
-,  `radial_distance` float NOT NULL DEFAULT '0'
-,  `tangent_distance` float NOT NULL DEFAULT '0'
-,  `wedge_distance` float NOT NULL DEFAULT '0'
+  `vertical_distance` float NOT NULL DEFAULT 0
+,  `latitude_distance` float NOT NULL DEFAULT 0
+,  `longitude_distance` float NOT NULL DEFAULT 0
+,  `radial_distance` float NOT NULL DEFAULT 0
+,  `tangent_distance` float NOT NULL DEFAULT 0
+,  `wedge_distance` float NOT NULL DEFAULT 0
 ,  `pressure` integer NOT NULL DEFAULT 760
 ,  `temperature` integer NOT NULL DEFAULT 15
 );
@@ -65,18 +65,20 @@ CREATE TABLE `shots` (
 ,  `label` varchar(30) DEFAULT NULL
 ,  `comment` text DEFAULT NULL
 ,  `timestamp` timestamp NOT NULL DEFAULT current_timestamp
+,  `pressure` integer NOT NULL DEFAULT 760
+,  `temperature` integer NOT NULL DEFAULT 15
 ,  `delta_n` float NOT NULL
 ,  `delta_e` float NOT NULL
 ,  `delta_z` float NOT NULL
+,  `prismoffset_vertical` float NOT NULL DEFAULT 0
+,  `prismoffset_latitude` float NOT NULL DEFAULT 0
+,  `prismoffset_longitude` float NOT NULL DEFAULT 0
+,  `prismoffset_radial` float NOT NULL DEFAULT 0
+,  `prismoffset_tangent` float NOT NULL DEFAULT 0
+,  `prismoffset_wedge` float NOT NULL DEFAULT 0
 ,  `northing` float NOT NULL
 ,  `easting` float NOT NULL
 ,  `elevation` float NOT NULL
-,  `prismoffset_vertical` float NOT NULL DEFAULT '0'
-,  `prismoffset_latitude` float NOT NULL DEFAULT '0'
-,  `prismoffset_longitude` float NOT NULL DEFAULT '0'
-,  `prismoffset_radial` float NOT NULL DEFAULT '0'
-,  `prismoffset_tangent` float NOT NULL DEFAULT '0'
-,  `prismoffset_wedge` float NOT NULL DEFAULT '0'
 ,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`groupings_id`) REFERENCES `groupings` (`id`)
 );
 CREATE TABLE `sites` (

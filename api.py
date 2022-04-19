@@ -1,6 +1,7 @@
 """This module contains the API for ShootPoints."""
 from fastapi import FastAPI, Form, Response
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 
 import core
@@ -13,6 +14,13 @@ app.mount(
     StaticFiles(directory="../shootpoints-web-frontend", html="index.html"),
     name="webapp",
 )
+
+
+@app.get("/", status_code=301)
+async def redirect(response: Response):
+    """This function redirects requests to the ShootPoints web interface."""
+    response.headers["Location"] = "/webapp"
+    return
 
 
 ##################
@@ -108,6 +116,27 @@ async def delete_subclass(
 ######################
 # DATABASE ENDPOINTS #
 ######################
+
+
+@app.get("/database/")
+async def download_entire_database():
+    """This function downloads the ShootPoints database SQLite file in its entirety."""
+    return FileResponse(
+        "ShootPoints.db",
+        media_type="application/x-sqlite3",
+        headers={"Content-Disposition": "attachment; filename=ShootPoints.db"},
+    )
+
+
+@app.get("/export/{sessions_id}")
+async def export_session_data(response: Response, sessions_id: int):
+    """This function downloads a ZIP file of the requested session and its shots."""
+    core.database.export_session_data(sessions_id)
+    return FileResponse(
+        "exports/export.zip",
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=ShootPoints_Export.zip"},
+    )
 
 
 @app.get("/setuperrors/")
