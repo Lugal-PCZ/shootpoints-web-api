@@ -271,6 +271,22 @@ def start_surveying_session_with_azimuth(
     return {key: val for key, val in outcome.items() if val}
 
 
+def get_all_sessions() -> dict:
+    """This function returns basic identifying information about all the sessions in the database."""
+    outcome = {"errors": [], "result": ""}
+    sql = (
+        "SELECT "
+        "  sess.id, "
+        "  sites.name || ', ' || sess.started AS description, "
+        "  sess.label as name "
+        "FROM sessions sess "
+        "JOIN stations sta ON sess.stations_id_occupied = sta.id "
+        "JOIN sites on sta.sites_id = sites.id"
+    )
+    outcome["sessions"] = database.read_from_database(sql)["results"]
+    return {key: val for key, val in outcome.items() if val or key == "sessions"}
+
+
 def get_current_session() -> dict:
     """This function returns information about the current active surveying session."""
     outcome = {"errors": [], "result": ""}
