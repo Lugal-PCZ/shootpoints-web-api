@@ -5,4 +5,3 @@ venv
 configs.ini
 *.db-journal
 ShootPoints.db
-exports/**
