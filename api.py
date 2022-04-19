@@ -302,6 +302,12 @@ async def get_current_session():
     return core.survey.get_current_session()
 
 
+@app.get("/sessions/")
+async def get_all_sessions():
+    """This function gets basic identifying information about all the surveying sessions in the database."""
+    return core.survey.get_all_sessions()
+
+
 @app.post("/session/", status_code=201)
 async def start_new_surveying_session(
     response: Response,
