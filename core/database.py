@@ -169,33 +169,43 @@ def export_session_data(sessions_id: int) -> str:
     multipointgroups = []
     linestringgroups = []
     thisgroupinfo = {}
-    thisgroupgeometry = ''
+    thisgroupgeometry = ""
     shotsinthisgroup = []
-    def assemble_group():
+
+    def _assemble_group():
         if len(shotsinthisgroup) > 1:
             # Wipe out the shot label and comment, which are taken from the first shot and wouldn't make sense for the entire group.
             thisgroupinfo["label"] = None
             thisgroupinfo["comment"] = None
-            match thisgroupgeometry:
-                case "Point Cloud":
-                    multipointgroups.append(
-                        dict({"wkt": f"MULTIPOINT Z({', '.join(shotsinthisgroup)})"}, **thisgroupinfo)
+            if thisgroupgeometry == "Point Cloud":
+                multipointgroups.append(
+                    dict(
+                        {"wkt": f"MULTIPOINT Z({', '.join(shotsinthisgroup)})"},
+                        **thisgroupinfo,
                     )
-                case "Open Polygon":
-                    linestringgroups.append(
-                        dict({"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"}, **thisgroupinfo)
+                )
+            elif thisgroupgeometry == "Open Polygon":
+                linestringgroups.append(
+                    dict(
+                        {"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"},
+                        **thisgroupinfo,
                     )
-                case "Closed Polygon":
-                    shotsinthisgroup.append(shotsinthisgroup[0])
-                    linestringgroups.append(
-                        dict({"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"}, **thisgroupinfo)
+                )
+            elif thisgroupgeometry == "Closed Polygon":
+                shotsinthisgroup.append(shotsinthisgroup[0])
+                linestringgroups.append(
+                    dict(
+                        {"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"},
+                        **thisgroupinfo,
                     )
+                )
+
     for eachshot in shotsdata:
         if (
             not "group_id" in thisgroupinfo
             or eachshot["group_id"] != thisgroupinfo["group_id"]
         ):
-            assemble_group()
+            _assemble_group()
             thisgroupgeometry = eachshot["geometry"]
             thisgroupinfo = {
                 "group_id": eachshot["group_id"],
@@ -211,19 +221,21 @@ def export_session_data(sessions_id: int) -> str:
         shotsinthisgroup.append(
             f"{eachshot['easting']} {eachshot['northing']} {eachshot['elevation']}"
         )
-        allshots.append({
-            "group_id": eachshot["group_id"],
-            "group_label": eachshot["group_label"],
-            "group_description": eachshot["group_description"],
-            "class": eachshot["class"],
-            "subclass": eachshot["subclass"],
-            "label": eachshot["label"],
-            "comment": eachshot["comment"],
-            "timestamp": eachshot["timestamp"],
-            "wkt": f"POINT Z({eachshot['easting']} {eachshot['northing']} {eachshot['elevation']})",
-        })
+        allshots.append(
+            {
+                "group_id": eachshot["group_id"],
+                "group_label": eachshot["group_label"],
+                "group_description": eachshot["group_description"],
+                "class": eachshot["class"],
+                "subclass": eachshot["subclass"],
+                "label": eachshot["label"],
+                "comment": eachshot["comment"],
+                "timestamp": eachshot["timestamp"],
+                "wkt": f"POINT Z({eachshot['easting']} {eachshot['northing']} {eachshot['elevation']})",
+            }
+        )
     assemble_group()  # This terminates a multi-point group that's at the end of the file
-    qgisfieldnames=[
+    qgisfieldnames = [
         "group_id",
         "group_label",
         "group_description",
@@ -261,10 +273,19 @@ def export_session_data(sessions_id: int) -> str:
     with ZipFile(f"exports/export.zip", "w") as f:
         f.write("exports/session_info.json", arcname=f"{archivename}/session_info.json")
         f.write("exports/shots_data.csv", arcname=f"{archivename}/shots_data.csv")
-        f.write("exports/for_qgis_allshots.csv", arcname=f"{archivename}/for_qgis/allshots.csv")
+        f.write(
+            "exports/for_qgis_allshots.csv",
+            arcname=f"{archivename}/for_qgis/allshots.csv",
+        )
         try:
-            f.write("exports/for_qgis_linestringgroups.csv", arcname=f"{archivename}/for_qgis/linestringgroups.csv")
-            f.write("exports/for_qgis_multipointgroups.csv", arcname=f"{archivename}/for_qgis/multipointgroups.csv")
+            f.write(
+                "exports/for_qgis_linestringgroups.csv",
+                arcname=f"{archivename}/for_qgis/linestringgroups.csv",
+            )
+            f.write(
+                "exports/for_qgis_multipointgroups.csv",
+                arcname=f"{archivename}/for_qgis/multipointgroups.csv",
+            )
         except FileNotFoundError:
             pass
     cleanup = glob.glob("exports/*.json")
