@@ -37,7 +37,7 @@ async def check_for_raspbian():
         with open("/etc/os-release", "r") as f:
             content = f.read().split("\n")
             if "ID=raspbian" in content:
-                rasbian = True
+                raspbian = True
     except FileNotFoundError:
         pass
     return raspbian
