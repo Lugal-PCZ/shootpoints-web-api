@@ -2,6 +2,7 @@
 from fastapi import FastAPI, Form, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+import os
 
 
 import core
@@ -21,6 +22,40 @@ async def redirect(response: Response):
     """This function redirects requests to the ShootPoints web interface."""
     response.headers["Location"] = "/webapp"
     return
+
+
+##########################
+# RASPBERRY PI ENDPOINTS #
+##########################
+
+
+@app.get("/raspbian/")
+async def check_for_raspbian():
+    """This function checks that the operating system is Raspbian."""
+    raspbian = False
+    try:
+        with open("/etc/os-release", "r") as f:
+            content = f.read().split("\n")
+            if "ID=raspbian" in content:
+                rasbian = True
+    except FileNotFoundError:
+        pass
+    return raspbian
+
+
+@app.get("/raspbian/shutdown/")
+async def shut_down_rpi():
+    """This function shuts down the Raspberrry Pi."""
+    os.system("sudo shutdown -h now")
+
+
+@app.put("/raspbian/clock/")
+async def set_rpi_clock(
+    datetimestring: str = Form(...),
+):
+    """This function sets the date and time on the Raspberrry Pi."""
+    os.system(f"sudo date -s '{datetimestring}'")
+    return {"result": "Clock updated."}
 
 
 ##################
