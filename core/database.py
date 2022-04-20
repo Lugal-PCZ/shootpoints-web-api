@@ -4,7 +4,7 @@ import sqlite3
 import json
 import csv
 import os, glob
-from zipfile import ZipFile
+from zipfile import ZipFile, ZIP_DEFLATED
 
 
 dbconn = sqlite3.connect("ShootPoints.db", check_same_thread=False)
@@ -71,7 +71,7 @@ def delete_from_database(sql: str, params: tuple) -> dict:
     return {key: val for key, val in outcome.items() if val or key == "results"}
 
 
-def export_session_data(sessions_id: int) -> str:
+def export_session_data(sessions_id: int) -> None:
     """This function creates a ZIP file of a session and its shots, for download by the browser."""
     # First, get information about the session, and save it to a JSON file.
     sql = (
@@ -234,7 +234,7 @@ def export_session_data(sessions_id: int) -> str:
                 "wkt": f"POINT Z({eachshot['easting']} {eachshot['northing']} {eachshot['elevation']})",
             }
         )
-    assemble_group()  # This terminates a multi-point group that's at the end of the file
+    _assemble_group()  # This terminates a multi-point group that's at the end of the file
     qgisfieldnames = [
         "group_id",
         "group_label",
@@ -270,7 +270,7 @@ def export_session_data(sessions_id: int) -> str:
             qgisfile.writeheader()
             qgisfile.writerows(linestringgroups)
     archivename = f"ShootPoints_Export_{sessiondata['session_started'][:10]}_Session-{sessiondata['session_id']}"
-    with ZipFile(f"exports/export.zip", "w") as f:
+    with ZipFile(f"exports/export.zip", "w", compression=ZIP_DEFLATED) as f:
         f.write("exports/session_info.json", arcname=f"{archivename}/session_info.json")
         f.write("exports/shots_data.csv", arcname=f"{archivename}/shots_data.csv")
         f.write(
@@ -304,6 +304,12 @@ def get_setup_errors() -> list:
     except:
         pass
     return errors
+
+
+def zip_database_file() -> None:
+    """This function creates a ZIP file of the ShootPoints database file, for download by the browser."""
+    with ZipFile(f"exports/database.zip", "w", compression=ZIP_DEFLATED) as f:
+        f.write("ShootPoints.db")  # , arcname=f"{archivename}/session_info.json")
 
 
 def _record_setup_error(error: str) -> None:

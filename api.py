@@ -121,10 +121,13 @@ async def delete_subclass(
 @app.get("/database/")
 async def download_entire_database():
     """This function downloads the ShootPoints database SQLite file in its entirety."""
+    core.database.zip_database_file()
     return FileResponse(
-        "ShootPoints.db",
-        media_type="application/x-sqlite3",
-        headers={"Content-Disposition": "attachment; filename=ShootPoints.db"},
+        "exports/database.zip",
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": "attachment; filename=ShootPoints_Database.zip"
+        },
     )
 
 
