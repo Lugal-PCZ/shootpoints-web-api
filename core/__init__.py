@@ -4,7 +4,7 @@ import configparser
 import shutil
 import glob
 import importlib
-from datetime import datetime
+import datetime
 import serial
 
 
@@ -28,9 +28,9 @@ def _check_system_date() -> None:
     as can easily happen with a Raspberry Pi without a clock module
     and no internet connection.
     """
-    if datetime.now() < datetime(2020, 6, 17):
+    if datetime.datetime.now() < datetime.datetime(2020, 6, 17):
         exit(
-            f'FATAL ERROR: Your system date ({datetime.strftime(datetime.now(), "%B %-d, %Y")}) is not set correctly. Fix this in your OS before proceeding.'
+            f'FATAL ERROR: Your system date ({datetime.datetime.strftime(datetime.datetime.now(), "%B %-d, %Y")}) is not set correctly. Fix this in your OS before proceeding.'
         )
 
 
@@ -159,31 +159,37 @@ def _load_application() -> dict:
             }
             survey.pressure = saved_state["pressure"]
             survey.temperature = saved_state["temperature"]
-            survey.sessionid = database.read_from_database(
-                "SELECT id FROM sessions ORDER BY started DESC LIMIT 1"
-            )["results"][0]["id"]
-            sql = (
-                "SELECT "
-                "  sta.northing AS n, "
-                "  sta.easting AS e, "
-                "  sta.elevation AS z, "
-                "  sess.instrumentheight AS ih, "
-                "  max(grp.id) AS gid "
-                "FROM sessions sess "
-                "JOIN stations sta ON sess.stations_id_occupied = sta.id "
-                "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
-                "WHERE sess.id = ?"
-            )
-            session_info = database.read_from_database(sql, (survey.sessionid,))[
-                "results"
-            ][0]
-            tripod.occupied_point = {
-                "n": session_info["n"],
-                "e": session_info["e"],
-                "z": session_info["z"],
-            }
-            tripod.instrument_height = session_info["ih"]
-            survey.groupingid = session_info["gid"]
+            lastsession = database.read_from_database(
+                "SELECT id, started FROM sessions ORDER BY started DESC LIMIT 1"
+            )["results"][0]
+            if (
+                datetime.datetime.strptime(lastsession["started"], "%Y-%m-%d %H:%M:%S")
+                + datetime.timedelta(hours=12)
+                > datetime.datetime.now()
+            ):
+                survey.sessionid = lastsession["id"]
+                sql = (
+                    "SELECT "
+                    "  sta.northing AS n, "
+                    "  sta.easting AS e, "
+                    "  sta.elevation AS z, "
+                    "  sess.instrumentheight AS ih, "
+                    "  max(grp.id) AS gid "
+                    "FROM sessions sess "
+                    "JOIN stations sta ON sess.stations_id_occupied = sta.id "
+                    "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
+                    "WHERE sess.id = ?"
+                )
+                session_info = database.read_from_database(sql, (survey.sessionid,))[
+                    "results"
+                ][0]
+                tripod.occupied_point = {
+                    "n": session_info["n"],
+                    "e": session_info["e"],
+                    "z": session_info["z"],
+                }
+                tripod.instrument_height = session_info["ih"]
+                survey.groupingid = session_info["gid"]
         except:
             pass
     loaders = [_load_configs_from_file, _load_total_station_model, _load_serial_port]
