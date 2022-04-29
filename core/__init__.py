@@ -204,6 +204,50 @@ def _load_application() -> dict:
     return {key: val for key, val in outcome.items() if val}
 
 
+def get_configs() -> dict:
+    """
+    This function gets the current settings of the configs.ini file, so that the
+    application front-end can display them. It also finds the available ports
+    and total station models for the config file, so that the application
+    front-end can provide sensible choices to the end user.
+    """
+    currentconfigs = {}
+    for eachsection in configs.sections():
+        for eachoption in configs.items(eachsection):
+            currentconfigs[eachoption[0]] = eachoption[1]
+    ports = ["demo", "auto"]
+    ports.extend(glob.glob("/dev/ttyUSB*"))
+    ports.extend(glob.glob("/dev/ttyAMA*"))
+    ports.extend(glob.glob("/dev/cu.usbserial*"))
+    if len(ports) == 2:  # No serial ports were found, so "auto" makes no sense.
+        ports = ["demo"]
+    makes = list(
+        set(glob.glob("core/total_stations/*"))
+        - set(glob.glob("core/total_stations/_*"))
+        - set(["core/total_stations/demo.py"])
+    )
+    makes.sort()
+    models = {}
+    for eachmake in makes:
+        themodels = list(
+            set(glob.glob(f"{eachmake}/*.py")) - set(glob.glob(f"{eachmake}/_*"))
+        )
+        themodels.sort()
+        models[eachmake.split("/")[2].replace("_", " ").title()] = [
+            x.split("/")[3]
+            .replace(".py", "")
+            .replace("_", " ")
+            .title()
+            .replace("Gts ", "GTS-")
+            for x in themodels
+        ]
+    options = {
+        "ports": ports,
+        "total_stations": {key: val for key, val in models.items() if len(val) > 0},
+    }
+    return {"current": currentconfigs, "options": options}
+
+
 def save_config_file(
     port: str = "", make: str = "", model: str = "", limit: int = 0
 ) -> dict:

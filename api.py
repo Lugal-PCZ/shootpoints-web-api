@@ -63,7 +63,13 @@ async def set_rpi_clock(
 ##################
 
 
-@app.put("/config/", status_code=201)
+@app.get("/configs/")
+async def get_configs():
+    """This function gets the current configs in the configs.ini file and the available ports and total station models."""
+    return core.get_configs()
+
+
+@app.put("/configs/", status_code=201)
 async def set_configs(
     response: Response,
     port: str = Form(None),
@@ -71,6 +77,7 @@ async def set_configs(
     model: str = Form(None),
     limit: int = Form(0),
 ):
+    """This function sets the application configs in the configs.ini file."""
     outcome = core.save_config_file(port, make, model, limit)
     if "errors" in outcome:
         response.status_code = 400
