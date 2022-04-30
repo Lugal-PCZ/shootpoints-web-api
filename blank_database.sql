@@ -52,6 +52,8 @@ CREATE TABLE `sessions` (
 ,  `stations_id_backsight` integer  DEFAULT NULL
 ,  `azimuth` varchar(12) NOT NULL DEFAULT '0°0''0"'
 ,  `instrumentheight` float NOT NULL
+,  `pressure` integer NOT NULL DEFAULT 760
+,  `temperature` integer NOT NULL DEFAULT 15
 ,  CONSTRAINT `sessions_ibfk_2` FOREIGN KEY (`stations_id_occupied`) REFERENCES `stations` (`id`)
 ,  CONSTRAINT `sessions_ibfk_3` FOREIGN KEY (`stations_id_backsight`) REFERENCES `stations` (`id`)
 );
@@ -110,11 +112,12 @@ CREATE TABLE `subclasses` (
 ,  UNIQUE (`classes_id`,`name`)
 ,  CONSTRAINT `subclasses_ibfk_1` FOREIGN KEY (`classes_id`) REFERENCES `classes` (`id`)
 );
-INSERT INTO subclasses VALUES(1,1,'Survey Station','Discrete surveying control points.');
+INSERT INTO subclasses VALUES(1,1,'Survey Station','Benchmarks for survey station setup or backsights.');
 INSERT INTO subclasses VALUES(2,1,'Trench','Excavation units.');
-INSERT INTO subclasses VALUES(3,2,'Wall','Vertical, human-made, constructions that enclose, divide, or delimit space.');
-INSERT INTO subclasses VALUES(4,2,'Floor','Prepared surfaces upon which human activities took place.');
-INSERT INTO subclasses VALUES(5,4,'Topography','Ground surface.');
+INSERT INTO subclasses VALUES(3,1,'GCP','Photogrammetry ground control points.');
+INSERT INTO subclasses VALUES(4,2,'Wall','Vertical, human-made, constructions that enclose, divide, or delimit space.');
+INSERT INTO subclasses VALUES(5,2,'Floor','Prepared surfaces upon which human activities took place.');
+INSERT INTO subclasses VALUES(6,4,'Topography','Ground surface.');
 DELETE FROM sqlite_sequence;
 INSERT INTO sqlite_sequence VALUES('classes',4);
 INSERT INTO sqlite_sequence VALUES('geometry',4);
