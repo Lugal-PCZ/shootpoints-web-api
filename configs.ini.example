@@ -4,7 +4,7 @@ port = demo
 
 [TOTAL STATION]
 make = Topcon
-model = GTS-303
+model = GTS-300 Series
 
 [BACKSIGHT ERROR]
 ; Acceptable error range for backsight shots (expected horizontal distance vs. measured distance), in cm.
