@@ -85,6 +85,8 @@ def export_session_data(sessions_id: int) -> None:
         "  site.description AS session_site_description, "
         "  sess.azimuth AS session_azimuth, "
         "  sess.instrumentheight AS session_instrumentheight, "
+        "  sess.pressure AS session_pressure, "
+        "  sess.temperature AS session_temperature, "
         "  sta1.id AS occupied_station_id, "
         "  sta1.name AS occupied_station_name, "
         "  sta1.description AS occupied_station_description, "
@@ -164,7 +166,7 @@ def export_session_data(sessions_id: int) -> None:
         shotsfile = csv.DictWriter(f, fieldnames=shotsdata[0].keys())
         shotsfile.writeheader()
         shotsfile.writerows(shotsdata)
-    # Finally, parse the shots data and re-format it as a CSV file that QGIS can import directly.
+    # Parse the shots data and re-format it as a CSV file that QGIS can import directly.
     allshots = []
     multipointgroups = []
     linestringgroups = []
@@ -269,27 +271,40 @@ def export_session_data(sessions_id: int) -> None:
             )
             qgisfile.writeheader()
             qgisfile.writerows(linestringgroups)
+    # Export a file of photogrammetry GCPs.
+    groundcontrolpoints = []
+    for eachshot in shotsdata:
+        if eachshot["subclass"] == "GCP":
+            groundcontrolpoints.append(
+                f"{eachshot['group_label'].replace(' ', '_')}\t{eachshot['easting']}\t{eachshot['northing']}\t{eachshot['elevation']}"
+            )
+    if len(groundcontrolpoints) > 0:
+        with open("exports/photogrammetry_gcps.txt", "w") as f:
+            f.write(f"WGS84 UTM {sessiondata['occupied_station_utmzone']}\n")
+            for eachgcp in groundcontrolpoints:
+                f.write(f"{eachgcp}\n")
+    # Finally, bundle up all the export files into a ZIP archive for download.
+    filesinarchive = [
+        "session_info.json",
+        "shots_data.csv",
+        "for_qgis/allshots.csv",
+        "for_qgis/linestringgroups.csv",
+        "for_qgis/multipointgroups.csv",
+        "photogrammetry_gcps.txt",
+    ]
     archivename = f"ShootPoints_Export_{sessiondata['session_started'][:10]}_Session-{sessiondata['session_id']}"
     with ZipFile(f"exports/export.zip", "w", compression=ZIP_DEFLATED) as f:
-        f.write("exports/session_info.json", arcname=f"{archivename}/session_info.json")
-        f.write("exports/shots_data.csv", arcname=f"{archivename}/shots_data.csv")
-        f.write(
-            "exports/for_qgis_allshots.csv",
-            arcname=f"{archivename}/for_qgis/allshots.csv",
-        )
-        try:
-            f.write(
-                "exports/for_qgis_linestringgroups.csv",
-                arcname=f"{archivename}/for_qgis/linestringgroups.csv",
-            )
-            f.write(
-                "exports/for_qgis_multipointgroups.csv",
-                arcname=f"{archivename}/for_qgis/multipointgroups.csv",
-            )
-        except FileNotFoundError:
-            pass
+        for eachfile in filesinarchive:
+            try:
+                f.write(
+                    f"exports/{eachfile.replace('/', '_')}",
+                    arcname=f"{archivename}/{eachfile}",
+                )
+            except FileNotFoundError:
+                pass
     cleanup = glob.glob("exports/*.json")
     cleanup.extend(glob.glob("exports/*.csv"))
+    cleanup.extend(glob.glob("exports/*.txt"))
     for eachfile in cleanup:
         os.remove(eachfile)
 
