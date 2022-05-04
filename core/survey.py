@@ -1,5 +1,7 @@
 """This module contains functions for handling the surveying session and associated data."""
 
+import datetime
+
 from . import database
 from . import calculations
 from . import tripod
@@ -25,7 +27,7 @@ def _save_new_session(data: tuple) -> int:
     sql = (
         "INSERT INTO sessions "
         "(label, started, surveyor, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight, pressure, temperature) "
-        "VALUES(?, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?)"
+        f"VALUES(?, '{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', ?, ?, ?, ?, ?, ?, ?)"
     )
     saved = database.save_to_database(sql, data)
     if "errors" not in saved:
@@ -431,7 +433,7 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
         sql = (
             "INSERT INTO shots "
             "(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, pressure, temperature, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, label, comment) "
-            "VALUES(CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            f"VALUES('{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
         saved = database.save_to_database(sql, data)
         if "errors" not in saved:
