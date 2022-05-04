@@ -278,11 +278,23 @@ def export_session_data(sessions_id: int) -> None:
             groundcontrolpoints.append(
                 f"{eachshot['group_label'].replace(' ', '_')}\t{eachshot['easting']}\t{eachshot['northing']}\t{eachshot['elevation']}"
             )
-    if len(groundcontrolpoints) > 0:
-        with open("exports/photogrammetry_gcps.txt", "w") as f:
+    if groundcontrolpoints:
+        with open("exports/photogrammetry_gcps_gcps_for_webodm.txt", "w") as f:
             f.write(f"WGS84 UTM {sessiondata['occupied_station_utmzone']}\n")
             for eachgcp in groundcontrolpoints:
                 f.write(f"{eachgcp}\n")
+        with open("exports/photogrammetry_gcps_gcps_for_dronedeploy.csv", "w") as f:
+            headers = ["GCP Label", "Northing", "Easting", "Elevation (m)"]
+            gcpfile = csv.DictWriter(
+                f,
+                fieldnames=headers,
+            )
+            gcpfile.writeheader()
+            for eachgcp in groundcontrolpoints:
+                coords = eachgcp.split("\t")
+                gcpfile.writerow(
+                    dict(zip(headers, [coords[0], coords[2], coords[1], coords[3]]))
+                )
     # Finally, bundle up all the export files into a ZIP archive for download.
     filesinarchive = [
         "session_info.json",
@@ -290,7 +302,8 @@ def export_session_data(sessions_id: int) -> None:
         "for_qgis/allshots.csv",
         "for_qgis/linestringgroups.csv",
         "for_qgis/multipointgroups.csv",
-        "photogrammetry_gcps.txt",
+        "photogrammetry_gcps/gcps_for_webodm.txt",
+        "photogrammetry_gcps/gcps_for_dronedeploy.csv",
     ]
     archivename = f"ShootPoints_Export_{sessiondata['session_started'][:10]}_Session-{sessiondata['session_id']}"
     with ZipFile(f"exports/export.zip", "w", compression=ZIP_DEFLATED) as f:
