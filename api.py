@@ -385,6 +385,18 @@ async def start_new_surveying_session(
     return outcome
 
 
+@app.delete("/session/")
+async def delete_session(
+    response: Response,
+    sessions_id: int = Form(...),
+):
+    """This function deletes the indicated session from the database, plus all its shots and groupings."""
+    outcome = core.survey.delete_session(sessions_id)
+    if "errors" in outcome:
+        response.status_code = 400
+    return outcome
+
+
 @app.get("/shot/")
 def take_shot(response: Response):
     """This function tells the total station to start measuring a point."""

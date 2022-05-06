@@ -64,31 +64,31 @@ ShootPoints Web will not let you begin collecting data without the proper prereq
 
 ### Geometries
 Every measurement taken with ShootPoints Web is part of a grouping, which can be any of the following four geometries:
-* Isolated Point: A discrete point that encapsulates granular information such as a point elevation or the location of a small artifact.
-* Point Cloud: Multiple non-sequential point samples that do not carry information individually but as elements of a group that in toto describes an entity (such as topography).
-* Open Polygon: Multiple sequential points that trace an outline wherein the start and end points do not connect.
-* Closed Polygon: Multiple sequential points that trace an outline wherein the start point is connected to the end point.
+* **Isolated Point**: A discrete point that encapsulates granular information such as a point elevation or the location of a small artifact.
+* **Point Cloud**: Multiple non-sequential point samples that do not carry information individually but as elements of a group that together describe an entity (such as topography).
+* **Open Polygon**: Multiple sequential points that trace an outline wherein the start and end points do not connect.
+* **Closed Polygon**: Multiple sequential points that trace an outline wherein the start point is connected to the end point.
 
 ### Classes and Subclasses
 Each grouping also is assigned a class and subclass to assist in categorization and visualization of the data collected. The following classes and subclasses are populated in the ShootPoints database with a fresh install, but new ones can be added and removed under the “Setup” section, as is appropriate for your site.
-* Architecture: Human-built structures.
-  * Wall: Vertical, human-made, constructions that enclose, divide, or delimit space.
-  * Floor: Prepared surfaces upon which human activities took place.
-* Artifact: Objects made, modified, or used by people.
-* Feature: Natural formations or immovable, non-architectural, human creations.
-  * Topography: Ground surface.
-* Operation: Excavation units, controls, grids, and measurements.
-  * Survey Station: Benchmarks for survey station setup or backsights.
-  * Trench: Excavation units.
-  * GCP: Photogrammetry ground control points.
+* **Architecture**: Human-built structures.
+  * **Wall**: Vertical, human-made, constructions that enclose, divide, or delimit space.
+  * **Floor**: Prepared surfaces upon which human activities took place.
+* **Artifact**: Objects made, modified, or used by people.
+* **Feature**: Natural formations or immovable, non-architectural, human creations.
+  * **Topography**: Ground surface.
+* **Operation**: Excavation units, controls, grids, and measurements.
+  * **Survey** Station: Benchmarks for survey station setup or backsights.
+  * **Trench**: Excavation units.
+  * **GCP**: Photogrammetry ground control points.
 
 ## ShootPoints Web Interface
 ShootPoints Web’s interface has five primary components:
-1. On-The-Fly Adjustments: Click the arrows icon in the upper left to set atmospheric corrections and prism offsets, which may change shot-to-shot.
-2. Utilities: Click the gears icon in the upper right to download data or delete a surveying session. Also, if ShootPoints Web is running on a Raspberry Pi, you will have options to set its system clock and safely shut it down.
-3. Output Box: The results of your commands will be displayed here.
-4. “Setup” Section: Expand this area to input values that should be set prior to beginning surveying, such as your site, total station benchmarks, and class/subclass.
-5. “Surveying” Section: Expand this area to collect data with the total station.  
+1. **On-The-Fly Adjustments**: Click the arrows icon in the upper left to set atmospheric corrections and prism offsets, which may change shot-to-shot.
+2. **Utilities**: Click the gears icon in the upper right to download data or delete a surveying session. Also, if ShootPoints Web is running on a Raspberry Pi, you will have options to set its system clock and safely shut it down.
+3. **Output Box**: The results of your commands will be displayed here.
+4. **“Setup” Section**: Expand this area to input values that should be set prior to beginning surveying, such as your site, total station benchmarks, and class/subclass.
+5. **“Surveying” Section**: Expand this area to collect data with the total station.  
 ![ShootPoints Web interface overview](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_Overview.png?raw=true)
 
 ## Start the ShootPoints Web software:

@@ -2,6 +2,8 @@
 
 import datetime
 
+from black import out
+
 from . import database
 from . import calculations
 from . import tripod
@@ -311,6 +313,51 @@ def get_current_session() -> dict:
         )
         outcome = database.read_from_database(sql, (sessionid,))["results"][0]
     return {key: val for key, val in outcome.items()}
+
+
+def delete_session(id: int) -> dict:
+    """This function expunges the indicated session from the database."""
+    outcome = {"errors": [], "results": ""}
+    exists = database.read_from_database(
+        "SELECT label FROM sessions WHERE id = ?", (id,)
+    )
+    if "errors" not in exists:
+        if exists[
+            "results"
+        ]:  # This is an empty list if there are no matches for the above query.
+            label = exists["results"][0]["label"]
+            groupings = [
+                str(x["id"])
+                for x in database.read_from_database(
+                    "SELECT id FROM groupings WHERE sessions_id = ?", (id,)
+                )["results"]
+            ]
+            shotsdeleted = database.delete_from_database(
+                f"DELETE FROM shots WHERE groupings_id in ({','.join(groupings)})", ()
+            )
+            if "errors" not in shotsdeleted:
+                groupingsdeleted = database.delete_from_database(
+                    f"DELETE FROM groupings WHERE id in ({','.join(groupings)})", ()
+                )
+                if "errors" not in groupingsdeleted:
+                    sessiondeleted = database.delete_from_database(
+                        "DELETE FROM sessions WHERE id = ?", (id,)
+                    )
+                    if "errors" not in sessiondeleted:
+                        outcome[
+                            "result"
+                        ] = f"Session “{label}” successfully deleted from the database."
+                    else:
+                        outcome["errors"].append(sessiondeleted["errors"])
+                else:
+                    outcome["errors"].append(groupingsdeleted["errors"])
+            else:
+                outcome["errors"].append(shotsdeleted["errors"])
+        else:
+            outcome["errors"].append(f"Session id {id} does not exist.")
+    else:
+        outcome["errors"] = exists["errors"]
+    return {key: val for key, val in outcome.items() if val}
 
 
 def get_current_grouping() -> dict:
