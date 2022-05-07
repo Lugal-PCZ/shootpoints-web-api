@@ -130,7 +130,6 @@ Add additional stations if you’re working with an existing site with multiple 
      * Enter the height (in meters) of the total station above the occupied point and azimuth (in dd.mmss format) to the known landmark.
    * **Backsight**: You will to shoot a point between two pre-set stations with known coordinates and have ShootPoints Web calculate the azimuth and instrument height.
      * Select the backsight station and enter the height (in meters) of the prism pole.
-     * Aim the total station at the prism.
 7. Click the “Start New Session” button.  
 ![Start New Session form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_StartNewSession.png?raw=true)
 10. When prompted to check, verify that the atmospheric conditions and time displayed in the page header are correct. If they aren’t, dismiss the dialog and click the “On-The-Fly” Adjustments (arrows) icon in the upper left and/or the “Utilities” (gears) icon in the upper right to make the necessary adjustments.
@@ -155,4 +154,6 @@ Add additional stations if you’re working with an existing site with multiple 
 5. (*optional*) If saving the shot, you can add a label or a comment such as “NE corner” or “broken edge” to assist your interpretation of the data later.  
 ![Save Last Shot form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_SaveLastShot.png?raw=true)
 
-Continue taking shots, each of which will be saved to the current grouping. To begin taking shots in a new grouping, simply create a new grouping as described above. Note that any grouping shot with an “Isolated Point” geometry can logically only have one shot saved to it, so if you’re taking a series of these (such as is typical of end-of-day point elevations in a trench), you will need to create a new grouping for each shot.
+Continue taking shots, each of which will be saved to the current grouping. To begin taking shots in a new grouping, simply create a new grouping as described above.
+
+Note that any grouping shot with an “Isolated Point” geometry can logically only have one shot saved to it, so if you’re taking a series of these (such as is typical of end-of-day point elevations in a trench), you will need to create a new grouping for each shot. Though this sounds needlessly cumbersome, in practice it is a quick process and ensures that your data are marked consistently.
