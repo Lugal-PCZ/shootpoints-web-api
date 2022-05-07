@@ -98,12 +98,13 @@ cd <path/to/your/installation/>shootpoints-web-api/
 uvicorn api:app --host 0.0.0.0
 ```
 
-Open a web browser on your computer and access ShootPoint Web’s interface at [http://localhost:8000/](http://localhost:8000/) or else open a web browser on a device connected to the same wifi network and navigate to [http://<your.computer's.ip.address>:8000/](http://<your.computer's.ip.address>:8000/) and expand the “Setup” section in the web page.
+Open a web browser on your computer and access ShootPoint Web’s interface at [http://localhost:8000/](http://localhost:8000/) or else open a web browser on a device connected to the same wifi network and navigate to [http://<your.computer's.ip.address>:8000/](http://<your.computer's.ip.address>:8000/).
 
 ## Save a new site:
-1. Enter a name for the new site.
-2. (*optional*) Enter a description for the new site.
-3. Click the “Save New Site” button.  
+1. Expand the “Setup” section.
+2. Enter a name for the new site.
+3. (*optional*) Enter a description for the new site.
+4. Click the “Save New Site” button.  
 ![Save New Site form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_SaveNewSite.png?raw=true)
 
 ## Save a new station:
@@ -115,24 +116,25 @@ Open a web browser on your computer and access ShootPoint Web’s interface at [
 6. Click the “Save New Station” button.  
 ![Save New Station form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_SaveNewStation.png?raw=true)
 
-Add additional stations if you’re working with an existing site with multiple benchmarks with known coordinates, then minimize the “Setup” section when you’re finished adding stations and expand the “Surveying” section.
+Add additional stations if you’re working with an existing site with multiple benchmarks with known coordinates.
 
 ## Start a new surveying session:
 (*If you’re testing with a total station, be sure that it is set up properly, turned on, and connected to your computer’s serial port. Also verify that the proper serial port is selected under the “Set Configs” form of the “Setup” section.*)
-1. Enter a label for the new surveying session.
-2. Enter your name or initials as the responsible surveyor.
-3. Choose the site.
-4. Choose the occupied point (the station over which the total station is set up).
-5. Choose the session type (note: choose “Azimuth,” if you’re in demo mode):
-   * “Azimuth,” if you want to aim the total station at a known landmark, enter the bearing to that landmark, and measure the instrument height by hand.
-   * “Backsight,” if you want to shoot a point between two known stations and have ShootPoints Web calculate the azimuth and instrument height.
-6. Enter the height (in meters) of the total station above the occupied point and azimuth (in dd.mmss format) to the known landmark, if you chose “Azimuth” in the previous step.
-7. Select the backsight station and enter the height (in meters) of the prism pole, if you chose “Backsight” in the previous step.
-8. Click the “Start New Session” button.  
+1. Minimize the “Setup” section and expand the “Surveying” section.
+2. Enter a label for the new surveying session.
+3. Enter your name or initials as the responsible surveyor.
+4. Choose the site.
+5. Choose the occupied point (the station over which the total station is set up).
+6. Choose the session type (note: choose “Azimuth,” if you’re in demo mode):
+   * **Azimuth**: You will aim the total station at a known landmark, enter the bearing to that landmark, and measure the instrument height by hand.
+     * Enter the height (in meters) of the total station above the occupied point and azimuth (in dd.mmss format) to the known landmark.
+   * **Backsight**: You will to shoot a point between two pre-set stations with known coordinates and have ShootPoints Web calculate the azimuth and instrument height.
+     * Select the backsight station and enter the height (in meters) of the prism pole.
+     * Aim the total station at the prism.
+7. Click the “Start New Session” button.  
 ![Start New Session form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_StartNewSession.png?raw=true)
-
-9. When prompted to check, verify that the atmospheric conditions and time displayed in the page header are correct. If they aren’t, dismiss the dialog and click the “On-The-Fly” Adjustments (arrows) icon in the upper left and/or the “Utilities” (gears) icon in the upper right to make the necessary adjustments.
-10. If the atmospheric conditions and system clock are correct, aim the total station at the landmark or the backsight target and click “OK” to start the new surveying session.  
+10. When prompted to check, verify that the atmospheric conditions and time displayed in the page header are correct. If they aren’t, dismiss the dialog and click the “On-The-Fly” Adjustments (arrows) icon in the upper left and/or the “Utilities” (gears) icon in the upper right to make the necessary adjustments.
+11. If the atmospheric conditions and system clock are correct, aim the total station at the landmark or the backsight prism and click “OK” to start the new surveying session.  
 ![“Please verify” dialog box](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_PleaseVerify.png?raw=true)
 
 ## Create a new grouping:
@@ -145,11 +147,12 @@ Add additional stations if you’re working with an existing site with multiple 
 
 
 ## Collect data:
-1. Click the “Take Shot” button.  
+1. Aim the total station at the prism.
+2. Click the “Take Shot” button.  
 ![Take Shot button](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_TakeShot.png?raw=true)
-2. While the shot is being taken, you can click the “Cancel Shot” button to abort.
-3. After the shot data have been returned from the total station, you will be given the option to save the shot or discard the data.
-4. (*optional*) If saving the shot, you can add a label or a comment such as “NE corner” or “broken edge” to assist your interpretation of the data later.  
+3. While the shot is being taken, you can click the “Cancel Shot” button to abort.
+4. After the shot data have been returned from the total station, you will be given the option to save the shot or discard the data.
+5. (*optional*) If saving the shot, you can add a label or a comment such as “NE corner” or “broken edge” to assist your interpretation of the data later.  
 ![Save Last Shot form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_SaveLastShot.png?raw=true)
 
 Continue taking shots, each of which will be saved to the current grouping. To begin taking shots in a new grouping, simply create a new grouping as described above. Note that any grouping shot with an “Isolated Point” geometry can logically only have one shot saved to it, so if you’re taking a series of these (such as is typical of end-of-day point elevations in a trench), you will need to create a new grouping for each shot.
