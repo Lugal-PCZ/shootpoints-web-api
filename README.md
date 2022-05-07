@@ -78,18 +78,19 @@ Each grouping also is assigned a class and subclass to assist in categorization 
 * **Feature**: Natural formations or immovable, non-architectural, human creations.
   * **Topography**: Ground surface.
 * **Operation**: Excavation units, controls, grids, and measurements.
-  * **Survey** Station: Benchmarks for survey station setup or backsights.
+  * **Survey Station**: Benchmarks for survey station setup or backsights.
   * **Trench**: Excavation units.
   * **GCP**: Photogrammetry ground control points.
 
 ## ShootPoints Web Interface
 ShootPoints Web’s interface has five primary components:
-1. **On-The-Fly Adjustments**: Click the arrows icon in the upper left to set atmospheric corrections and prism offsets, which may change shot-to-shot.
+
+![ShootPoints Web interface overview](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_Overview.png?raw=true)
+1. **On-The-Fly Adjustments**: Click the arrows icon in the upper left to set atmospheric corrections and prism offsets, which may vary from one shot to the next.
 2. **Utilities**: Click the gears icon in the upper right to download data or delete a surveying session. Also, if ShootPoints Web is running on a Raspberry Pi, you will have options to set its system clock and safely shut it down.
 3. **Output Box**: The results of your commands will be displayed here.
 4. **“Setup” Section**: Expand this area to input values that should be set prior to beginning surveying, such as your site, total station benchmarks, and class/subclass.
-5. **“Surveying” Section**: Expand this area to collect data with the total station.  
-![ShootPoints Web interface overview](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_Overview.png?raw=true)
+5. **“Surveying” Section**: Expand this area to collect data with the total station.
 
 ## Start the ShootPoints Web software:
 ```bash
