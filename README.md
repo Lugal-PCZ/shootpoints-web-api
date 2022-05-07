@@ -94,7 +94,7 @@ ShootPoints Web’s interface has five primary components:
 
 ## Start the ShootPoints Web software:
 ```bash
-cd <path/to/your/installation/>
+cd <path/to/your/installation/>shootpoints-web-api/
 uvicorn api:app --host 0.0.0.0
 ```
 
