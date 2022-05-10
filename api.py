@@ -327,14 +327,14 @@ async def get_current_grouping():
 @app.post("/grouping/", status_code=201)
 async def start_new_grouping(
     response: Response,
-    geometry_id: int = Form(...),
+    geometries_id: int = Form(...),
     subclasses_id: int = Form(...),
     label: str = Form(...),
     description: str = Form(None),
 ):
     """This function saves a new grouping to the database."""
     outcome = core.survey.start_new_grouping(
-        geometry_id, subclasses_id, label, description
+        geometries_id, subclasses_id, label, description
     )
     if "errors" in outcome:
         response.status_code = 400

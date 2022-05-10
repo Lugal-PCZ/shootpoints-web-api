@@ -10,26 +10,26 @@ INSERT INTO classes VALUES(1,'Operation','Excavation units, controls, grids, and
 INSERT INTO classes VALUES(2,'Architecture','Human-built structures.');
 INSERT INTO classes VALUES(3,'Artifact','Objects made, modified, or used by people.');
 INSERT INTO classes VALUES(4,'Feature','Natural formations or immovable, non-architectural, human creations.');
-CREATE TABLE `geometry` (
+CREATE TABLE `geometries` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(30) COLLATE NOCASE NOT NULL
 ,  `sequential` integer NOT NULL DEFAULT 0
 ,  `description` varchar(200) NOT NULL
 ,  UNIQUE (`name`)
 );
-INSERT INTO geometry VALUES(1,'Isolated Point',0,'A discrete point that encapsulates granular information such as a point elevation or the location of a small artifact.');
-INSERT INTO geometry VALUES(2,'Point Cloud',0,'Multiple non-sequential point samples that do not carry information individually but as elements of a group that together describe an entity (such as topography).');
-INSERT INTO geometry VALUES(3,'Open Polygon',1,'Multiple sequential points that trace an outline wherein the start and end points do not connect.');
-INSERT INTO geometry VALUES(4,'Closed Polygon',1,'Multiple sequential points that trace an outline wherein the start point is connected to the end point.');
+INSERT INTO geometries VALUES(1,'Isolated Point',0,'A discrete point that encapsulates granular information such as a point elevation or the location of a small artifact.');
+INSERT INTO geometries VALUES(2,'Point Cloud',0,'Multiple non-sequential point samples that do not carry information individually but as elements of a group that together describe an entity (such as topography).');
+INSERT INTO geometries VALUES(3,'Open Polygon',1,'Multiple sequential points that trace an outline wherein the start and end points do not connect.');
+INSERT INTO geometries VALUES(4,'Closed Polygon',1,'Multiple sequential points that trace an outline wherein the start point is connected to the end point.');
 CREATE TABLE `groupings` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `sessions_id` integer NOT NULL
-,  `geometry_id` integer NOT NULL
+,  `geometries_id` integer NOT NULL
 ,  `subclasses_id` integer NOT NULL
 ,  `label` varchar(30) NOT NULL
 ,  `description` varchar(200) DEFAULT NULL
 ,  CONSTRAINT `groupings_ibfk_1` FOREIGN KEY (`sessions_id`) REFERENCES `sessions` (`id`)
-,  CONSTRAINT `groupings_ibfk_2` FOREIGN KEY (`geometry_id`) REFERENCES `geometry` (`id`)
+,  CONSTRAINT `groupings_ibfk_2` FOREIGN KEY (`geometries_id`) REFERENCES `geometries` (`id`)
 ,  CONSTRAINT `groupings_ibfk_3` FOREIGN KEY (`subclasses_id`) REFERENCES `subclasses` (`id`)
 );
 CREATE TABLE `savedstate` (
@@ -120,12 +120,12 @@ INSERT INTO subclasses VALUES(5,2,'Floor','Prepared surfaces upon which human ac
 INSERT INTO subclasses VALUES(6,4,'Topography','Ground surface.');
 DELETE FROM sqlite_sequence;
 INSERT INTO sqlite_sequence VALUES('classes',4);
-INSERT INTO sqlite_sequence VALUES('geometry',4);
+INSERT INTO sqlite_sequence VALUES('geometries',4);
 INSERT INTO sqlite_sequence VALUES('subclasses',5);
 CREATE INDEX "idx_sessions_stations_id_occupied" ON "sessions" (`stations_id_occupied`);
 CREATE INDEX "idx_sessions_stations_id_backsight" ON "sessions" (`stations_id_backsight`);
 CREATE INDEX "idx_groupings_sessions_id" ON "groupings" (`sessions_id`);
-CREATE INDEX "idx_groupings_geometry_id" ON "groupings" (`geometry_id`);
+CREATE INDEX "idx_groupings_geometries_id" ON "groupings" (`geometries_id`);
 CREATE INDEX "idx_groupings_subclasses_id" ON "groupings" (`subclasses_id`);
 COMMIT;
 PRAGMA foreign_keys=ON;

@@ -78,9 +78,9 @@ def _save_new_station() -> dict:
 
 
 def get_geometries() -> list:
-    """This function returns the types of geometry saved in the database, for use by the application front end."""
+    """This function returns the types of geometries saved in the database, for use by the application front end."""
     outcome = {"errors": [], "sites": {}}
-    query = database.read_from_database("SELECT * FROM geometry")
+    query = database.read_from_database("SELECT * FROM geometries")
     if "errors" not in query:
         outcome["geometries"] = query["results"]
     return {key: val for key, val in outcome.items() if val or key == "geometries"}
@@ -289,7 +289,7 @@ def get_all_sessions() -> dict:
         "  sess.label as name "
         "FROM sessions sess "
         "JOIN stations sta ON sess.stations_id_occupied = sta.id "
-        "JOIN sites on sta.sites_id = sites.id"
+        "JOIN sites on sta.sites_id = sites.id "
     )
     outcome["sessions"] = database.read_from_database(sql)["results"]
     return {key: val for key, val in outcome.items() if val or key == "sessions"}
@@ -367,13 +367,13 @@ def get_current_grouping() -> dict:
         sql = (
             "SELECT "
             "  grp.label, "
-            "  geo.name AS geometry_name, "
+            "  geo.name AS geometries_name, "
             "  cl.name AS classes_name, "
             "  scl.name AS subclasses_name, "
             "  grp.description, "
             "  count(shots.id) as num_shots "
             "FROM groupings grp "
-            "JOIN geometry geo ON grp.geometry_id = geo.id "
+            "JOIN geometries geo ON grp.geometries_id = geo.id "
             "JOIN subclasses scl ON grp.subclasses_id = scl.id "
             "JOIN classes cl ON scl.classes_id = cl.id "
             "LEFT OUTER JOIN shots ON grp.id = shots.groupings_id "
@@ -384,7 +384,7 @@ def get_current_grouping() -> dict:
 
 
 def start_new_grouping(
-    geometry_id: int, subclasses_id: int, label: str, description: str = None
+    geometries_id: int, subclasses_id: int, label: str, description: str = None
 ) -> dict:
     """This function begins recording a grouping of total station measurements."""
     outcome = {"errors": [], "result": ""}
@@ -394,11 +394,11 @@ def start_new_grouping(
         description = description.strip() if description else None
         sql = (
             "INSERT INTO groupings "
-            "(sessions_id, geometry_id, subclasses_id, label, description) "
+            "(sessions_id, geometries_id, subclasses_id, label, description) "
             "VALUES(?, ?, ?, ?, ?)"
         )
         saved = database.save_to_database(
-            sql, (sessionid, geometry_id, subclasses_id, label, description)
+            sql, (sessionid, geometries_id, subclasses_id, label, description)
         )
         if "errors" not in saved:
             groupingid = database.cursor.lastrowid
@@ -445,7 +445,7 @@ def take_shot() -> dict:
 def save_last_shot(label: str = None, comment: str = None) -> dict:
     """This function saves the data from the last shot to the database.
 
-    Note: isolated points (geometry_id = 1) will take the label of their grouping,
+    Note: isolated points (groupings.geometries_id = 1) will take the label of their grouping,
     but can also have a comment saved for the shot. This will be enforced on the front end.
     """
     outcome = {"errors": [], "result": ""}
@@ -496,8 +496,8 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
             activeshotdata = {}
             if (
                 database.read_from_database(
-                    "SELECT geometry_id FROM groupings WHERE id = ?", (groupingid,)
-                )["results"][0]["geometry_id"]
+                    "SELECT geometries_id FROM groupings WHERE id = ?", (groupingid,)
+                )["results"][0]["geometries_id"]
                 == 1
             ):
                 groupingid = 0  # The active shot is an isolated point, so reset the groupingid to 0

@@ -104,11 +104,15 @@ def export_session_data(sessions_id: int) -> None:
         "  sta2.elevation AS backsight_station_elevation, "
         "  sta2.utmzone AS backsight_station_utmzone, "
         "  sta2.latitude AS backsight_station_latitude, "
-        "  sta2.longitude AS backsight_station_longitude "
+        "  sta2.longitude AS backsight_station_longitude, "
+        "  count(DISTINCT grp.id) AS data_number_of_groupings, "
+        "  count(shots.id) AS data_number_of_shots "
         "FROM sessions sess "
         "JOIN stations sta1 ON  sess.stations_id_occupied = sta1.id "
         "JOIN sites site ON sta1.sites_id = site.id "
         "LEFT OUTER JOIN stations sta2 ON sess.stations_id_backsight = sta2.id "
+        "LEFT OUTER JOIN groupings grp ON grp.sessions_id = sess.id "
+        "LEFT OUTER JOIN shots ON shots.groupings_id = grp.id "
         "WHERE sess.id = ?"
     )
     sessiondata = read_from_database(sql, (sessions_id,))["results"][0]
@@ -122,179 +126,182 @@ def export_session_data(sessions_id: int) -> None:
             occupied_station[key[17:]] = val
         elif key.startswith("backsight_"):
             backsight_station[key[18:]] = val
+        elif key.startswith("data_"):
+            session["session"][key[5:]] = val
     session["session"]["occupied_station"] = occupied_station
     if backsight_station["name"]:
         session["session"]["backsight_station"] = backsight_station
     with open("exports/session_info.json", "w") as f:
         f.write(json.dumps(session, ensure_ascii=False, indent=2))
-    # Next, get data for all the shots in the session, and save them to a CSV file.
-    sql = (
-        "SELECT "
-        "  grp.id AS group_id, "
-        "  grp.label AS group_label, "
-        "  grp.description AS group_description, "
-        "  cls.name AS class, "
-        "  scl.name AS subclass, "
-        "  geo.name AS geometry, "
-        "  sh.label, "
-        "  sh.comment, "
-        "  sh.timestamp, "
-        "  sh.pressure, "
-        "  sh.temperature, "
-        "  sh.delta_n, "
-        "  sh.delta_e, "
-        "  sh.delta_z, "
-        "  sh.prismoffset_vertical, "
-        "  sh.prismoffset_latitude, "
-        "  sh.prismoffset_longitude, "
-        "  sh.prismoffset_radial, "
-        "  sh.prismoffset_tangent, "
-        "  sh.prismoffset_vertical, "
-        "  sh.prismoffset_wedge, "
-        "  sh.northing, "
-        "  sh.easting, "
-        "  sh.elevation "
-        "FROM groupings grp "
-        "JOIN geometry geo ON grp.geometry_id = geo.id "
-        "JOIN subclasses scl ON grp.subclasses_id = scl.id "
-        "JOIN classes cls ON scl.classes_id = cls.id "
-        "JOIN shots sh ON sh.groupings_id = grp.id "
-        "WHERE grp.sessions_id = ?"
-    )
-    shotsdata = read_from_database(sql, (sessions_id,))["results"]
-    with open("exports/shots_data.csv", "w") as f:
-        shotsfile = csv.DictWriter(f, fieldnames=shotsdata[0].keys())
-        shotsfile.writeheader()
-        shotsfile.writerows(shotsdata)
-    # Parse the shots data and re-format it as a CSV file that QGIS can import directly.
-    allshots = []
-    multipointgroups = []
-    linestringgroups = []
-    thisgroupinfo = {}
-    thisgroupgeometry = ""
-    shotsinthisgroup = []
+    if sessiondata["data_number_of_shots"] > 0:
+        # Next, get data for all the shots in the session, and save them to a CSV file.
+        sql = (
+            "SELECT "
+            "  grp.id AS group_id, "
+            "  grp.label AS group_label, "
+            "  grp.description AS group_description, "
+            "  cls.name AS class, "
+            "  scl.name AS subclass, "
+            "  geo.name AS geometry, "
+            "  sh.label, "
+            "  sh.comment, "
+            "  sh.timestamp, "
+            "  sh.pressure, "
+            "  sh.temperature, "
+            "  sh.delta_n, "
+            "  sh.delta_e, "
+            "  sh.delta_z, "
+            "  sh.prismoffset_vertical, "
+            "  sh.prismoffset_latitude, "
+            "  sh.prismoffset_longitude, "
+            "  sh.prismoffset_radial, "
+            "  sh.prismoffset_tangent, "
+            "  sh.prismoffset_vertical, "
+            "  sh.prismoffset_wedge, "
+            "  sh.northing, "
+            "  sh.easting, "
+            "  sh.elevation "
+            "FROM groupings grp "
+            "JOIN geometries geo ON grp.geometries_id = geo.id "
+            "JOIN subclasses scl ON grp.subclasses_id = scl.id "
+            "JOIN classes cls ON scl.classes_id = cls.id "
+            "JOIN shots sh ON sh.groupings_id = grp.id "
+            "WHERE grp.sessions_id = ?"
+        )
+        shotsdata = read_from_database(sql, (sessions_id,))["results"]
+        with open("exports/shots_data.csv", "w") as f:
+            shotsfile = csv.DictWriter(f, fieldnames=shotsdata[0].keys())
+            shotsfile.writeheader()
+            shotsfile.writerows(shotsdata)
+        # Parse the shots data and re-format it as a CSV file that QGIS can import directly.
+        allshots = []
+        multipointgroups = []
+        linestringgroups = []
+        thisgroupinfo = {}
+        thisgroupgeometry = ""
+        shotsinthisgroup = []
 
-    def _assemble_group():
-        if len(shotsinthisgroup) > 1:
-            # Wipe out the shot label and comment, which are taken from the first shot and wouldn't make sense for the entire group.
-            thisgroupinfo["label"] = None
-            thisgroupinfo["comment"] = None
-            if thisgroupgeometry == "Point Cloud":
-                multipointgroups.append(
-                    dict(
-                        {"wkt": f"MULTIPOINT Z({', '.join(shotsinthisgroup)})"},
-                        **thisgroupinfo,
+        def _assemble_group():
+            if len(shotsinthisgroup) > 1:
+                # Wipe out the shot label and comment, which are taken from the first shot and wouldn't make sense for the entire group.
+                thisgroupinfo["label"] = None
+                thisgroupinfo["comment"] = None
+                if thisgroupgeometry == "Point Cloud":
+                    multipointgroups.append(
+                        dict(
+                            {"wkt": f"MULTIPOINT Z({', '.join(shotsinthisgroup)})"},
+                            **thisgroupinfo,
+                        )
                     )
-                )
-            elif thisgroupgeometry == "Open Polygon":
-                linestringgroups.append(
-                    dict(
-                        {"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"},
-                        **thisgroupinfo,
+                elif thisgroupgeometry == "Open Polygon":
+                    linestringgroups.append(
+                        dict(
+                            {"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"},
+                            **thisgroupinfo,
+                        )
                     )
-                )
-            elif thisgroupgeometry == "Closed Polygon":
-                shotsinthisgroup.append(shotsinthisgroup[0])
-                linestringgroups.append(
-                    dict(
-                        {"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"},
-                        **thisgroupinfo,
+                elif thisgroupgeometry == "Closed Polygon":
+                    shotsinthisgroup.append(shotsinthisgroup[0])
+                    linestringgroups.append(
+                        dict(
+                            {"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"},
+                            **thisgroupinfo,
+                        )
                     )
-                )
 
-    for eachshot in shotsdata:
-        if (
-            not "group_id" in thisgroupinfo
-            or eachshot["group_id"] != thisgroupinfo["group_id"]
-        ):
-            _assemble_group()
-            thisgroupgeometry = eachshot["geometry"]
-            thisgroupinfo = {
-                "group_id": eachshot["group_id"],
-                "group_label": eachshot["group_label"],
-                "group_description": eachshot["group_description"],
-                "class": eachshot["class"],
-                "subclass": eachshot["subclass"],
-                "label": eachshot["label"],
-                "comment": eachshot["comment"],
-                "timestamp": eachshot["timestamp"],
-            }
-            shotsinthisgroup = []
-        shotsinthisgroup.append(
-            f"{eachshot['easting']} {eachshot['northing']} {eachshot['elevation']}"
-        )
-        allshots.append(
-            {
-                "group_id": eachshot["group_id"],
-                "group_label": eachshot["group_label"],
-                "group_description": eachshot["group_description"],
-                "class": eachshot["class"],
-                "subclass": eachshot["subclass"],
-                "label": eachshot["label"],
-                "comment": eachshot["comment"],
-                "timestamp": eachshot["timestamp"],
-                "wkt": f"POINT Z({eachshot['easting']} {eachshot['northing']} {eachshot['elevation']})",
-            }
-        )
-    _assemble_group()  # This terminates a multi-point group that's at the end of the file
-    qgisfieldnames = [
-        "group_id",
-        "group_label",
-        "group_description",
-        "class",
-        "subclass",
-        "label",
-        "comment",
-        "timestamp",
-        "wkt",
-    ]
-    with open("exports/for_qgis_allshots.csv", "w") as f:
-        qgisfile = csv.DictWriter(
-            f,
-            fieldnames=qgisfieldnames,
-        )
-        qgisfile.writeheader()
-        qgisfile.writerows(allshots)
-    if multipointgroups:
-        with open("exports/for_qgis_multipointgroups.csv", "w") as f:
+        for eachshot in shotsdata:
+            if (
+                not "group_id" in thisgroupinfo
+                or eachshot["group_id"] != thisgroupinfo["group_id"]
+            ):
+                _assemble_group()
+                thisgroupgeometry = eachshot["geometry"]
+                thisgroupinfo = {
+                    "group_id": eachshot["group_id"],
+                    "group_label": eachshot["group_label"],
+                    "group_description": eachshot["group_description"],
+                    "class": eachshot["class"],
+                    "subclass": eachshot["subclass"],
+                    "label": eachshot["label"],
+                    "comment": eachshot["comment"],
+                    "timestamp": eachshot["timestamp"],
+                }
+                shotsinthisgroup = []
+            shotsinthisgroup.append(
+                f"{eachshot['easting']} {eachshot['northing']} {eachshot['elevation']}"
+            )
+            allshots.append(
+                {
+                    "group_id": eachshot["group_id"],
+                    "group_label": eachshot["group_label"],
+                    "group_description": eachshot["group_description"],
+                    "class": eachshot["class"],
+                    "subclass": eachshot["subclass"],
+                    "label": eachshot["label"],
+                    "comment": eachshot["comment"],
+                    "timestamp": eachshot["timestamp"],
+                    "wkt": f"POINT Z({eachshot['easting']} {eachshot['northing']} {eachshot['elevation']})",
+                }
+            )
+        _assemble_group()  # This terminates a multi-point group that's at the end of the file
+        qgisfieldnames = [
+            "group_id",
+            "group_label",
+            "group_description",
+            "class",
+            "subclass",
+            "label",
+            "comment",
+            "timestamp",
+            "wkt",
+        ]
+        with open("exports/for_qgis_allshots.csv", "w") as f:
             qgisfile = csv.DictWriter(
                 f,
                 fieldnames=qgisfieldnames,
             )
             qgisfile.writeheader()
-            qgisfile.writerows(multipointgroups)
-    if linestringgroups:
-        with open("exports/for_qgis_linestringgroups.csv", "w") as f:
-            qgisfile = csv.DictWriter(
-                f,
-                fieldnames=qgisfieldnames,
-            )
-            qgisfile.writeheader()
-            qgisfile.writerows(linestringgroups)
-    # Export a file of photogrammetry GCPs.
-    groundcontrolpoints = []
-    for eachshot in shotsdata:
-        if eachshot["subclass"] == "GCP":
-            groundcontrolpoints.append(
-                f"{eachshot['group_label'].replace(' ', '_')}\t{eachshot['easting']}\t{eachshot['northing']}\t{eachshot['elevation']}"
-            )
-    if groundcontrolpoints:
-        with open("exports/photogrammetry_gcps_gcps_for_webodm.txt", "w") as f:
-            f.write(f"WGS84 UTM {sessiondata['occupied_station_utmzone']}\n")
-            for eachgcp in groundcontrolpoints:
-                f.write(f"{eachgcp}\n")
-        with open("exports/photogrammetry_gcps_gcps_for_dronedeploy.csv", "w") as f:
-            headers = ["GCP Label", "Northing", "Easting", "Elevation (m)"]
-            gcpfile = csv.DictWriter(
-                f,
-                fieldnames=headers,
-            )
-            gcpfile.writeheader()
-            for eachgcp in groundcontrolpoints:
-                coords = eachgcp.split("\t")
-                gcpfile.writerow(
-                    dict(zip(headers, [coords[0], coords[2], coords[1], coords[3]]))
+            qgisfile.writerows(allshots)
+        if multipointgroups:
+            with open("exports/for_qgis_multipointgroups.csv", "w") as f:
+                qgisfile = csv.DictWriter(
+                    f,
+                    fieldnames=qgisfieldnames,
                 )
+                qgisfile.writeheader()
+                qgisfile.writerows(multipointgroups)
+        if linestringgroups:
+            with open("exports/for_qgis_linestringgroups.csv", "w") as f:
+                qgisfile = csv.DictWriter(
+                    f,
+                    fieldnames=qgisfieldnames,
+                )
+                qgisfile.writeheader()
+                qgisfile.writerows(linestringgroups)
+        # Export a file of photogrammetry GCPs.
+        groundcontrolpoints = []
+        for eachshot in shotsdata:
+            if eachshot["subclass"] == "GCP":
+                groundcontrolpoints.append(
+                    f"{eachshot['group_label'].replace(' ', '_')}\t{eachshot['easting']}\t{eachshot['northing']}\t{eachshot['elevation']}"
+                )
+        if groundcontrolpoints:
+            with open("exports/photogrammetry_gcps_gcps_for_webodm.txt", "w") as f:
+                f.write(f"WGS84 UTM {sessiondata['occupied_station_utmzone']}\n")
+                for eachgcp in groundcontrolpoints:
+                    f.write(f"{eachgcp}\n")
+            with open("exports/photogrammetry_gcps_gcps_for_dronedeploy.csv", "w") as f:
+                headers = ["GCP Label", "Northing", "Easting", "Elevation (m)"]
+                gcpfile = csv.DictWriter(
+                    f,
+                    fieldnames=headers,
+                )
+                gcpfile.writeheader()
+                for eachgcp in groundcontrolpoints:
+                    coords = eachgcp.split("\t")
+                    gcpfile.writerow(
+                        dict(zip(headers, [coords[0], coords[2], coords[1], coords[3]]))
+                    )
     # Finally, bundle up all the export files into a ZIP archive for download.
     filesinarchive = [
         "session_info.json",
@@ -337,7 +344,7 @@ def get_setup_errors() -> list:
 def zip_database_file() -> None:
     """This function creates a ZIP file of the ShootPoints database file, for download by the browser."""
     with ZipFile(f"exports/database.zip", "w", compression=ZIP_DEFLATED) as f:
-        f.write("ShootPoints.db")  # , arcname=f"{archivename}/session_info.json")
+        f.write("ShootPoints.db")
 
 
 def _record_setup_error(error: str) -> None:
