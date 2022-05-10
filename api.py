@@ -413,7 +413,7 @@ async def save_last_shot(
     comment: str = Form(None),
 ):
     """This function saves the last shot to the database."""
-    # Note: the front end should not prompt the user for label or comment in cases where groupings.geometry_id = 1 (= isolate point).
+    # Note: the front end should not prompt the user for label in cases where geometry is isolated point.
     outcome = core.survey.save_last_shot(label, comment)
     if "errors" in outcome:
         response.status_code = 400
