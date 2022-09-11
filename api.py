@@ -1,8 +1,9 @@
 """This module contains the API for ShootPoints."""
+from time import strftime
 from fastapi import FastAPI, Form, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import os
+import os, datetime
 
 
 import core
@@ -47,6 +48,12 @@ async def check_for_raspbian():
 async def shut_down_rpi():
     """This function shuts down the Raspberrry Pi."""
     os.system("sudo shutdown -h now")
+
+
+@app.get("/raspbian/clock/")
+async def get_rpi_time():
+    """This function checks the clock on Raspbian systems."""
+    return datetime.datetime.now()
 
 
 @app.put("/raspbian/clock/")

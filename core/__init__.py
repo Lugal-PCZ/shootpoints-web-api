@@ -22,18 +22,6 @@ totalstation = None
 serialport = None
 
 
-def _check_system_date() -> None:
-    """
-    This function halts execution if the sytem date is unrealistic,
-    as can easily happen with a Raspberry Pi without a clock module
-    and no internet connection.
-    """
-    if datetime.datetime.now() < datetime.datetime(2020, 6, 17):
-        exit(
-            f'FATAL ERROR: Your system date ({datetime.datetime.strftime(datetime.datetime.now(), "%B %-d, %Y")}) is not set correctly. Fix this in your OS before proceeding.'
-        )
-
-
 def _load_configs_from_file() -> dict:
     """
     This function loads the configurations from the configs.ini file.
@@ -141,7 +129,6 @@ def _load_serial_port() -> dict:
 def _load_application() -> dict:
     """This function runs the private loader funtions (above) and clears setup errors if they run cleanly."""
     outcome = {"errors": [], "results": []}
-    _check_system_date()
     if (
         not configs
     ):  # This app is being loaded fresh or reloaded, so check to see if there's current state saved in the database, and use that to set the module variables.
