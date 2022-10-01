@@ -184,11 +184,12 @@ def start_surveying_session_with_backsight(
                         outcome["errors"].append(
                             f"The measured distance between the Occupied Point and the Backsight Station ({variance}cm) exceeds the limit set in configs.ini ({backsighterrorlimit}cm)."
                         )
-                    elev_diff_of_points = occupied_z - backsight_z
-                    delta_z_to_point = (
-                        measurement["measurement"]["delta_z"] - prism_height
+                    instrument_height = (
+                        prism_height
+                        - measurement["measurement"]["delta_z"]
+                        + backsight_z
+                        - occupied_z
                     )
-                    instrument_height = elev_diff_of_points + delta_z_to_point
                     tripod._validate_instrument_height(
                         instrument_height, outcome["errors"]
                     )
