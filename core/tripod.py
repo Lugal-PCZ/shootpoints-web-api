@@ -144,7 +144,7 @@ def get_stations(sites_id: int) -> dict:
         > 0
     ):
         query = database.read_from_database(
-            "SELECT * FROM stations WHERE sites_id = ?", (sites_id,)
+            "SELECT * FROM stations WHERE sites_id = ? ORDER BY name", (sites_id,)
         )
         if "errors" not in query:
             outcome["stations"] = query["results"]
