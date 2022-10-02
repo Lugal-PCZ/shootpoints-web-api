@@ -190,6 +190,7 @@ def start_surveying_session_with_backsight(
                         + backsight_z
                         - occupied_z
                     )
+                    instrument_height = round(instrument_height, 3)
                     tripod._validate_instrument_height(
                         instrument_height, outcome["errors"]
                     )
