@@ -113,11 +113,14 @@ CREATE TABLE `subclasses` (
 ,  CONSTRAINT `subclasses_ibfk_1` FOREIGN KEY (`classes_id`) REFERENCES `classes` (`id`)
 );
 INSERT INTO subclasses VALUES(1,1,'Survey Station','Benchmarks for survey station setup or backsights.');
-INSERT INTO subclasses VALUES(2,1,'Trench','Excavation units.');
-INSERT INTO subclasses VALUES(3,1,'GCP','Photogrammetry ground control points.');
-INSERT INTO subclasses VALUES(4,2,'Wall','Vertical, human-made, constructions that enclose, divide, or delimit space.');
-INSERT INTO subclasses VALUES(5,2,'Floor','Prepared surfaces upon which human activities took place.');
-INSERT INTO subclasses VALUES(6,4,'Topography','Ground surface.');
+INSERT INTO subclasses VALUES(2,1,'Grid','Site or survey grid.');
+INSERT INTO subclasses VALUES(3,1,'Trench','Excavation units.');
+INSERT INTO subclasses VALUES(4,1,'Elevation Control Point','Control point for taking local elevations.');
+INSERT INTO subclasses VALUES(5,1,'GCP','Photogrammetry ground control points.');
+INSERT INTO subclasses VALUES(6,2,'Wall','Vertical, human-made, constructions that enclose, divide, or delimit space.');
+INSERT INTO subclasses VALUES(7,2,'Floor','Level surfaces upon which human activities took place.');
+INSERT INTO subclasses VALUES(8,4,'Topography','Ground surface.');
+INSERT INTO subclasses VALUES(9,4,'Pit','');
 DELETE FROM sqlite_sequence;
 INSERT INTO sqlite_sequence VALUES('classes',4);
 INSERT INTO sqlite_sequence VALUES('geometries',4);
