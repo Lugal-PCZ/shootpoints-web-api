@@ -14,7 +14,7 @@ port = None  # This property is set by core/__init__.py once the serial port has
 _canceled = False
 
 
-def _read(timeout: float = 0.2) -> bytes:
+def _read(timeout: float) -> bytes:
     """This function reads all characters waiting in the serial port's buffer."""
     port.timeout = timeout
     buffer = port.read_until(bytes(ETX, "ascii"))
@@ -44,12 +44,11 @@ def _calculate_bcc(data: str) -> str:
 
 def _wait_for_ack(count: int = 10) -> bool:
     """This function listens for the ACK returned from the total station."""
-    global _canceled
     ack_received = False
     for _ in range(count):
         if _canceled:
             break
-        elif _read() == bytes(ACK + ETX, "ascii"):
+        elif _read(0.5) == bytes(ACK + ETX, "ascii"):
             ack_received = True
             break
     return ack_received
@@ -123,14 +122,13 @@ def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
 
 def take_measurement() -> dict:
     """This function tells the total station to begin measuring a point."""
-    global _canceled
     outcome = {"errors": [], "measurement": {}, "notification": ""}
     measurement = b""
     _write("Z64088")
     if _wait_for_ack():
         _write("C067")
         if _wait_for_ack():
-            measurement = _read(10).decode("utf-8")
+            measurement = _read(30).decode("utf-8")
             _write(ACK)
         else:
             outcome["errors"].append("A communication error occurred.")
