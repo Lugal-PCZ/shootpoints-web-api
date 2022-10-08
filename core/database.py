@@ -312,7 +312,13 @@ def export_session_data(sessions_id: int) -> None:
         "photogrammetry_gcps/gcps_for_webodm.txt",
         "photogrammetry_gcps/gcps_for_dronedeploy.csv",
     ]
-    archivename = f"ShootPoints_Export_{sessiondata['session_started'][:10]}_Session-{sessiondata['session_id']}"
+    collapseddate = (
+        sessiondata["session_started"]
+        .replace("-", "")
+        .replace(" ", "")
+        .replace(":", "")
+    )
+    archivename = f"ShootPoints_Session_{collapseddate}"
     with ZipFile(f"exports/export.zip", "w", compression=ZIP_DEFLATED) as f:
         for eachfile in filesinarchive:
             try:
