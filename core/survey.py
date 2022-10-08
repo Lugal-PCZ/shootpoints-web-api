@@ -307,7 +307,7 @@ def get_current_session() -> dict:
             "  sess.started, "
             "  sites.name AS sites_name, "
             "  sta.name AS stations_name, "
-            "  printf('%.2f', sess.instrumentheight) AS instrumentheight "
+            "  printf('%.3f', sess.instrumentheight) AS instrumentheight "
             "FROM sessions sess "
             "JOIN stations sta ON sess.stations_id_occupied = sta.id "
             "JOIN sites on sta.sites_id = sites.id "
