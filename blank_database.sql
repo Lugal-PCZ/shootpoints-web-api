@@ -64,7 +64,6 @@ CREATE TABLE `setuperrors` (
 CREATE TABLE `shots` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `groupings_id` integer NOT NULL
-,  `label` varchar(30) DEFAULT NULL
 ,  `comment` text DEFAULT NULL
 ,  `timestamp` timestamp NOT NULL DEFAULT current_timestamp
 ,  `pressure` integer NOT NULL DEFAULT 760

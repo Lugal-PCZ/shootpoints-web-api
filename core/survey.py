@@ -287,7 +287,7 @@ def get_all_sessions() -> dict:
     sql = (
         "SELECT "
         "  sess.id, "
-        "  sites.name || ', ' || sess.started AS description, "
+        "  sites.name || '; Started ' || sess.started AS description, "
         "  sess.label as name "
         "FROM sessions sess "
         "JOIN stations sta ON sess.stations_id_occupied = sta.id "
@@ -444,12 +444,8 @@ def take_shot() -> dict:
     return {key: val for key, val in outcome.items() if val}
 
 
-def save_last_shot(label: str = None, comment: str = None) -> dict:
-    """This function saves the data from the last shot to the database.
-
-    Note: isolated points (groupings.geometries_id = 1) will take the label of their grouping,
-    but can also have a comment saved for the shot. This will be enforced on the front end.
-    """
+def save_last_shot(comment: str = None) -> dict:
+    """This function saves the data from the last shot to the database."""
     outcome = {"errors": [], "result": ""}
     global groupingid
     global activeshotdata
@@ -458,7 +454,6 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
             "Shot not saved because there is no unsaved shot data."
         )
     else:
-        label = label.strip() if label else None
         comment = comment.strip() if comment else None
         data = (
             activeshotdata["delta_n"],
@@ -476,13 +471,12 @@ def save_last_shot(label: str = None, comment: str = None) -> dict:
             prism.offsets["tangent_distance"],
             prism.offsets["wedge_distance"],
             groupingid,
-            label,
             comment,
         )
         sql = (
             "INSERT INTO shots "
-            "(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, pressure, temperature, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, label, comment) "
-            f"VALUES('{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, pressure, temperature, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, comment) "
+            f"VALUES('{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
         saved = database.save_to_database(sql, data)
         if "errors" not in saved:

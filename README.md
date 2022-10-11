@@ -151,7 +151,7 @@ Add additional stations if you’re working with an existing site with multiple 
 ![Take Shot button](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_TakeShot.png?raw=true)
 3. While the shot is being taken, you can click the “Cancel Shot” button to abort.
 4. After the shot data have been returned from the total station, you will be given the option to save the shot or discard the data.
-5. (*optional*) If saving the shot, you can add a label or a comment such as “NE corner” or “broken edge” to assist your interpretation of the data later.  
+5. (*optional*) If saving the shot, you can add a comment such as “NE corner” or “broken edge” to assist your interpretation of the data later.  
 ![Save Last Shot form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_SaveLastShot.png?raw=true)
 
 Continue taking shots, each of which will be saved to the current grouping. To begin taking shots in a new grouping, simply create a new grouping as described above.

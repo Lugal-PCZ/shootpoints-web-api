@@ -138,12 +138,12 @@ def export_session_data(sessions_id: int) -> None:
         sql = (
             "SELECT "
             "  grp.id AS group_id, "
-            "  grp.label AS group_label, "
-            "  grp.description AS group_description, "
+            "  grp.label, "
+            "  grp.description, "
             "  cls.name AS class, "
             "  scl.name AS subclass, "
             "  geo.name AS geometry, "
-            "  sh.label, "
+            "  sh.id AS shot_id, "
             "  sh.comment, "
             "  sh.timestamp, "
             "  sh.pressure, "
@@ -183,9 +183,6 @@ def export_session_data(sessions_id: int) -> None:
 
         def _assemble_group():
             if len(shotsinthisgroup) > 1:
-                # Wipe out the shot label and comment, which are taken from the first shot and wouldn't make sense for the entire group.
-                thisgroupinfo["label"] = None
-                thisgroupinfo["comment"] = None
                 if thisgroupgeometry == "Point Cloud":
                     multipointgroups.append(
                         dict(
@@ -218,12 +215,10 @@ def export_session_data(sessions_id: int) -> None:
                 thisgroupgeometry = eachshot["geometry"]
                 thisgroupinfo = {
                     "group_id": eachshot["group_id"],
-                    "group_label": eachshot["group_label"],
-                    "group_description": eachshot["group_description"],
+                    "label": eachshot["label"],
+                    "description": eachshot["description"],
                     "class": eachshot["class"],
                     "subclass": eachshot["subclass"],
-                    "label": eachshot["label"],
-                    "comment": eachshot["comment"],
                     "timestamp": eachshot["timestamp"],
                 }
                 shotsinthisgroup = []
@@ -233,11 +228,11 @@ def export_session_data(sessions_id: int) -> None:
             allshots.append(
                 {
                     "group_id": eachshot["group_id"],
-                    "group_label": eachshot["group_label"],
-                    "group_description": eachshot["group_description"],
+                    "shot_id": eachshot["shot_id"],
+                    "label": eachshot["label"],
+                    "description": eachshot["description"],
                     "class": eachshot["class"],
                     "subclass": eachshot["subclass"],
-                    "label": eachshot["label"],
                     "comment": eachshot["comment"],
                     "timestamp": eachshot["timestamp"],
                     "wkt": f"POINT Z({eachshot['easting']} {eachshot['northing']} {eachshot['elevation']})",
@@ -246,11 +241,11 @@ def export_session_data(sessions_id: int) -> None:
         _assemble_group()  # This terminates a multi-point group that's at the end of the file
         qgisfieldnames = [
             "group_id",
-            "group_label",
-            "group_description",
+            "shot_id",
+            "label",
+            "description",
             "class",
             "subclass",
-            "label",
             "comment",
             "timestamp",
             "wkt",
@@ -262,6 +257,9 @@ def export_session_data(sessions_id: int) -> None:
             )
             qgisfile.writeheader()
             qgisfile.writerows(allshots)
+            # multipointgroups and linestrings don’t record individual points, so remove data fields that only pertain to them.
+            qgisfieldnames.remove("shot_id")
+            qgisfieldnames.remove("comment")
         if multipointgroups:
             with open("exports/for_qgis_multipointgroups.csv", "w") as f:
                 qgisfile = csv.DictWriter(
@@ -283,7 +281,7 @@ def export_session_data(sessions_id: int) -> None:
         for eachshot in shotsdata:
             if eachshot["subclass"] == "GCP":
                 groundcontrolpoints.append(
-                    f"{eachshot['group_label'].replace(' ', '_')}\t{eachshot['easting']}\t{eachshot['northing']}\t{eachshot['elevation']}"
+                    f"{eachshot['label'].replace(' ', '_')}\t{eachshot['easting']}\t{eachshot['northing']}\t{eachshot['elevation']}"
                 )
         if groundcontrolpoints:
             with open("exports/photogrammetry_gcps_gcps_for_webodm.txt", "w") as f:
