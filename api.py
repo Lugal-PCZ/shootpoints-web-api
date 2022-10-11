@@ -314,8 +314,6 @@ async def set_atmospheric_conditions(
     outcome = core.survey.set_atmospheric_conditions(temperature, pressure)
     if "errors" in outcome:
         response.status_code = 400
-    else:
-        outcome["result"] = "Atmospheric conditions updated."
     return outcome
 
 

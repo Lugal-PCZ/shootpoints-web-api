@@ -119,9 +119,12 @@ def set_atmospheric_conditions(temp: int, press: int) -> dict:
         database.save_to_database(sql, (press, temp))
         pressure = press
         temperature = temp
+        p = press * 106.036
+        t = temp + 273.15
+        ppm = round((279.66 - (p / t)) * pow(10, -6) * 1000000)
         outcome[
             "result"
-        ] = f"Ambient temperature is now set to {temp}°C and atmospheric pressure is now set to {press}mmHg."
+        ] = f"Temperature and pressure are now set to {temp}°C and {press}mmHg ({ppm}ppm)."
     return {key: val for key, val in outcome.items() if val}
 
 
