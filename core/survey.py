@@ -284,6 +284,19 @@ def start_surveying_session_with_azimuth(
     return {key: val for key, val in outcome.items() if val}
 
 
+def end_current_session() -> dict:
+    """This function ends the current session."""
+    global sessionid
+    outcome = {"errors": [], "result": ""}
+    endgrouping = end_current_grouping()
+    if not "errors" in endgrouping:
+        sessionid = 0
+        outcome["result"] = "Session ended."
+    else:
+        outcome["errors"] = endgrouping["errors"]
+    return {key: val for key, val in outcome.items() if val}
+
+
 def get_all_sessions() -> dict:
     """This function returns basic identifying information about all the sessions in the database."""
     outcome = {"errors": [], "result": ""}
@@ -306,6 +319,7 @@ def get_current_session() -> dict:
     if sessionid:
         sql = (
             "SELECT "
+            "  sess.id, "
             "  sess.label, "
             "  sess.started, "
             "  sites.name AS sites_name, "
@@ -415,6 +429,15 @@ def start_new_grouping(
             )
     else:
         outcome["errors"].append("There is no active surveying session.")
+    return {key: val for key, val in outcome.items() if val}
+
+
+def end_current_grouping() -> dict:
+    """This function ends the current grouping."""
+    outcome = {"errors": [], "result": ""}
+    global groupingid
+    groupingid = 0
+    outcome["result"] = "Grouping ended."
     return {key: val for key, val in outcome.items() if val}
 
 

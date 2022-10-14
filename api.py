@@ -346,6 +346,14 @@ async def start_new_grouping(
     return outcome
 
 
+@app.put("/grouping/")
+async def end_current_grouping(response: Response):
+    outcome = core.survey.end_current_grouping()
+    if "errors" in outcome:
+        response.status_code = 400
+    return outcome
+
+
 @app.get("/session/")
 async def get_current_session():
     """This function gets basic information about the currently active surveying session."""
@@ -385,6 +393,14 @@ async def start_new_surveying_session(
         outcome = core.survey.start_surveying_session_with_azimuth(
             label, surveyor, sites_id, occupied_point_id, instrument_height, azimuth
         )
+    if "errors" in outcome:
+        response.status_code = 400
+    return outcome
+
+
+@app.put("/session/")
+async def end_current_session(response: Response):
+    outcome = core.survey.end_current_session()
     if "errors" in outcome:
         response.status_code = 400
     return outcome
