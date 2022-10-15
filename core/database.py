@@ -234,6 +234,9 @@ def export_session_data(sessions_id: int) -> None:
                     "class": eachshot["class"],
                     "subclass": eachshot["subclass"],
                     "comment": eachshot["comment"],
+                    "N": eachshot["northing"],
+                    "E": eachshot["easting"],
+                    "Z": eachshot["elevation"],
                     "timestamp": eachshot["timestamp"],
                     "wkt": f"POINT Z({eachshot['easting']} {eachshot['northing']} {eachshot['elevation']})",
                 }
@@ -248,6 +251,9 @@ def export_session_data(sessions_id: int) -> None:
             "subclass",
             "comment",
             "timestamp",
+            "N",
+            "E",
+            "Z",
             "wkt",
         ]
         with open("exports/for_qgis_allshots.csv", "w") as f:
@@ -257,9 +263,12 @@ def export_session_data(sessions_id: int) -> None:
             )
             qgisfile.writeheader()
             qgisfile.writerows(allshots)
-            # multipointgroups and linestrings don’t record individual points, so remove data fields that only pertain to them.
+            # multipointgroups and linestrings don’t record individual points, so remove data fields that don’t pertain.
             qgisfieldnames.remove("shot_id")
             qgisfieldnames.remove("comment")
+            qgisfieldnames.remove("N")
+            qgisfieldnames.remove("E")
+            qgisfieldnames.remove("Z")
         if multipointgroups:
             with open("exports/for_qgis_multipointgroups.csv", "w") as f:
                 qgisfile = csv.DictWriter(
