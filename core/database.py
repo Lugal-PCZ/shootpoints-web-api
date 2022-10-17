@@ -175,8 +175,9 @@ def export_session_data(sessions_id: int) -> None:
             shotsfile.writerows(shotsdata)
         # Parse the shots data and re-format it as a CSV file that QGIS can import directly.
         allshots = []
-        multipointgroups = []
-        linestringgroups = []
+        pointclouds = []
+        openpolygons = []
+        closedpolygons = []
         thisgroupinfo = {}
         thisgroupgeometry = ""
         shotsinthisgroup = []
@@ -184,24 +185,23 @@ def export_session_data(sessions_id: int) -> None:
         def _assemble_group():
             if len(shotsinthisgroup) > 1:
                 if thisgroupgeometry == "Point Cloud":
-                    multipointgroups.append(
+                    pointclouds.append(
                         dict(
                             {"wkt": f"MULTIPOINT Z({', '.join(shotsinthisgroup)})"},
                             **thisgroupinfo,
                         )
                     )
                 elif thisgroupgeometry == "Open Polygon":
-                    linestringgroups.append(
+                    openpolygons.append(
                         dict(
                             {"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"},
                             **thisgroupinfo,
                         )
                     )
                 elif thisgroupgeometry == "Closed Polygon":
-                    shotsinthisgroup.append(shotsinthisgroup[0])
-                    linestringgroups.append(
+                    closedpolygons.append(
                         dict(
-                            {"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"},
+                            {"wkt": f"POLYGON Z(({', '.join(shotsinthisgroup)}))"},
                             **thisgroupinfo,
                         )
                     )
@@ -263,28 +263,38 @@ def export_session_data(sessions_id: int) -> None:
             )
             qgisfile.writeheader()
             qgisfile.writerows(allshots)
-            # multipointgroups and linestrings don’t record individual points, so remove data fields that don’t pertain.
+            # QGIS doesn’t report details of the individual nodes (= shots) in multipoint (= point cloud),
+            # linestring (= open polygon), or polygon (= closed polygon) layers, so remove the following
+            # data fields which don’t pertain in those cases.
             qgisfieldnames.remove("shot_id")
             qgisfieldnames.remove("comment")
             qgisfieldnames.remove("N")
             qgisfieldnames.remove("E")
             qgisfieldnames.remove("Z")
-        if multipointgroups:
-            with open("exports/for_qgis_multipointgroups.csv", "w") as f:
+        if pointclouds:
+            with open("exports/for_qgis_pointclouds.csv", "w") as f:
                 qgisfile = csv.DictWriter(
                     f,
                     fieldnames=qgisfieldnames,
                 )
                 qgisfile.writeheader()
-                qgisfile.writerows(multipointgroups)
-        if linestringgroups:
-            with open("exports/for_qgis_linestringgroups.csv", "w") as f:
+                qgisfile.writerows(pointclouds)
+        if openpolygons:
+            with open("exports/for_qgis_openpolygons.csv", "w") as f:
                 qgisfile = csv.DictWriter(
                     f,
                     fieldnames=qgisfieldnames,
                 )
                 qgisfile.writeheader()
-                qgisfile.writerows(linestringgroups)
+                qgisfile.writerows(openpolygons)
+        if closedpolygons:
+            with open("exports/for_qgis_closedpolygons.csv", "w") as f:
+                qgisfile = csv.DictWriter(
+                    f,
+                    fieldnames=qgisfieldnames,
+                )
+                qgisfile.writeheader()
+                qgisfile.writerows(closedpolygons)
         # Export a file of photogrammetry GCPs.
         groundcontrolpoints = []
         for eachshot in shotsdata:
@@ -314,8 +324,9 @@ def export_session_data(sessions_id: int) -> None:
         "session_info.json",
         "shots_data.csv",
         "for_qgis/allshots.csv",
-        "for_qgis/linestringgroups.csv",
-        "for_qgis/multipointgroups.csv",
+        "for_qgis/pointclouds.csv",
+        "for_qgis/openpolygons.csv",
+        "for_qgis/closedpolygons.csv",
         "photogrammetry_gcps/gcps_for_webodm.txt",
         "photogrammetry_gcps/gcps_for_dronedeploy.csv",
     ]
