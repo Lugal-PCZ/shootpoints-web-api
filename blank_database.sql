@@ -1,9 +1,9 @@
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
 CREATE TABLE `classes` (
-  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `name` varchar(30) COLLATE NOCASE NOT NULL
-,  `description` varchar(200) DEFAULT NULL
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `name` TEXT COLLATE NOCASE NOT NULL
+,  `description` TEXT DEFAULT NULL
 ,  UNIQUE (`name`)
 );
 INSERT INTO classes VALUES(1,'Operation','Excavation units, controls, grids, and measurements.');
@@ -11,10 +11,10 @@ INSERT INTO classes VALUES(2,'Architecture','Human-built structures.');
 INSERT INTO classes VALUES(3,'Artifact','Objects made, modified, or used by people.');
 INSERT INTO classes VALUES(4,'Feature','Natural formations or immovable, non-architectural, human creations.');
 CREATE TABLE `geometries` (
-  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `name` varchar(30) COLLATE NOCASE NOT NULL
-,  `sequential` integer NOT NULL DEFAULT 0
-,  `description` varchar(200) NOT NULL
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `name` TEXT COLLATE NOCASE NOT NULL
+,  `sequential` INTEGER NOT NULL DEFAULT 0
+,  `description` TEXT NOT NULL
 ,  UNIQUE (`name`)
 );
 INSERT INTO geometries VALUES(1,'Isolated Point',0,'A discrete point that encapsulates granular information such as a point elevation or the location of a small artifact.');
@@ -22,92 +22,94 @@ INSERT INTO geometries VALUES(2,'Point Cloud',0,'Multiple non-sequential point s
 INSERT INTO geometries VALUES(3,'Open Polygon',1,'Multiple sequential points that trace an outline wherein the start and end points do not connect.');
 INSERT INTO geometries VALUES(4,'Closed Polygon',1,'Multiple sequential points that trace an outline wherein the start point is connected to the end point.');
 CREATE TABLE `groupings` (
-  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `sessions_id` integer NOT NULL
-,  `geometries_id` integer NOT NULL
-,  `subclasses_id` integer NOT NULL
-,  `label` varchar(30) NOT NULL
-,  `description` varchar(200) DEFAULT NULL
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `sessions_id` INTEGER NOT NULL
+,  `geometries_id` INTEGER NOT NULL
+,  `subclasses_id` INTEGER NOT NULL
+,  `label` TEXT NOT NULL
+,  `description` TEXT DEFAULT NULL
 ,  CONSTRAINT `groupings_ibfk_1` FOREIGN KEY (`sessions_id`) REFERENCES `sessions` (`id`)
 ,  CONSTRAINT `groupings_ibfk_2` FOREIGN KEY (`geometries_id`) REFERENCES `geometries` (`id`)
 ,  CONSTRAINT `groupings_ibfk_3` FOREIGN KEY (`subclasses_id`) REFERENCES `subclasses` (`id`)
 );
 CREATE TABLE `savedstate` (
-  `vertical_distance` float NOT NULL DEFAULT 0
-,  `latitude_distance` float NOT NULL DEFAULT 0
-,  `longitude_distance` float NOT NULL DEFAULT 0
-,  `radial_distance` float NOT NULL DEFAULT 0
-,  `tangent_distance` float NOT NULL DEFAULT 0
-,  `wedge_distance` float NOT NULL DEFAULT 0
-,  `pressure` integer NOT NULL DEFAULT 760
-,  `temperature` integer NOT NULL DEFAULT 15
+  `vertical_distance` REAL NOT NULL DEFAULT 0
+,  `latitude_distance` REAL NOT NULL DEFAULT 0
+,  `longitude_distance` REAL NOT NULL DEFAULT 0
+,  `radial_distance` REAL NOT NULL DEFAULT 0
+,  `tangent_distance` REAL NOT NULL DEFAULT 0
+,  `wedge_distance` REAL NOT NULL DEFAULT 0
+,  `pressure` INTEGER NOT NULL DEFAULT 760
+,  `temperature` INTEGER NOT NULL DEFAULT 15
+,  `sessions_id` INTEGER NOT NULL DEFAULT 0
+,  `groupings_id` INTEGER NOT NULL DEFAULT 0
 );
-INSERT INTO savedstate VALUES(0.0,0.0,0.0,0.0,0.0,0.0,760,15);
+INSERT INTO savedstate VALUES(0.0,0.0,0.0,0.0,0.0,0.0,760,15,0,0);
 CREATE TABLE `sessions` (
-  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `label` varchar(30) NOT NULL
-,  `started` timestamp NULL DEFAULT current_timestamp
-,  `surveyor` varchar(100) NOT NULL
-,  `stations_id_occupied` integer NOT NULL
-,  `stations_id_backsight` integer  DEFAULT NULL
-,  `azimuth` varchar(12) NOT NULL DEFAULT '0°0''0"'
-,  `instrumentheight` float NOT NULL
-,  `pressure` integer NOT NULL DEFAULT 760
-,  `temperature` integer NOT NULL DEFAULT 15
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `label` TEXT NOT NULL
+,  `started` TEXT NULL DEFAULT current_timestamp
+,  `surveyor` TEXT NOT NULL
+,  `stations_id_occupied` INTEGER NOT NULL
+,  `stations_id_backsight` INTEGER  DEFAULT NULL
+,  `azimuth` TEXT NOT NULL DEFAULT '0°0''0"'
+,  `instrumentheight` REAL NOT NULL
+,  `pressure` INTEGER NOT NULL DEFAULT 760
+,  `temperature` INTEGER NOT NULL DEFAULT 15
 ,  CONSTRAINT `sessions_ibfk_2` FOREIGN KEY (`stations_id_occupied`) REFERENCES `stations` (`id`)
 ,  CONSTRAINT `sessions_ibfk_3` FOREIGN KEY (`stations_id_backsight`) REFERENCES `stations` (`id`)
 );
 CREATE TABLE `setuperrors` (
-  `error` varchar(200) NOT NULL
+  `error` TEXT NOT NULL
 ,  PRIMARY KEY (`error`)
 );
 CREATE TABLE `shots` (
-  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `groupings_id` integer NOT NULL
-,  `comment` text DEFAULT NULL
-,  `timestamp` timestamp NOT NULL DEFAULT current_timestamp
-,  `pressure` integer NOT NULL DEFAULT 760
-,  `temperature` integer NOT NULL DEFAULT 15
-,  `delta_n` float NOT NULL
-,  `delta_e` float NOT NULL
-,  `delta_z` float NOT NULL
-,  `prismoffset_vertical` float NOT NULL DEFAULT 0
-,  `prismoffset_latitude` float NOT NULL DEFAULT 0
-,  `prismoffset_longitude` float NOT NULL DEFAULT 0
-,  `prismoffset_radial` float NOT NULL DEFAULT 0
-,  `prismoffset_tangent` float NOT NULL DEFAULT 0
-,  `prismoffset_wedge` float NOT NULL DEFAULT 0
-,  `northing` float NOT NULL
-,  `easting` float NOT NULL
-,  `elevation` float NOT NULL
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `groupings_id` INTEGER NOT NULL
+,  `comment` TEXT DEFAULT NULL
+,  `timestamp` TEXT NOT NULL DEFAULT current_timestamp
+,  `pressure` INTEGER NOT NULL DEFAULT 760
+,  `temperature` INTEGER NOT NULL DEFAULT 15
+,  `delta_n` REAL NOT NULL
+,  `delta_e` REAL NOT NULL
+,  `delta_z` REAL NOT NULL
+,  `prismoffset_vertical` REAL NOT NULL DEFAULT 0
+,  `prismoffset_latitude` REAL NOT NULL DEFAULT 0
+,  `prismoffset_longitude` REAL NOT NULL DEFAULT 0
+,  `prismoffset_radial` REAL NOT NULL DEFAULT 0
+,  `prismoffset_tangent` REAL NOT NULL DEFAULT 0
+,  `prismoffset_wedge` REAL NOT NULL DEFAULT 0
+,  `northing` REAL NOT NULL
+,  `easting` REAL NOT NULL
+,  `elevation` REAL NOT NULL
 ,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`groupings_id`) REFERENCES `groupings` (`id`)
 );
 CREATE TABLE `sites` (
-  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `name` varchar(30) COLLATE NOCASE NOT NULL
-,  `description` varchar(200) DEFAULT NULL
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `name` TEXT COLLATE NOCASE NOT NULL
+,  `description` TEXT DEFAULT NULL
 ,  UNIQUE (`name`)
 );
 CREATE TABLE `stations` (
-  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `sites_id` integer NOT NULL
-,  `name` varchar(30) COLLATE NOCASE NOT NULL
-,  `description` varchar(200) DEFAULT NULL
-,  `northing` float NOT NULL
-,  `easting` float NOT NULL
-,  `elevation` float NOT NULL
-,  `utmzone` varchar(3) DEFAULT ''
-,  `latitude` float DEFAULT NULL
-,  `longitude` float DEFAULT NULL
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `sites_id` INTEGER NOT NULL
+,  `name` TEXT COLLATE NOCASE NOT NULL
+,  `description` TEXT DEFAULT NULL
+,  `northing` REAL NOT NULL
+,  `easting` REAL NOT NULL
+,  `elevation` REAL NOT NULL
+,  `utmzone` TEXT DEFAULT ''
+,  `latitude` REAL DEFAULT NULL
+,  `longitude` REAL DEFAULT NULL
 ,  UNIQUE (`name`,`sites_id`)
 ,  UNIQUE (`northing`,`easting`,`sites_id`)
 ,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`sites_id`) REFERENCES `sites` (`id`)
 );
 CREATE TABLE `subclasses` (
-  `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
-,  `classes_id` integer NOT NULL
-,  `name` varchar(30) COLLATE NOCASE NOT NULL
-,  `description` varchar(200) DEFAULT NULL
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+,  `classes_id` INTEGER NOT NULL
+,  `name` TEXT COLLATE NOCASE NOT NULL
+,  `description` TEXT DEFAULT NULL
 ,  UNIQUE (`classes_id`,`name`)
 ,  CONSTRAINT `subclasses_ibfk_1` FOREIGN KEY (`classes_id`) REFERENCES `classes` (`id`)
 );
