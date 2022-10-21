@@ -41,8 +41,8 @@ CREATE TABLE `savedstate` (
 ,  `wedge_distance` REAL NOT NULL DEFAULT 0
 ,  `pressure` INTEGER NOT NULL DEFAULT 760
 ,  `temperature` INTEGER NOT NULL DEFAULT 15
-,  `sessions_id` INTEGER NOT NULL DEFAULT 0
-,  `groupings_id` INTEGER NOT NULL DEFAULT 0
+,  `currentsession` INTEGER NOT NULL DEFAULT 0
+,  `currentgrouping` INTEGER NOT NULL DEFAULT 0
 );
 INSERT INTO savedstate VALUES(0.0,0.0,0.0,0.0,0.0,0.0,760,15,0,0);
 CREATE TABLE `sessions` (

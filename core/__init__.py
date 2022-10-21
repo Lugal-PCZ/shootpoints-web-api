@@ -146,15 +146,19 @@ def _load_application() -> dict:
             }
             survey.pressure = saved_state["pressure"]
             survey.temperature = saved_state["temperature"]
-            lastsession = database.read_from_database(
-                "SELECT id, started FROM sessions ORDER BY started DESC LIMIT 1"
-            )["results"][0]
+            currentsession = saved_state["currentsession"]
+            currentgrouping = saved_state["currentgrouping"]
+            # End the current session if it’s been > 12 hours since the last session was started.
+            # (The presumption is that it was never ended when it should have been.)
+            currentsessionstart = database.read_from_database(
+                "SELECT started FROM sessions WHERE id = ?", (currentsession,)
+            )["results"][0]["started"]
             if (
-                datetime.datetime.strptime(lastsession["started"], "%Y-%m-%d %H:%M:%S")
+                datetime.datetime.strptime(currentsessionstart, "%Y-%m-%d %H:%M:%S")
                 + datetime.timedelta(hours=12)
                 > datetime.datetime.now()
             ):
-                survey.sessionid = lastsession["id"]
+                survey.sessionid = currentsession
                 sql = (
                     "SELECT "
                     "  sta.northing AS n, "
@@ -167,7 +171,7 @@ def _load_application() -> dict:
                     "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
                     "WHERE sess.id = ?"
                 )
-                session_info = database.read_from_database(sql, (survey.sessionid,))[
+                session_info = database.read_from_database(sql, (currentsession,))[
                     "results"
                 ][0]
                 tripod.occupied_point = {
@@ -176,7 +180,9 @@ def _load_application() -> dict:
                     "z": session_info["z"],
                 }
                 tripod.instrument_height = session_info["ih"]
-                survey.groupingid = session_info["gid"]
+                survey.groupingid = currentgrouping
+            else:
+                survey.end_current_session()
         except:
             pass
     loaders = [_load_configs_from_file, _load_total_station_model, _load_serial_port]

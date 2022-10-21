@@ -34,6 +34,9 @@ def _save_new_session(data: tuple) -> int:
     saved = database.save_to_database(sql, data)
     if "errors" not in saved:
         sessionid = database.cursor.lastrowid
+        _ = database.save_to_database(
+            "UPDATE savedstate SET currentsession = ?", (sessionid,)
+        )
     else:
         sessionid = 0
     groupingid = 0
@@ -116,7 +119,7 @@ def set_atmospheric_conditions(temp: int, press: int) -> dict:
         )
     if not outcome["errors"]:
         sql = "UPDATE savedstate SET pressure = ?, temperature = ?"
-        database.save_to_database(sql, (press, temp))
+        _ = database.save_to_database(sql, (press, temp))
         pressure = press
         temperature = temp
         p = press * 106.036
@@ -291,6 +294,9 @@ def end_current_session() -> dict:
     endgrouping = end_current_grouping()
     if not "errors" in endgrouping:
         sessionid = 0
+        _ = database.save_to_database(
+            "UPDATE savedstate SET currentsession = ?", (sessionid,)
+        )
         outcome["result"] = "Session ended."
     else:
         outcome["errors"] = endgrouping["errors"]
@@ -421,6 +427,9 @@ def start_new_grouping(
         )
         if "errors" not in saved:
             groupingid = database.cursor.lastrowid
+            _ = database.save_to_database(
+                "UPDATE savedstate SET currentgrouping = ?", (groupingid,)
+            )
             outcome["result"] = f"New grouping started."
         else:
             groupingid = 0
@@ -437,6 +446,9 @@ def end_current_grouping() -> dict:
     outcome = {"errors": [], "result": ""}
     global groupingid
     groupingid = 0
+    _ = database.save_to_database(
+        "UPDATE savedstate SET currentgrouping = ?", (groupingid,)
+    )
     outcome["result"] = "Grouping ended."
     return {key: val for key, val in outcome.items() if val}
 
