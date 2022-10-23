@@ -303,10 +303,6 @@ def export_session_data(sessions_id: int) -> None:
                     f"{eachshot['label'].replace(' ', '_')}\t{eachshot['easting']}\t{eachshot['northing']}\t{eachshot['elevation']}"
                 )
         if groundcontrolpoints:
-            with open("exports/photogrammetry_gcps_gcps_for_webodm.txt", "w") as f:
-                f.write(f"WGS84 UTM {sessiondata['occupied_station_utmzone']}\n")
-                for eachgcp in groundcontrolpoints:
-                    f.write(f"{eachgcp}\n")
             with open("exports/photogrammetry_gcps_gcps_for_dronedeploy.csv", "w") as f:
                 headers = ["GCP Label", "Northing", "Easting", "Elevation (m)"]
                 gcpfile = csv.DictWriter(
@@ -319,6 +315,22 @@ def export_session_data(sessions_id: int) -> None:
                     gcpfile.writerow(
                         dict(zip(headers, [coords[0], coords[2], coords[1], coords[3]]))
                     )
+            with open("exports/photogrammetry_gcps_gcps_for_metashape.csv", "w") as f:
+                headers = ["Name", "X", "Y", "Z"]
+                gcpfile = csv.DictWriter(
+                    f,
+                    fieldnames=headers,
+                )
+                gcpfile.writeheader()
+                for eachgcp in groundcontrolpoints:
+                    coords = eachgcp.split("\t")
+                    gcpfile.writerow(
+                        dict(zip(headers, [coords[0], coords[1], coords[2], coords[3]]))
+                    )
+            with open("exports/photogrammetry_gcps_gcps_for_webodm.txt", "w") as f:
+                f.write(f"WGS84 UTM {sessiondata['occupied_station_utmzone']}\n")
+                for eachgcp in groundcontrolpoints:
+                    f.write(f"{eachgcp}\n")
     # Finally, bundle up all the export files into a ZIP archive for download.
     filesinarchive = [
         "session_info.json",
@@ -327,8 +339,9 @@ def export_session_data(sessions_id: int) -> None:
         "for_qgis/pointclouds.csv",
         "for_qgis/openpolygons.csv",
         "for_qgis/closedpolygons.csv",
-        "photogrammetry_gcps/gcps_for_webodm.txt",
         "photogrammetry_gcps/gcps_for_dronedeploy.csv",
+        "photogrammetry_gcps/gcps_for_metashape.csv",
+        "photogrammetry_gcps/gcps_for_webodm.txt",
     ]
     collapseddate = (
         sessiondata["session_started"]
