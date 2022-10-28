@@ -230,7 +230,7 @@ def start_surveying_session_with_backsight(
                 ] = f"New session started. Please confirm that the measured instrument height ({instrument_height}m) is accurate before proceeding."
             else:
                 outcome["errors"].append(
-                    "A problem occurred while saving the new session to the database."
+                    "A problem occurred while saving the new session."
                 )
     return {key: val for key, val in outcome.items() if val}
 
@@ -280,7 +280,7 @@ def start_surveying_session_with_azimuth(
                     outcome["result"] = f"New session started."
                 else:
                     outcome["errors"].append(
-                        f"A problem occurred while saving the new session to the database."
+                        f"A problem occurred while saving the new session."
                     )
             else:
                 outcome["errors"].extend(setazimuth["errors"])
@@ -309,11 +309,14 @@ def get_all_sessions() -> dict:
     sql = (
         "SELECT "
         "  sess.id, "
-        "  sites.name || '; Started ' || sess.started AS description, "
-        "  sess.label as name "
+        "  sites.name || '; Started ' || sess.started || ' (' || count(shots.id) || ' shots)' AS description, "
+        "  sess.label AS name "
         "FROM sessions sess "
-        "JOIN stations sta ON sess.stations_id_occupied = sta.id "
-        "JOIN sites on sta.sites_id = sites.id "
+        "LEFT OUTER JOIN stations sta ON sess.stations_id_occupied = sta.id "
+        "LEFT OUTER JOIN sites on sta.sites_id = sites.id "
+        "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
+        "LEFT OUTER JOIN shots ON grp.id = shots.groupings_id "
+        "GROUP BY sess.id"
     )
     outcome["sessions"] = database.read_from_database(sql)["results"]
     return {key: val for key, val in outcome.items() if val or key == "sessions"}
@@ -369,9 +372,7 @@ def delete_session(id: int) -> dict:
                         "DELETE FROM sessions WHERE id = ?", (id,)
                     )
                     if "errors" not in sessiondeleted:
-                        outcome[
-                            "result"
-                        ] = f"Session “{label}” successfully deleted from the database."
+                        outcome["result"] = f"Session “{label}” successfully deleted."
                     else:
                         outcome["errors"].append(sessiondeleted["errors"])
                 else:
@@ -518,7 +519,7 @@ def save_last_shot(comment: str = None) -> dict:
         )
         saved = database.save_to_database(sql, data)
         if "errors" not in saved:
-            outcome["result"] = "The last shot was saved to the database."
+            outcome["result"] = "The last shot was saved."
             newstation = _save_new_station()
             if newstation:
                 if "errors" in newstation:
@@ -526,7 +527,7 @@ def save_last_shot(comment: str = None) -> dict:
                 else:
                     outcome[
                         "result"
-                    ] = "The last shot was saved to the database and added to the stations table."
+                    ] = "The last shot was saved and added to the stations list."
             activeshotdata = {}
             if (
                 database.read_from_database(

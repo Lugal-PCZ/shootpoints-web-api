@@ -31,11 +31,9 @@ def save_site(name: str, description: str = None) -> dict:
             ),
         )
         if "errors" not in saved:
-            outcome["result"] = f"Site “{name}” saved to the database."
+            outcome["result"] = f"Site “{name}” saved."
         else:
-            outcome["errors"].append(
-                f"Site “{name}” could not be saved to the database."
-            )
+            outcome["errors"].append(f"Site “{name}” could not be saved.")
     return {key: val for key, val in outcome.items() if val}
 
 
@@ -51,9 +49,7 @@ def delete_site(id: int) -> dict:
             sql = "DELETE FROM sites WHERE id = ?"
             deleted = database.delete_from_database(sql, (id,))
             if "errors" not in deleted:
-                outcome[
-                    "result"
-                ] = f"Site “{name}” successfully deleted from the database."
+                outcome["result"] = f"Site “{name}” successfully deleted."
             else:
                 outcome["errors"] = deleted["errors"]
             try:

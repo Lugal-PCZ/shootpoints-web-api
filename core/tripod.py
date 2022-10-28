@@ -261,11 +261,9 @@ def save_new_station(
                 description,
             )
             if "errors" not in database.save_to_database(sql, newstation):
-                outcome["result"] = f"Station “{name}” saved to the database."
+                outcome["result"] = f"Station “{name}” saved."
             else:
-                outcome["errors"].append(
-                    f"Station “{name}” could not be saved to the database."
-                )
+                outcome["errors"].append(f"Station “{name}” could not be saved.")
     return {key: val for key, val in outcome.items() if val}
 
 
@@ -287,9 +285,7 @@ def delete_station(sites_id: int, id: int) -> dict:
             sql = "DELETE FROM stations WHERE id = ?"
             deleted = database.delete_from_database(sql, (id,))
             if "errors" not in deleted:
-                outcome[
-                    "result"
-                ] = f"Station “{name}” successfully deleted from the database."
+                outcome["result"] = f"Station “{name}” successfully deleted."
             else:
                 outcome["errors"] = deleted["errors"]
             try:

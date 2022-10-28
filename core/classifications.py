@@ -36,7 +36,7 @@ def save_new_class(name: str, description: str = None) -> dict:
     sql = "INSERT INTO classes (name, description) VALUES(?, ?)"
     newclass = database.save_to_database(sql, (name, description))
     if "errors" not in newclass:
-        outcome["result"] = f"Class “{name}” saved to the database."
+        outcome["result"] = f"Class “{name}” saved."
     else:
         outcome["errors"] = newclass["errors"]
     return {key: val for key, val in outcome.items() if val}
@@ -50,7 +50,7 @@ def save_new_subclass(classes_id: int, name: str, description: str = None) -> di
     sql = "INSERT INTO subclasses (classes_id, name, description) VALUES(?, ?, ?)"
     newclass = database.save_to_database(sql, (classes_id, name, description))
     if "errors" not in newclass:
-        outcome["result"] = f"Sublass “{name}” saved to the database."
+        outcome["result"] = f"Sublass “{name}” saved."
     else:
         outcome["errors"] = newclass["errors"]
     return {key: val for key, val in outcome.items() if val}
@@ -68,9 +68,7 @@ def delete_class(id: int) -> dict:
             sql = "DELETE FROM classes WHERE id = ?"
             deleted = database.delete_from_database(sql, (id,))
             if "errors" not in deleted:
-                outcome[
-                    "result"
-                ] = f"Class “{name}” successfully deleted from the database."
+                outcome["result"] = f"Class “{name}” successfully deleted."
             else:
                 outcome["errors"] = deleted["errors"]
             try:
@@ -110,9 +108,7 @@ def delete_subclass(classes_id: int, id: int) -> dict:
                 sql = "DELETE FROM subclasses WHERE id = ?"
                 deleted = database.delete_from_database(sql, (id,))
                 if "errors" not in deleted:
-                    outcome[
-                        "result"
-                    ] = f"Subclass “{name}” successfully deleted from the database."
+                    outcome["result"] = f"Subclass “{name}” successfully deleted."
                 else:
                     outcome["errors"] = deleted["errors"]
                 try:
