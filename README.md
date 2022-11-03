@@ -8,7 +8,7 @@
 
 
 # Overview
-ShootPoints Web is a set of programs for total station surveying. Based on the SiteMap surveying package originally developed at the Museum Applied Science Center for Archaeology (MASCA) at the University of Pennsylvania Museum, ShootPoints Web streamlines and simplifies total station operation and data collection on archaeological excavations.
+ShootPoints Web is a set of programs for total station surveying. Based on the SiteMap surveying package originally developed at the Museum Applied Science Center for Archaeology (MASCA) at the University of Pennsylvania Museum, ShootPoints Web streamlines and simplifies total station operation and data collection on archaeological excavations. Developed independently, it was heavily tested and refined at the Penn Museum projects at Ur and [Lagash](https://web.sas.upenn.edu/lagash/), Iraq.
 
 ShootPoints Web consists of two interrelated projects: shootpoints-web-api and shootpoints-web-frontend. shootpoints-web-api can be run as a standalone program from the command line, but it is most easily operated through the web interface provided by shootpoints-web-frontend.
 
@@ -42,7 +42,7 @@ git clone https://github.com/Lugal-PCZ/shootpoints-web-frontend.git
 
 ## Install required Python packages:
 ```bash
-pip3 install -r shootpoints-web-api/requirement.txt
+pip3 install -r shootpoints-web-api/requirements.txt
 ```
 
 ## Install Mustache:
@@ -58,7 +58,7 @@ These instructions presume that you will be installing ShootPoints Web on a lapt
 By default, shootpoints-web-api will launch in “demo” mode with no serial connection and simulated shot data so you can familiarize yourself with the software without a total station. This, however, can be easily overridden for testing with an actual live connection to a supported total station.
 
 ## Data Management and Categorization
-Following the model developed for SiteMap, ShootPoints Web categorizes shot data to simplify its interpretation and visualization. The two primary categorizations are groupings (collections of related points) and class/subclass (archaeological metadata about the shots). All data are saved to a local database which can be downloaded *in toto* or exported as CSV files via the web interface.
+Following the model developed for SiteMap, ShootPoints Web categorizes shot data to simplify its visualization and interpretation. The two primary categorizations are groupings (collections of related points) and class/subclass (archaeological metadata about the shots). All data are saved to a local database which can be downloaded *in toto* or exported as CSV files via the web interface.
 
 ShootPoints Web will not let you begin collecting data without the proper prerequisites (site, station coordinates, and surveying session).
 
@@ -72,25 +72,28 @@ Every measurement taken with ShootPoints Web is part of a grouping, which can be
 ### Classes and Subclasses
 Each grouping also is assigned a class and subclass to assist in categorization and visualization of the data collected. The following classes and subclasses are populated in the ShootPoints database with a fresh install, but new ones can be added and removed under the “Setup” section, as is appropriate for your site.
 * **Architecture**: Human-built structures.
-  * **Wall**: Vertical, human-made, constructions that enclose, divide, or delimit space.
   * **Floor**: Prepared surfaces upon which human activities took place.
+  * **Wall**: Vertical, human-made, constructions that enclose, divide, or delimit space.
 * **Artifact**: Objects made, modified, or used by people.
 * **Feature**: Natural formations or immovable, non-architectural, human creations.
+  * **Pit**: Hole or depression that cuts through lower stratigraphic layers.
   * **Topography**: Ground surface.
 * **Operation**: Excavation units, controls, grids, and measurements.
+  * **GCP**: Photogrammetry ground control points.
+  * **Elevation Control Point**: Control point for taking local elevations, as with a string and bubble level.
+  * **Grid**: Site or survey grid.
   * **Survey Station**: Benchmarks for survey station setup or backsights.
   * **Trench**: Excavation units.
-  * **GCP**: Photogrammetry ground control points.
 
 ## ShootPoints Web Interface
 ShootPoints Web’s interface has five primary components:
 
 ![ShootPoints Web interface overview](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_Overview.png?raw=true)
 1. **On-The-Fly Adjustments**: Click the arrows icon in the upper left to set atmospheric corrections and prism offsets, which may vary from one shot to the next.
-2. **Utilities**: Click the gears icon in the upper right to download data or delete a surveying session. Also, if ShootPoints Web is running on a Raspberry Pi, you will have options to set its system clock and safely shut it down.
+2. **Utilities**: Click the gears icon in the upper right to download data or delete a surveying session. Also, if ShootPoints Web is running on a Raspberry Pi, you will have options to safely shut it down.
 3. **Output Box**: The results of your commands will be displayed here.
-4. **“Setup” Section**: Expand this area to input values that should be set prior to beginning surveying, such as your site, total station benchmarks, and class/subclass.
-5. **“Surveying” Section**: Expand this area to collect data with the total station.
+4. **“Surveying” Section**: Expand this area to collect data with the total station.
+5. **“Setup” Section**: Expand this area to input values that should be set prior to beginning surveying, such as your site, total station benchmarks, and class/subclass.
 
 ## Start the ShootPoints Web software:
 ```bash
@@ -130,10 +133,11 @@ Add additional stations if you’re working with an existing site with multiple 
      * Enter the height (in meters) of the total station above the occupied point and azimuth (in dd.mmss format) to the known landmark.
    * **Backsight**: You will to shoot a point between two pre-set stations with known coordinates and have ShootPoints Web calculate the azimuth and instrument height.
      * Select the backsight station and enter the height (in meters) of the prism pole.
-7. Click the “Start New Session” button.  
-![Start New Session form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_StartNewSession.png?raw=true)
+7. Click the “Set Instrument Azimuth” or “Shoot Backsight” button. (The button label will change, depending on the session type.)
+![Start New Session form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_SetInstrumentAzimuth.png?raw=true)
+![Start New Session form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_ShootBacksight.png?raw=true)
 10. When prompted to check, verify that the atmospheric conditions and time displayed in the page header are correct. If they aren’t, dismiss the dialog and click the “On-The-Fly” Adjustments (arrows) icon in the upper left and/or the “Utilities” (gears) icon in the upper right to make the necessary adjustments.
-11. If the atmospheric conditions and system clock are correct, aim the total station at the landmark or the backsight prism and click “OK” to start the new surveying session.  
+11. If the atmospheric conditions are correct, aim the total station at the landmark or the backsight prism and click “OK” to start the new surveying session.  
 ![“Please verify” dialog box](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_PleaseVerify.png?raw=true)
 
 ## Create a new grouping:
@@ -154,6 +158,6 @@ Add additional stations if you’re working with an existing site with multiple 
 5. (*optional*) If saving the shot, you can add a comment such as “NE corner” or “broken edge” to assist your interpretation of the data later.  
 ![Save Last Shot form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_SaveLastShot.png?raw=true)
 
-Continue taking shots, each of which will be saved to the current grouping. To begin taking shots in a new grouping, simply create a new grouping as described above.
+Continue taking shots, each of which will be saved to the current grouping. To begin taking shots in a new grouping, simply create a new grouping as described above. You can also end a grouping or session deliberately. (This is useful if multiple excavators are using the total station and you want to prevent the accidental addition of new shots to existing groupings.)
 
 Note that any grouping shot with an “Isolated Point” geometry can logically only have one shot saved to it, so if you’re taking a series of these (such as is typical of end-of-day point elevations in a trench), you will need to create a new grouping for each shot. Though this sounds needlessly cumbersome, in practice it is a quick process and ensures that your data are marked consistently.
