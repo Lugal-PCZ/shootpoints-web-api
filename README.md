@@ -133,8 +133,8 @@ Add additional stations if you’re working with an existing site with multiple 
      * Enter the height (in meters) of the total station above the occupied point and azimuth (in dd.mmss format) to the known landmark.
    * **Backsight**: You will to shoot a point between two pre-set stations with known coordinates and have ShootPoints Web calculate the azimuth and instrument height.
      * Select the backsight station and enter the height (in meters) of the prism pole.
-7. Click the “Set Instrument Azimuth” or “Shoot Backsight” button. (The button label will change, depending on the session type.)
-![Start New Session form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_SetInstrumentAzimuth.png?raw=true)
+7. Click the “Set Instrument Azimuth” or “Shoot Backsight” button. (The button label will change, depending on the session type.)  
+![Start New Session form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_SetInstrumentAzimuth.png?raw=true)  
 ![Start New Session form](https://github.com/Lugal-PCZ/readme-images/blob/main/shootpoints-web-frontend_ShootBacksight.png?raw=true)
 10. When prompted to check, verify that the atmospheric conditions and time displayed in the page header are correct. If they aren’t, dismiss the dialog and click the “On-The-Fly” Adjustments (arrows) icon in the upper left and/or the “Utilities” (gears) icon in the upper right to make the necessary adjustments.
 11. If the atmospheric conditions are correct, aim the total station at the landmark or the backsight prism and click “OK” to start the new surveying session.  
