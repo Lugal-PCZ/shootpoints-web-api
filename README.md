@@ -29,9 +29,6 @@ shootpoints-web-api requires the following third-party Python packages, installa
 - utm
 - uvicorn
 
-shootpoints-web-frontend requires the [Mustache](http://mustache.github.io) JavaScript library. Because ShootPoints Web is expected to be run on a local wifi network without internet access, Mustache is installed locally, as shown below.
-
-
 # Installation
 ## Clone ShootPoints Web into your project directory:
 ```bash
@@ -44,13 +41,6 @@ git clone https://github.com/Lugal-PCZ/shootpoints-web-frontend.git
 ```bash
 pip3 install -r shootpoints-web-api/requirements.txt
 ```
-
-## Install Mustache:
-```bash
-curl -LO https://unpkg.com/mustache@latest/mustache.min.js
-mv mustache.min.js <path/to/your/installation/>shootpoints-web-frontend/lib/
-```
-
 
 # Quick Start
 These instructions presume that you will be installing ShootPoints Web on a laptop or desktop computer for initial testing purposes. Instructions for installing ShootPoints Web on a Raspberry Pi for fieldwork are forthcoming.
