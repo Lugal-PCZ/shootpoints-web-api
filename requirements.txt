@@ -2,5 +2,4 @@ pyserial
 fastapi
 uvicorn
 utm
-black
 python-multipart

@@ -2,8 +2,6 @@
 
 import datetime
 
-from black import out
-
 from . import database
 from . import calculations
 from . import tripod

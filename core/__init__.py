@@ -119,7 +119,7 @@ def _load_serial_port() -> dict:
             outcome["result"] = f"Serial port {serialport} opened."
         except:
             outcome["errors"].append(
-                f"Serial port {serialport} could not be opened. Check your serial adapter and cable connections before proceeding"
+                f"Serial port {serialport} could not be opened. Check your serial adapter and cable connections before proceeding."
             )
     for each in outcome["errors"]:
         database._record_setup_error(each)

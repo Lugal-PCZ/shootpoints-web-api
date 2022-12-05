@@ -1,4 +1,5 @@
 """This module contains the API for ShootPoints."""
+
 from time import strftime
 from fastapi import FastAPI, Form, Response
 from fastapi.staticfiles import StaticFiles
