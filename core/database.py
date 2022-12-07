@@ -349,7 +349,7 @@ def export_session_data(sessions_id: int) -> None:
         .replace(" ", "")
         .replace(":", "")
     )
-    archivename = f"ShootPoints_Session_{collapseddate}"
+    archivename = f"ShootPoints_Data_{collapseddate}"
     with ZipFile(f"exports/export.zip", "w", compression=ZIP_DEFLATED) as f:
         for eachfile in filesinarchive:
             try:
