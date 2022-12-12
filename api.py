@@ -368,7 +368,7 @@ async def get_all_sessions():
 
 
 @app.post("/session/", status_code=201)
-async def start_new_surveying_session(
+def start_new_surveying_session(
     response: Response,
     label: str = Form(...),
     surveyor: str = Form(...),

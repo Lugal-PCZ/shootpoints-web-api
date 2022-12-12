@@ -139,6 +139,7 @@ def start_surveying_session_with_backsight(
 ) -> dict:
     """This function starts a new surveying session with a backsight to a known point."""
     outcome = {"errors": database.get_setup_errors(), "result": ""}
+    canceled = False
     if not outcome["errors"]:
         if occupied_point_id == backsight_station_id:
             outcome["errors"].append(
@@ -175,7 +176,12 @@ def start_surveying_session_with_backsight(
             setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
             if "errors" not in setazimuth:
                 measurement = totalstation.take_measurement()
-                if "errors" not in measurement:
+                if "notification" in measurement:
+                    canceled = True
+                    outcome["result"] = "Backsight shot canceled by user."
+                elif "errors" in measurement:
+                    outcome["errors"].extend(measurement["errors"])
+                else:
                     variance = calculations._calculate_backsight_variance(
                         occupied_n,
                         occupied_e,
@@ -198,11 +204,9 @@ def start_surveying_session_with_backsight(
                     tripod._validate_instrument_height(
                         instrument_height, outcome["errors"]
                     )
-                else:
-                    outcome["errors"].extend(measurement["errors"])
             else:
                 outcome["errors"].extend(setazimuth["errors"])
-        if not outcome["errors"]:
+        if not canceled and not outcome["errors"]:
             data = (
                 label,
                 surveyor,
