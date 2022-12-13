@@ -45,6 +45,12 @@ async def check_for_raspbian():
     return raspbian
 
 
+@app.get("/raspbian/reboot/")
+async def reboot_rpi():
+    """This function reboots the Raspberrry Pi."""
+    os.system("sudo reboot")
+
+
 @app.get("/raspbian/shutdown/")
 async def shut_down_rpi():
     """This function shuts down the Raspberrry Pi."""
