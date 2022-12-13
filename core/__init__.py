@@ -148,41 +148,29 @@ def _load_application() -> dict:
             survey.temperature = saved_state["temperature"]
             currentsession = saved_state["currentsession"]
             currentgrouping = saved_state["currentgrouping"]
-            # End the current session if it’s been > 12 hours since the last session was started.
-            # (The presumption is that it was never ended when it should have been.)
-            currentsessionstart = database.read_from_database(
-                "SELECT started FROM sessions WHERE id = ?", (currentsession,)
-            )["results"][0]["started"]
-            if (
-                datetime.datetime.strptime(currentsessionstart, "%Y-%m-%d %H:%M:%S")
-                + datetime.timedelta(hours=12)
-                > datetime.datetime.now()
-            ):
-                survey.sessionid = currentsession
-                sql = (
-                    "SELECT "
-                    "  sta.northing AS n, "
-                    "  sta.easting AS e, "
-                    "  sta.elevation AS z, "
-                    "  sess.instrumentheight AS ih, "
-                    "  max(grp.id) AS gid "
-                    "FROM sessions sess "
-                    "JOIN stations sta ON sess.stations_id_occupied = sta.id "
-                    "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
-                    "WHERE sess.id = ?"
-                )
-                session_info = database.read_from_database(sql, (currentsession,))[
-                    "results"
-                ][0]
-                tripod.occupied_point = {
-                    "n": session_info["n"],
-                    "e": session_info["e"],
-                    "z": session_info["z"],
-                }
-                tripod.instrument_height = session_info["ih"]
-                survey.groupingid = currentgrouping
-            else:
-                survey.end_current_session()
+            survey.sessionid = currentsession
+            sql = (
+                "SELECT "
+                "  sta.northing AS n, "
+                "  sta.easting AS e, "
+                "  sta.elevation AS z, "
+                "  sess.instrumentheight AS ih, "
+                "  max(grp.id) AS gid "
+                "FROM sessions sess "
+                "JOIN stations sta ON sess.stations_id_occupied = sta.id "
+                "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
+                "WHERE sess.id = ?"
+            )
+            session_info = database.read_from_database(sql, (currentsession,))[
+                "results"
+            ][0]
+            tripod.occupied_point = {
+                "n": session_info["n"],
+                "e": session_info["e"],
+                "z": session_info["z"],
+            }
+            tripod.instrument_height = session_info["ih"]
+            survey.groupingid = currentgrouping
         except:
             pass
     loaders = [_load_configs_from_file, _load_total_station_model, _load_serial_port]

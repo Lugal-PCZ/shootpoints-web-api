@@ -401,6 +401,7 @@ def start_new_surveying_session(
 
 @app.put("/session/")
 async def end_current_session(response: Response):
+    """This function ends the current surveying session."""
     outcome = core.survey.end_current_session()
     if "errors" in outcome:
         response.status_code = 400
