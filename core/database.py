@@ -295,42 +295,33 @@ def export_session_data(sessions_id: int) -> None:
                 )
                 qgisfile.writeheader()
                 qgisfile.writerows(closedpolygons)
-        # Export a file of photogrammetry GCPs.
+        # Export files of photogrammetry GCPs.
         groundcontrolpoints = []
         for eachshot in shotsdata:
             if eachshot["subclass"] == "GCP":
+                label = eachshot["label"].replace(" ", "_")
                 groundcontrolpoints.append(
-                    f"{eachshot['label'].replace(' ', '_')}\t{eachshot['easting']}\t{eachshot['northing']}\t{eachshot['elevation']}"
+                    f"{label}\t{eachshot['easting']}\t{eachshot['northing']}\t{eachshot['elevation']}"
                 )
         if groundcontrolpoints:
-            with open("exports/photogrammetry_gcps_gcps_for_dronedeploy.csv", "w") as f:
-                headers = ["GCP Label", "Northing", "Easting", "Elevation (m)"]
-                gcpfile = csv.DictWriter(
-                    f,
-                    fieldnames=headers,
-                )
-                gcpfile.writeheader()
-                for eachgcp in groundcontrolpoints:
-                    coords = eachgcp.split("\t")
-                    gcpfile.writerow(
-                        dict(zip(headers, [coords[0], coords[2], coords[1], coords[3]]))
-                    )
-            with open("exports/photogrammetry_gcps_gcps_for_metashape.csv", "w") as f:
-                headers = ["Name", "X", "Y", "Z"]
-                gcpfile = csv.DictWriter(
-                    f,
-                    fieldnames=headers,
-                )
-                gcpfile.writeheader()
-                for eachgcp in groundcontrolpoints:
-                    coords = eachgcp.split("\t")
-                    gcpfile.writerow(
-                        dict(zip(headers, [coords[0], coords[1], coords[2], coords[3]]))
-                    )
-            with open("exports/photogrammetry_gcps_gcps_for_webodm.txt", "w") as f:
-                f.write(f"WGS84 UTM {sessiondata['occupied_station_utmzone']}\n")
-                for eachgcp in groundcontrolpoints:
-                    f.write(f"{eachgcp}\n")
+            write_gcps_to_file(
+                "dronedeploy",
+                "csv",
+                ["GCP Label", "Northing", "Easting", "Elevation (m)"],
+                groundcontrolpoints,
+            )
+            write_gcps_to_file(
+                "metashape",
+                "csv",
+                ["Name", "X", "Y", "Z"],
+                groundcontrolpoints,
+            )
+            write_gcps_to_file(
+                "webodm",
+                "txt",
+                [f"WGS84 UTM {sessiondata['occupied_station_utmzone']}"],
+                groundcontrolpoints,
+            )
     # Finally, bundle up all the export files into a ZIP archive for download.
     filesinarchive = [
         "session_info.json",
@@ -364,6 +355,29 @@ def export_session_data(sessions_id: int) -> None:
     cleanup.extend(glob.glob("exports/*.txt"))
     for eachfile in cleanup:
         os.remove(eachfile)
+
+
+def write_gcps_to_file(
+    thefile: str, filetype: str, headers: list, groundcontrolpoints: list
+) -> None:
+    """This function writes a text or CSV file with the parameters given."""
+    with open(f"exports/photogrammetry_gcps_gcps_for_{thefile}.{filetype}", "w") as f:
+        if filetype == "csv":
+            gcpfile = csv.DictWriter(
+                f,
+                fieldnames=headers,
+            )
+            gcpfile.writeheader()
+            for eachgcp in groundcontrolpoints:
+                coords = eachgcp.split("\t")
+                gcpfile.writerow(
+                    dict(zip(headers, [coords[0], coords[2], coords[1], coords[3]]))
+                )
+        elif filetype == "txt":
+            for eachline in headers:
+                f.write(f"{eachline}\n")
+            for eachgcp in groundcontrolpoints:
+                f.write(f"{eachgcp}\n")
 
 
 def get_setup_errors() -> list:
