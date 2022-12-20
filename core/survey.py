@@ -394,6 +394,7 @@ def get_current_grouping() -> dict:
     if sessionid:
         sql = (
             "SELECT "
+            "  grp.id, "
             "  grp.label, "
             "  geo.name AS geometries_name, "
             "  cl.name AS classes_name, "
