@@ -125,9 +125,11 @@ def _validate_instrument_height(height: float, errors: list) -> dict:
     try:
         height = round(float(height), 3)
         if height < 0:
-            errors.append(f"The instrument height ({height}m) is negative.")
+            errors.append(f"The calculated instrument height ({height}m) is negative.")
         elif height >= 2:
-            errors.append(f"The instrument height ({height}m) is unrealistically high.")
+            errors.append(
+                f"The calculated instrument height ({height}m) is unrealistically high."
+            )
     except ValueError:
         errors.append(f"The instrument height ({height}m) is not numeric.")
 
