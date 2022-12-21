@@ -3,6 +3,7 @@
 import sqlite3
 import json
 import csv
+import shapefile
 import os, glob
 from zipfile import ZipFile, ZIP_DEFLATED
 
@@ -73,6 +74,62 @@ def delete_from_database(sql: str, params: tuple) -> dict:
 
 def export_session_data(sessions_id: int) -> None:
     """This function creates a ZIP file of a session and its shots, for download by the browser."""
+    allshots = []
+    pointclouds = []
+    openpolygons = []
+    closedpolygons = []
+    thisgroupinfo = {}
+    thisgroupgeometry = ""
+    shotsinthisgroup = []
+    gcps = []
+
+    def _assemble_group():
+        if thisgroupgeometry == "Point Cloud":
+            pointclouds.append([dict(**thisgroupinfo), shotsinthisgroup])
+        elif thisgroupgeometry == "Open Polygon":
+            openpolygons.append([dict(**thisgroupinfo), shotsinthisgroup])
+        elif thisgroupgeometry == "Closed Polygon":
+            closedpolygons.append([dict(**thisgroupinfo), shotsinthisgroup])
+
+    def _write_gcps_to_file(
+        thefile: str,
+        filetype: str,
+        coords: str,
+        headers: list,
+        gcps: list,
+    ) -> None:
+        """This function writes a text or CSV file with the parameters given."""
+        with open(
+            f"exports/photogrammetry_gcps_gcps_for_{thefile}.{filetype}", "w"
+        ) as f:
+            if filetype == "csv":
+                gcpfile = csv.DictWriter(
+                    f,
+                    fieldnames=headers,
+                )
+                gcpfile.writeheader()
+                for eachgcp in gcps:
+                    gcpfile.writerow(
+                        dict(
+                            zip(
+                                headers,
+                                [
+                                    eachgcp["label"],
+                                    eachgcp[coords[0]],
+                                    eachgcp[coords[1]],
+                                    eachgcp[coords[2]],
+                                ],
+                            )
+                        )
+                    )
+            elif filetype == "txt":
+                for eachline in headers:
+                    f.write(f"{eachline}\n")
+                for eachgcp in gcps:
+                    f.write(
+                        f"{eachgcp['label']}\t{eachgcp[coords[0]]}\t{eachgcp[coords[1]]}\t{eachgcp[coords[2]]}\n"
+                    )
+
     # First, get information about the session, and save it to a JSON file.
     sql = (
         "SELECT "
@@ -133,8 +190,11 @@ def export_session_data(sessions_id: int) -> None:
         session["session"]["backsight_station"] = backsight_station
     with open("exports/session_info.json", "w") as f:
         f.write(json.dumps(session, ensure_ascii=False, indent=2))
+
+    # Next, save the shots to multiple kinds of data files.
     if sessiondata["data_number_of_shots"] > 0:
-        # Next, get data for all the shots in the session, and save them to a CSV file.
+
+        # Save all shots to a flat CSV file.
         sql = (
             "SELECT "
             "  grp.id AS group_id, "
@@ -173,42 +233,12 @@ def export_session_data(sessions_id: int) -> None:
             shotsfile = csv.DictWriter(f, fieldnames=shotsdata[0].keys())
             shotsfile.writeheader()
             shotsfile.writerows(shotsdata)
-        # Parse the shots data and re-format it as a CSV file that QGIS can import directly.
-        allshots = []
-        pointclouds = []
-        openpolygons = []
-        closedpolygons = []
-        thisgroupinfo = {}
-        thisgroupgeometry = ""
-        shotsinthisgroup = []
-
-        def _assemble_group():
-            if len(shotsinthisgroup) > 1:
-                if thisgroupgeometry == "Point Cloud":
-                    pointclouds.append(
-                        dict(
-                            {"wkt": f"MULTIPOINT Z({', '.join(shotsinthisgroup)})"},
-                            **thisgroupinfo,
-                        )
-                    )
-                elif thisgroupgeometry == "Open Polygon":
-                    openpolygons.append(
-                        dict(
-                            {"wkt": f"LINESTRING Z({', '.join(shotsinthisgroup)})"},
-                            **thisgroupinfo,
-                        )
-                    )
-                elif thisgroupgeometry == "Closed Polygon":
-                    closedpolygons.append(
-                        dict(
-                            {"wkt": f"POLYGON Z(({', '.join(shotsinthisgroup)}))"},
-                            **thisgroupinfo,
-                        )
-                    )
 
         for eachshot in shotsdata:
             if (
+                # This is the first shot in shotsdata.
                 not "group_id" in thisgroupinfo
+                # This is the first shot in a new grouping.
                 or eachshot["group_id"] != thisgroupinfo["group_id"]
             ):
                 _assemble_group()
@@ -219,128 +249,143 @@ def export_session_data(sessions_id: int) -> None:
                     "description": eachshot["description"],
                     "class": eachshot["class"],
                     "subclass": eachshot["subclass"],
-                    "timestamp": eachshot["timestamp"],
                 }
                 shotsinthisgroup = []
             shotsinthisgroup.append(
-                f"{eachshot['easting']} {eachshot['northing']} {eachshot['elevation']}"
+                [eachshot["easting"], eachshot["northing"], eachshot["elevation"]]
             )
             allshots.append(
                 {
                     "group_id": eachshot["group_id"],
                     "shot_id": eachshot["shot_id"],
                     "label": eachshot["label"],
-                    "description": eachshot["description"],
+                    "descr": eachshot["description"],
                     "class": eachshot["class"],
                     "subclass": eachshot["subclass"],
                     "comment": eachshot["comment"],
+                    "timestamp": eachshot["timestamp"],
                     "N": eachshot["northing"],
                     "E": eachshot["easting"],
                     "Z": eachshot["elevation"],
-                    "timestamp": eachshot["timestamp"],
-                    "wkt": f"POINT Z({eachshot['easting']} {eachshot['northing']} {eachshot['elevation']})",
                 }
             )
-        _assemble_group()  # This terminates a multi-point group that's at the end of the file
-        qgisfieldnames = [
-            "group_id",
-            "shot_id",
-            "label",
-            "description",
-            "class",
-            "subclass",
-            "comment",
-            "timestamp",
-            "N",
-            "E",
-            "Z",
-            "wkt",
-        ]
-        with open("exports/for_qgis_allshots.csv", "w") as f:
-            qgisfile = csv.DictWriter(
-                f,
-                fieldnames=qgisfieldnames,
-            )
-            qgisfile.writeheader()
-            qgisfile.writerows(allshots)
-            # QGIS doesn’t report details of the individual nodes (= shots) in multipoint (= point cloud),
-            # linestring (= open polygon), or polygon (= closed polygon) layers, so remove the following
-            # data fields which don’t pertain in those cases.
-            qgisfieldnames.remove("shot_id")
-            qgisfieldnames.remove("comment")
-            qgisfieldnames.remove("N")
-            qgisfieldnames.remove("E")
-            qgisfieldnames.remove("Z")
-        if pointclouds:
-            with open("exports/for_qgis_pointclouds.csv", "w") as f:
-                qgisfile = csv.DictWriter(
-                    f,
-                    fieldnames=qgisfieldnames,
-                )
-                qgisfile.writeheader()
-                qgisfile.writerows(pointclouds)
-        if openpolygons:
-            with open("exports/for_qgis_openpolygons.csv", "w") as f:
-                qgisfile = csv.DictWriter(
-                    f,
-                    fieldnames=qgisfieldnames,
-                )
-                qgisfile.writeheader()
-                qgisfile.writerows(openpolygons)
-        if closedpolygons:
-            with open("exports/for_qgis_closedpolygons.csv", "w") as f:
-                qgisfile = csv.DictWriter(
-                    f,
-                    fieldnames=qgisfieldnames,
-                )
-                qgisfile.writeheader()
-                qgisfile.writerows(closedpolygons)
-        # Export files of photogrammetry GCPs.
-        groundcontrolpoints = []
-        for eachshot in shotsdata:
+            # Assemble a list of all the GCPs in this session.
             if eachshot["subclass"] == "GCP":
-                label = eachshot["label"].replace(" ", "_")
-                groundcontrolpoints.append(
-                    f"{label}\t{eachshot['easting']}\t{eachshot['northing']}\t{eachshot['elevation']}"
+                label = eachshot["label"].replace(" ", "_").replace(",", "_")
+                gcps.append(
+                    {
+                        "label": label,
+                        "N": eachshot["northing"],
+                        "E": eachshot["easting"],
+                        "X": eachshot["easting"],
+                        "Y": eachshot["northing"],
+                        "Z": eachshot["elevation"],
+                    }
                 )
-        if groundcontrolpoints:
-            write_gcps_to_file(
-                "dronedeploy",
-                "csv",
-                ["GCP Label", "Northing", "Easting", "Elevation (m)"],
-                groundcontrolpoints,
-            )
-            write_gcps_to_file(
-                "metashape",
-                "csv",
-                ["Name", "X", "Y", "Z"],
-                groundcontrolpoints,
-            )
-            write_gcps_to_file(
-                "webodm",
-                "txt",
-                [f"WGS84 UTM {sessiondata['occupied_station_utmzone']}"],
-                groundcontrolpoints,
-            )
+        _assemble_group()  # This terminates a multi-point group that's at the end of the file
+
+        # Write shapefile of all the points shot in the session.
+        with shapefile.Writer(
+            "exports/gis_shapefiles_allshots", shapeType=shapefile.POINTZ
+        ) as w:
+            w.field("group_id", "N")
+            w.field("shot_id", "N")
+            w.field("label", "C")
+            w.field("descr", "C")
+            w.field("class", "C")
+            w.field("subclass", "C")
+            w.field("comment", "C")
+            w.field("timestamp", "C")
+            w.field("N", "N", decimal=3)
+            w.field("E", "N", decimal=3)
+            w.field("Z", "N", decimal=3)
+            for eachshot in allshots:
+                w.record(*tuple(eachshot.values()))
+                w.pointz(eachshot["E"], eachshot["N"], eachshot["Z"])
+
+        # Write shapefiles for multipoint geometries.
+        if pointclouds:
+            with shapefile.Writer(
+                "exports/gis_shapefiles_pointclouds", shapeType=shapefile.MULTIPOINTZ
+            ) as w:
+                w.field("group_id", "N")
+                w.field("label", "C")
+                w.field("descr", "C")
+                w.field("class", "C")
+                w.field("subclass", "C")
+                for eachgroup in pointclouds:
+                    w.record(*tuple(eachgroup[0].values()))
+                    w.multipointz(eachgroup[1])
+        if openpolygons:
+            with shapefile.Writer(
+                "exports/gis_shapefiles_openpolygons", shapeType=shapefile.POLYLINEZ
+            ) as w:
+                w.field("group_id", "N")
+                w.field("label", "C")
+                w.field("descr", "C")
+                w.field("class", "C")
+                w.field("subclass", "C")
+                for eachgroup in openpolygons:
+                    w.record(*tuple(eachgroup[0].values()))
+                    w.linez([eachgroup[1]])
+        if closedpolygons:
+            with shapefile.Writer(
+                "exports/gis_shapefiles_closedpolygons", shapeType=shapefile.POLYGONZ
+            ) as w:
+                w.field("group_id", "N")
+                w.field("label", "C")
+                w.field("descr", "C")
+                w.field("class", "C")
+                w.field("subclass", "C")
+                for eachgroup in closedpolygons:
+                    w.record(*tuple(eachgroup[0].values()))
+                    w.polyz([eachgroup[1]])
+
+    # Write GCPs to files.
+    if gcps:
+        _write_gcps_to_file(
+            "dronedeploy",
+            "csv",
+            "NEZ",
+            ["GCP Label", "Northing", "Easting", "Elevation (m)"],
+            gcps,
+        )
+        _write_gcps_to_file(
+            "metashape",
+            "csv",
+            "XYZ",
+            ["Name", "X", "Y", "Z"],
+            gcps,
+        )
+        _write_gcps_to_file(
+            "webodm",
+            "txt",
+            "XYZ",
+            [f"WGS84 UTM {sessiondata['occupied_station_utmzone']}"],
+            gcps,
+        )
+
     # Finally, bundle up all the export files into a ZIP archive for download.
     filesinarchive = [
         "session_info.json",
         "shots_data.csv",
-        "for_qgis/allshots.csv",
-        "for_qgis/pointclouds.csv",
-        "for_qgis/openpolygons.csv",
-        "for_qgis/closedpolygons.csv",
+        "gis_shapefiles/allshots.dbf",
+        "gis_shapefiles/allshots.shp",
+        "gis_shapefiles/allshots.shx",
+        "gis_shapefiles/closedpolygons.dbf",
+        "gis_shapefiles/closedpolygons.shp",
+        "gis_shapefiles/closedpolygons.shx",
+        "gis_shapefiles/openpolygons.dbf",
+        "gis_shapefiles/openpolygons.shx",
+        "gis_shapefiles/openpolygons.shp",
+        "gis_shapefiles/pointclouds.dbf",
+        "gis_shapefiles/pointclouds.shp",
+        "gis_shapefiles/pointclouds.shx",
         "photogrammetry_gcps/gcps_for_dronedeploy.csv",
         "photogrammetry_gcps/gcps_for_metashape.csv",
         "photogrammetry_gcps/gcps_for_webodm.txt",
     ]
-    collapseddate = (
-        sessiondata["session_started"]
-        .replace("-", "")
-        .replace(" ", "")
-        .replace(":", "")
-    )
-    archivename = f"ShootPoints_Data_{collapseddate}"
+    archivename = f"ShootPoints_Data_{sessiondata['session_started'].replace('-', '').replace(' ', '').replace(':', '')}"
     with ZipFile(f"exports/export.zip", "w", compression=ZIP_DEFLATED) as f:
         for eachfile in filesinarchive:
             try:
@@ -352,32 +397,12 @@ def export_session_data(sessions_id: int) -> None:
                 pass
     cleanup = glob.glob("exports/*.json")
     cleanup.extend(glob.glob("exports/*.csv"))
+    cleanup.extend(glob.glob("exports/*.dbf"))
+    cleanup.extend(glob.glob("exports/*.shp"))
+    cleanup.extend(glob.glob("exports/*.shx"))
     cleanup.extend(glob.glob("exports/*.txt"))
     for eachfile in cleanup:
         os.remove(eachfile)
-
-
-def write_gcps_to_file(
-    thefile: str, filetype: str, headers: list, groundcontrolpoints: list
-) -> None:
-    """This function writes a text or CSV file with the parameters given."""
-    with open(f"exports/photogrammetry_gcps_gcps_for_{thefile}.{filetype}", "w") as f:
-        if filetype == "csv":
-            gcpfile = csv.DictWriter(
-                f,
-                fieldnames=headers,
-            )
-            gcpfile.writeheader()
-            for eachgcp in groundcontrolpoints:
-                coords = eachgcp.split("\t")
-                gcpfile.writerow(
-                    dict(zip(headers, [coords[0], coords[2], coords[1], coords[3]]))
-                )
-        elif filetype == "txt":
-            for eachline in headers:
-                f.write(f"{eachline}\n")
-            for eachgcp in groundcontrolpoints:
-                f.write(f"{eachgcp}\n")
 
 
 def get_setup_errors() -> list:
