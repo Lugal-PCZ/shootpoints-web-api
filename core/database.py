@@ -246,7 +246,7 @@ def export_session_data(sessions_id: int) -> None:
                 thisgroupinfo = {
                     "group_id": eachshot["group_id"],
                     "label": eachshot["label"],
-                    "description": eachshot["description"],
+                    "dscrptn": eachshot["description"],
                     "class": eachshot["class"],
                     "subclass": eachshot["subclass"],
                 }
@@ -259,7 +259,7 @@ def export_session_data(sessions_id: int) -> None:
                     "group_id": eachshot["group_id"],
                     "shot_id": eachshot["shot_id"],
                     "label": eachshot["label"],
-                    "descr": eachshot["description"],
+                    "dscrptn": eachshot["description"],
                     "class": eachshot["class"],
                     "subclass": eachshot["subclass"],
                     "comment": eachshot["comment"],
@@ -291,7 +291,7 @@ def export_session_data(sessions_id: int) -> None:
             w.field("group_id", "N")
             w.field("shot_id", "N")
             w.field("label", "C")
-            w.field("descr", "C")
+            w.field("dscrptn", "C")
             w.field("class", "C")
             w.field("subclass", "C")
             w.field("comment", "C")
@@ -310,7 +310,7 @@ def export_session_data(sessions_id: int) -> None:
             ) as w:
                 w.field("group_id", "N")
                 w.field("label", "C")
-                w.field("descr", "C")
+                w.field("dscrptn", "C")
                 w.field("class", "C")
                 w.field("subclass", "C")
                 for eachgroup in pointclouds:
@@ -322,7 +322,7 @@ def export_session_data(sessions_id: int) -> None:
             ) as w:
                 w.field("group_id", "N")
                 w.field("label", "C")
-                w.field("descr", "C")
+                w.field("dscrptn", "C")
                 w.field("class", "C")
                 w.field("subclass", "C")
                 for eachgroup in openpolygons:
@@ -334,7 +334,7 @@ def export_session_data(sessions_id: int) -> None:
             ) as w:
                 w.field("group_id", "N")
                 w.field("label", "C")
-                w.field("descr", "C")
+                w.field("dscrptn", "C")
                 w.field("class", "C")
                 w.field("subclass", "C")
                 for eachgroup in closedpolygons:
