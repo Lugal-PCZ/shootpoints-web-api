@@ -52,7 +52,7 @@ CREATE TABLE `sessions` (
 ,  `surveyor` TEXT NOT NULL
 ,  `stations_id_occupied` INTEGER NOT NULL
 ,  `stations_id_backsight` INTEGER  DEFAULT NULL
-,  `azimuth` TEXT NOT NULL DEFAULT '0°0''0"'
+,  `azimuth` TEXT NOT NULL DEFAULT '0° 0'' 0"'
 ,  `instrumentheight` REAL NOT NULL
 ,  `pressure` INTEGER NOT NULL DEFAULT 760
 ,  `temperature` INTEGER NOT NULL DEFAULT 15
