@@ -24,6 +24,12 @@ gcpfiles = [
         "headers": ["Name", "X", "Y", "Z"],
     },
     {
+        "name": "pix4d",
+        "type": "csv",
+        "coords": "ENZ",
+        "headers": [],
+    },
+    {
         "name": "webodm",
         "type": "txt",
         "coords": "XYZ",
@@ -304,11 +310,19 @@ def _write_gcps_to_file(
     session: dict,
     gcps: list,
 ) -> None:
-    """This function writes a text or CSV file with the parameters given."""
-    headers = [
-        eachheader.replace("|UTMZONE|", session["occupied_station_utmzone"])
-        for eachheader in fileinfo["headers"]
-    ]
+    """This function writes a CSV or text file with the parameters given."""
+    if not fileinfo["headers"]:
+        headers = [
+            "label",
+            fileinfo["coords"][0],
+            fileinfo["coords"][1],
+            fileinfo["coords"][2],
+        ]
+    else:
+        headers = [
+            eachheader.replace("|UTMZONE|", session["occupied_station_utmzone"])
+            for eachheader in fileinfo["headers"]
+        ]
     with open(
         f"exports/photogrammetry_gcps_gcps_for_{fileinfo['name']}.{fileinfo['type']}",
         "w",
@@ -318,7 +332,8 @@ def _write_gcps_to_file(
                 f,
                 fieldnames=headers,
             )
-            gcpfile.writeheader()
+            if fileinfo["headers"]:
+                gcpfile.writeheader()
             for eachgcp in gcps:
                 gcpfile.writerow(
                     dict(
