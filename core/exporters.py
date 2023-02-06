@@ -30,6 +30,12 @@ gcpfiles = [
         "headers": [],
     },
     {
+        "name": "realitycapture",
+        "type": "csv",
+        "coords": "XYZ",
+        "headers": ["Name", "X (east)", "Y (north)", "Alt"],
+    },
+    {
         "name": "webodm",
         "type": "txt",
         "coords": "XYZ",
