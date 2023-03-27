@@ -29,7 +29,7 @@ def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
     distance_to_point = math.hypot(distance_to_prism, offset)
     offset_angle = math.degrees(
         math.acos(
-            (distance_to_prism ** 2 + distance_to_point ** 2 - offset ** 2)
+            (distance_to_prism**2 + distance_to_point**2 - offset**2)
             / (2 * distance_to_prism * distance_to_point)
         )
     )
@@ -65,7 +65,7 @@ def _calculate_wedge_offset(measurement: dict, offset: float) -> tuple:
     # Note: distance_to_point = distance_to_prism
     offset_angle = math.degrees(
         math.acos(
-            ((2 * distance_to_prism ** 2) - offset ** 2) / (2 * distance_to_prism ** 2)
+            ((2 * distance_to_prism**2) - offset**2) / (2 * distance_to_prism**2)
         )
     )
     if offset < 0:
@@ -151,7 +151,7 @@ def _calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
     """This function returns the azimuth in decimal degrees between two points (aN, aE) and (bN, bE)."""
     delta_n = point_b[0] - point_a[0]
     delta_e = point_b[1] - point_a[1]
-    azimuth = math.atan2(delta_e, delta_n) * (180 / math.pi)
+    azimuth = math.degrees(math.atan2(delta_e, delta_n))
     if azimuth < 0.0:
         azimuth += 360.0
     return azimuth

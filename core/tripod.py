@@ -106,16 +106,12 @@ def _validate_uniqueness_of_station(
             "SELECT count(*) FROM stations WHERE sites_id = ? AND upper(name) = ?",
             (sites_id, name.upper()),
         )["results"][0]["count(*)"]:
-            errors.append(
-                f"The station name “{name}” is already taken at site “{sitename}.”"
-            )
+            errors.append(f"The station name “{name}” is already taken at {sitename}.")
         if database.read_from_database(
             "SELECT count(*) FROM stations WHERE sites_id = ? AND (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)",
             (sites_id, northing, easting),
         )["results"][0]["count(*)"]:
-            errors.append(
-                f"The station coordinates are not unique at site “{sitename}.”"
-            )
+            errors.append(f"The station coordinates are not unique at {sitename}.")
     else:
         errors.append(f"There is no site with id {sites_id}.")
 

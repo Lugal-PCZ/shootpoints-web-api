@@ -4,7 +4,6 @@ import configparser
 import shutil
 import glob
 import importlib
-import datetime
 import serial
 
 
