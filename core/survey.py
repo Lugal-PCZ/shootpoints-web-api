@@ -19,7 +19,7 @@ pressure = 760
 temperature = 15
 
 
-def _save_new_session(data: tuple) -> int:
+def _save_new_session(data: tuple) -> int | None:
     """This function saves the surveying session information to the database."""
     global sessionid
     global groupingid
@@ -44,7 +44,7 @@ def _save_new_session(data: tuple) -> int:
 
 def _save_new_station() -> dict:
     """This function checks if the last shot was a survey station, and if so saves it to the stations database table."""
-    outcome = None
+    outcome = {}
     currentgrouping = database.read_from_database(
         "SELECT * FROM groupings WHERE id = ?",
         (groupingid,),
@@ -78,7 +78,7 @@ def _save_new_station() -> dict:
     return outcome
 
 
-def get_geometries() -> list:
+def get_geometries() -> dict:
     """This function returns the types of geometries saved in the database, for use by the application front end."""
     outcome = {"errors": [], "sites": {}}
     query = database.read_from_database("SELECT * FROM geometries")

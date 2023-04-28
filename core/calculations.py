@@ -189,8 +189,11 @@ def _calculate_backsight_variance(
     backsight_easting: float,
     delta_n: float,
     delta_e: float,
-) -> tuple:
-    """This function calculates the variance between the expected backsight distance and the measured backsight distance"""
+) -> float:
+    """
+    This function calculates the variance between the expected
+    backsight distance and the measured backsight distance.
+    """
     expected_distance = math.hypot(
         occupied_northing - backsight_northing, occupied_easting - backsight_easting
     )

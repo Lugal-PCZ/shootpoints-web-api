@@ -117,12 +117,12 @@ def get_raw_prism_offsets() -> dict:
 
 
 def set_prism_offsets(
-    vertical_distance: int = None,
-    latitude_distance: int = None,
-    longitude_distance: int = None,
-    radial_distance: int = None,
-    tangent_distance: int = None,
-    wedge_distance: int = None,
+    vertical_distance: float = None,
+    latitude_distance: float = None,
+    longitude_distance: float = None,
+    radial_distance: float = None,
+    tangent_distance: float = None,
+    wedge_distance: float = None,
 ) -> dict:
     """This function sets the prism offsets and saves them to the database."""
     global offsets
