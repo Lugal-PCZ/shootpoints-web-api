@@ -42,7 +42,7 @@ def _save_new_session(data: tuple) -> int | None:
     return sessionid
 
 
-def _save_new_station() -> dict:
+def _save_shot_as_new_station() -> dict:
     """This function checks if the last shot was a survey station, and if so saves it to the stations database table."""
     outcome = {}
     currentgrouping = database.read_from_database(
@@ -519,7 +519,7 @@ def save_last_shot(comment: str = None) -> dict:
         saved = database.save_to_database(sql, data)
         if "errors" not in saved:
             outcome["result"] = "The last shot was saved."
-            newstation = _save_new_station()
+            newstation = _save_shot_as_new_station()
             if newstation:
                 if "errors" in newstation:
                     outcome["errors"].append(newstation["errors"][0])
