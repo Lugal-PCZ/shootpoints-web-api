@@ -166,13 +166,9 @@ def start_surveying_session_with_backsight(
         else:
             prism.set_prism_offsets(-prism_height, 0, 0, 0, 0, 0)
         if not outcome["errors"]:
-            azimuth = calculations._calculate_azimuth(
+            degrees, minutes, seconds = calculations._calculate_azimuth(
                 (occupied_n, occupied_e), (backsight_n, backsight_e)
-            )
-            degrees, remainder = divmod(azimuth, 1)
-            minutes, remainder = divmod(remainder * 60, 1)
-            seconds = round(remainder * 60)
-            degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
+            )[1:]
             setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
             if "errors" not in setazimuth:
                 measurement = totalstation.take_measurement()

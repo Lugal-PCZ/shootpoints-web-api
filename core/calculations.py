@@ -24,7 +24,7 @@ def _calculate_tangent_offset(measurement: dict, offset: float) -> tuple:
         return 0, 0
     azimuth_to_prism = _calculate_azimuth(
         (0, 0), (measurement["delta_n"], measurement["delta_e"])
-    )
+    )[0]
     distance_to_prism = math.hypot(measurement["delta_n"], measurement["delta_e"])
     distance_to_point = math.hypot(distance_to_prism, offset)
     offset_angle = math.degrees(
@@ -60,7 +60,7 @@ def _calculate_wedge_offset(measurement: dict, offset: float) -> tuple:
         return 0, 0
     azimuth_to_prism = _calculate_azimuth(
         (0, 0), (measurement["delta_n"], measurement["delta_e"])
-    )
+    )[0]
     distance_to_prism = math.hypot(measurement["delta_n"], measurement["delta_e"])
     # Note: distance_to_point = distance_to_prism
     offset_angle = math.degrees(
@@ -147,14 +147,23 @@ def _apply_offsets_to_measurement(measurement: dict) -> dict:
     return measurement
 
 
-def _calculate_azimuth(point_a: tuple, point_b: tuple) -> float:
+def _calculate_azimuth(point_a: tuple, point_b: tuple) -> tuple:
     """This function returns the azimuth in decimal degrees between two points (aN, aE) and (bN, bE)."""
     delta_n = point_b[0] - point_a[0]
     delta_e = point_b[1] - point_a[1]
     azimuth = math.degrees(math.atan2(delta_e, delta_n))
     if azimuth < 0.0:
         azimuth += 360.0
-    return azimuth
+    degrees, remainder = divmod(azimuth, 1)
+    minutes, remainder = divmod(remainder * 60, 1)
+    seconds = round(remainder * 60)
+    degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
+    return (
+        azimuth,
+        degrees,
+        minutes,
+        seconds,
+    )
 
 
 def _convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
