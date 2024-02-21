@@ -148,7 +148,7 @@ def _apply_offsets_to_measurement(measurement: dict) -> dict:
 
 
 def _calculate_azimuth(point_a: tuple, point_b: tuple) -> tuple:
-    """This function returns the azimuth in decimal degrees between two points (aN, aE) and (bN, bE)."""
+    """This function returns the azimuth in decimal degrees and D, M, S between two points (aN, aE) and (bN, bE)."""
     delta_n = point_b[0] - point_a[0]
     delta_e = point_b[1] - point_a[1]
     azimuth = math.degrees(math.atan2(delta_e, delta_n))
@@ -164,6 +164,41 @@ def _calculate_azimuth(point_a: tuple, point_b: tuple) -> tuple:
         minutes,
         seconds,
     )
+
+
+def _calculate_coordinates_by_resection(
+    P0: tuple,
+    P1: tuple,
+    r0: float,
+    r1: float,
+) -> tuple:
+    """
+    This function calculates the X and Y coordinates of an unknown point, given
+    measurements to two points with known coordinates. From the point of view of the
+    occupied point (P3), P0 is the known station to the left, and P1 is the one to the
+    right. r0 and r1 are the measured distances to those two points, respectively.
+
+    The math in this routine is from the “Intersection of Two Circles” example
+    on the website http://paulbourke.net/geometry/circlesphere/
+    """
+    # The distance between P0 and P1
+    d = math.hypot(P0[0] - P1[0], P0[1] - P1[1])
+    # The length of the left segment of d where it intersects the perpendicular to the unknown point
+    a = (r0**2 - r1**2 + d**2) / (2 * d)
+    # The length of the leg from occupied_point, perpendicular to d
+    # Note: this might throw an error if the three points are in a line
+    h = math.sqrt(abs(r0**2 - a**2))
+    # The XY coordinates of the point where the leg from point P3 intersects d
+    P2 = (
+        P0[0] + a * (P1[0] - P0[0]) / d,
+        P0[1] + a * (P1[1] - P0[1]) / d,
+    )
+    # Finally, find the XY coordinates of P3
+    P3 = (
+        round(P2[0] + h * (P1[1] - P0[1]) / d, 3),
+        round(P2[1] - h * (P1[0] - P0[0]) / d, 3),
+    )
+    return P3
 
 
 def _convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
@@ -198,4 +233,4 @@ def _calculate_backsight_variance(
         occupied_northing - backsight_northing, occupied_easting - backsight_easting
     )
     measured_distance = math.hypot(delta_n, delta_e)
-    return round(abs(expected_distance - measured_distance) * 100)
+    return round(abs(expected_distance - measured_distance) * 100, 1)

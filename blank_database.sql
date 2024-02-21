@@ -52,12 +52,16 @@ CREATE TABLE `sessions` (
 ,  `surveyor` TEXT NOT NULL
 ,  `stations_id_occupied` INTEGER NOT NULL
 ,  `stations_id_backsight` INTEGER  DEFAULT NULL
+,  `stations_id_resection_left` INTEGER  DEFAULT NULL
+,  `stations_id_resection_right` INTEGER  DEFAULT NULL
 ,  `azimuth` TEXT NOT NULL DEFAULT '0° 0'' 0"'
 ,  `instrumentheight` REAL NOT NULL
 ,  `pressure` INTEGER NOT NULL DEFAULT 760
 ,  `temperature` INTEGER NOT NULL DEFAULT 15
-,  CONSTRAINT `sessions_ibfk_2` FOREIGN KEY (`stations_id_occupied`) REFERENCES `stations` (`id`)
-,  CONSTRAINT `sessions_ibfk_3` FOREIGN KEY (`stations_id_backsight`) REFERENCES `stations` (`id`)
+,  CONSTRAINT `sessions_ibfk_1` FOREIGN KEY (`stations_id_occupied`) REFERENCES `stations` (`id`)
+,  CONSTRAINT `sessions_ibfk_2` FOREIGN KEY (`stations_id_backsight`) REFERENCES `stations` (`id`)
+,  CONSTRAINT `sessions_ibfk_3` FOREIGN KEY (`stations_id_resection_left`) REFERENCES `stations` (`id`)
+,  CONSTRAINT `sessions_ibfk_4` FOREIGN KEY (`stations_id_resection_right`) REFERENCES `stations` (`id`)
 );
 CREATE TABLE `setuperrors` (
   `error` TEXT NOT NULL

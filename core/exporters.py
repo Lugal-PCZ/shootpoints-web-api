@@ -111,7 +111,7 @@ def export_session_data(sessions_id: int) -> None:
         "LEFT OUTER JOIN shots ON shots.groupings_id = grp.id "
         "WHERE sess.id = ?"
     )
-    sessiondata = database.read_from_database(sql, (sessions_id,))["results"][0]
+    sessiondata = database._read_from_database(sql, (sessions_id,))["results"][0]
     session = {"session": {}}
     occupied_station = {}
     backsight_station = {}
@@ -165,7 +165,7 @@ def export_session_data(sessions_id: int) -> None:
             "JOIN shots sh ON sh.groupings_id = grp.id "
             "WHERE grp.sessions_id = ?"
         )
-        shotsdata = database.read_from_database(sql, (sessions_id,))["results"]
+        shotsdata = database._read_from_database(sql, (sessions_id,))["results"]
         # Save all shots to a flat CSV file.
         with open("exports/shots_data.csv", "w") as f:
             shotsfile = csv.DictWriter(f, fieldnames=shotsdata[0].keys())

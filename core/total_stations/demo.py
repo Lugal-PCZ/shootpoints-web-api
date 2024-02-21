@@ -6,6 +6,8 @@ for when ShootPoints is run in demo mode.
 from time import sleep as _sleep
 from random import randint as _randint
 
+from ..utilities import format_outcome
+
 
 _canceled = False
 
@@ -14,7 +16,7 @@ def set_mode_hr() -> dict:
     """This function sets the total station to V/H mode with Horizontal Right."""
     outcome = {"errors": [], "result": ""}
     outcome["result"] = "Mode set to Horizontal Right."
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
@@ -51,8 +53,8 @@ def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
             f"A non-integer value ({seconds}) was entered for seconds."
         )
     if not outcome["errors"]:
-        outcome["result"] = f"Azimuth set to {degrees}° {minutes}' {seconds}\""
-    return {key: val for key, val in outcome.items() if val}
+        outcome["result"] = f"Azimuth set to {degrees}° {minutes}' {seconds}\"."
+    return format_outcome(outcome)
 
 
 def take_measurement() -> dict:
@@ -66,7 +68,7 @@ def take_measurement() -> dict:
         _sleep(1)
         if _canceled:
             _canceled = False
-            return {"notification": "Measurement canceled by user."}
+            return {"notification": "Shot canceled by user."}
     delta_n = round((496337 + _randint(-50000, 50000)) / 10000, 3)
     delta_e = round((311930 + _randint(-50000, 50000)) / 10000, 3)
     delta_z = round((95802 + _randint(-10000, 10000)) / 10000, 3)
@@ -75,7 +77,7 @@ def take_measurement() -> dict:
         "delta_e": delta_e,
         "delta_z": delta_z,
     }
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def cancel_measurement() -> dict:

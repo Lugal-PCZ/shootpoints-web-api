@@ -89,7 +89,7 @@ async def set_configs(
     port: str = Form(None),
     make: str = Form(None),
     model: str = Form(None),
-    limit: int = Form(0),
+    limit: float = Form(0.0),
 ):
     """This function sets the application configs in the configs.ini file."""
     outcome = core.save_config_file(port, make, model, limit)
@@ -305,6 +305,13 @@ async def delete_site(
 ####################
 
 
+@app.get("/abort/")
+async def abort_resection():
+    """This function stops a measurement in progress."""
+    outcome = core.survey.abort_resection()
+    return outcome
+
+
 @app.get("/atmosphere/")
 async def get_atmospheric_conditions():
     """This function gets the pressure and temperature, as last set and saved to the ShootPoints database."""
@@ -378,15 +385,20 @@ def start_new_surveying_session(
     response: Response,
     label: str = Form(...),
     surveyor: str = Form(...),
-    sites_id: int = Form(...),
-    occupied_point_id: int = Form(...),
+    sites_id: int = Form(0),
+    temperature: int = Form(...),
+    pressure: int = Form(...),
     sessiontype: str = Form(...),
+    occupied_point_id: int = Form(0),
     backsight_station_id: int = Form(0),
+    backsight_station_1_id: int = Form(0),
+    backsight_station_2_id: int = Form(0),
     prism_height: float = Form(0.00),
     instrument_height: float = Form(0.00),
     azimuth: float = Form(0.0000),  # ddd.mmss format
 ):
     """This function saves a new surveying session to the database."""
+    sessiontype = sessiontype.capitalize()
     if sessiontype == "Backsight":
         outcome = core.survey.start_surveying_session_with_backsight(
             label,
@@ -395,10 +407,30 @@ def start_new_surveying_session(
             occupied_point_id,
             backsight_station_id,
             prism_height,
+            temperature,
+            pressure,
         )
     elif sessiontype == "Azimuth":
         outcome = core.survey.start_surveying_session_with_azimuth(
-            label, surveyor, sites_id, occupied_point_id, instrument_height, azimuth
+            label,
+            surveyor,
+            sites_id,
+            occupied_point_id,
+            instrument_height,
+            azimuth,
+            temperature,
+            pressure,
+        )
+    elif sessiontype == "Resection":
+        outcome = core.survey.start_surveying_session_with_resection(
+            label,
+            surveyor,
+            sites_id,
+            backsight_station_1_id,
+            backsight_station_2_id,
+            instrument_height,
+            temperature,
+            pressure,
         )
     if "errors" in outcome:
         response.status_code = 400
@@ -488,6 +520,7 @@ async def save_new_station(
     description: str = Form(None),
 ):
     """This function saves a new survey station to the database."""
+    coordinates = {}
     if coordinatesystem == "Site":
         coordinates = {"northing": northing, "easting": easting, "elevation": elevation}
     elif coordinatesystem == "UTM":

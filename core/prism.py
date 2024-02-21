@@ -24,6 +24,7 @@ from the occupied station.
 """
 
 from . import database
+from .utilities import format_outcome
 
 
 offsets = {
@@ -138,18 +139,18 @@ def set_prism_offsets(
     if not outcome["errors"]:
         sql = f"UPDATE savedstate SET {', '.join(newoffsets.keys())}"
         data = list(newoffsets.values())
-        saved = database.save_to_database(sql, data)
+        saved = database._save_to_database(sql, data)
         if "errors" not in saved:
             for key, val in saved_args.items():
                 if val != None:
                     offsets[key] = val
             readable_offsets = get_readable_prism_offsets()["offsets"]
             if len(readable_offsets):
-                outcome[
-                    "result"
-                ] = f'Prism offsets are now {", ".join(readable_offsets)}.'
+                outcome["result"] = (
+                    f'Prism offsets are now {", ".join(readable_offsets)}.'
+                )
             else:
                 outcome["result"] = "Prism offsets are 0 in all directions."
         else:
             outcome["errors"] = saved["errors"]
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)

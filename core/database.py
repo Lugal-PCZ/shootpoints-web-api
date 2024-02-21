@@ -2,6 +2,8 @@
 
 import sqlite3
 
+from .utilities import format_outcome
+
 
 dbconn = sqlite3.connect("ShootPoints.db", check_same_thread=False)
 dbconn.row_factory = sqlite3.Row
@@ -17,7 +19,7 @@ except sqlite3.OperationalError:
 cursor.execute("PRAGMA foreign_keys = ON")
 
 
-def save_to_database(sql: str, data: tuple) -> dict:
+def _save_to_database(sql: str, data: tuple) -> dict:
     """This function performs an INSERT or UPDATE of the given data using the provided query string."""
     outcome = {"errors": [], "result": ""}
     if sql[:11].upper().find("INSERT INTO") == 0 or sql[:6].upper().find("UPDATE") == 0:
@@ -31,10 +33,10 @@ def save_to_database(sql: str, data: tuple) -> dict:
         outcome["errors"].append(
             "The given sql does not appear to be an INSERT or UPDATE query."
         )
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
-def read_from_database(sql: str, params: tuple = ()) -> dict:
+def _read_from_database(sql: str, params: tuple = ()) -> dict:
     """This function performs a SELECT query on the database, with optional parameters."""
     outcome = {"errors": [], "results": []}
     if sql[:6].upper().find("SELECT") == 0:
@@ -45,10 +47,10 @@ def read_from_database(sql: str, params: tuple = ()) -> dict:
             outcome["errors"].append(str(err))
     else:
         outcome["errors"].append("The given sql does not appear to be a SELECT query.")
-    return {key: val for key, val in outcome.items() if val or key == "results"}
+    return format_outcome(outcome, "results")
 
 
-def delete_from_database(sql: str, params: tuple) -> dict:
+def _delete_from_database(sql: str, params: tuple) -> dict:
     """This function deletes data from the database"""
     outcome = {"errors": [], "result": ""}
     if sql[:6].upper().find("DELETE") == 0:
@@ -64,19 +66,7 @@ def delete_from_database(sql: str, params: tuple) -> dict:
             outcome["errors"].append(str(err))
     else:
         outcome["errors"].append("The given sql does not appear to be a DELETE query.")
-    return {key: val for key, val in outcome.items() if val or key == "results"}
-
-
-def get_setup_errors() -> list:
-    """This function returns any setup errors logged on app load."""
-    outcome = read_from_database("SELECT * FROM setuperrors")
-    errors = []
-    try:
-        for each in outcome["results"]:
-            errors.append(each["error"])
-    except:
-        pass
-    return errors
+    return format_outcome(outcome, "results")
 
 
 def _record_setup_error(error: str) -> None:
@@ -94,3 +84,17 @@ def _clear_setup_errors() -> None:
         dbconn.commit()
     except:
         pass
+
+
+def get_setup_errors() -> dict:
+    """This function returns any setup errors logged on app load."""
+    outcome = _read_from_database("SELECT * FROM setuperrors")
+    if "errors" not in outcome:
+        outcome["errors"] = []
+        try:
+            for each in outcome["results"]:
+                outcome["errors"].append(each["error"])
+        except:
+            pass
+        outcome["results"] = "ShootPoints loaded without errors."
+    return format_outcome(outcome)

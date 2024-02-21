@@ -1,5 +1,7 @@
 """This module contains constants and methods for communicating with Topcon GTS-300 Series total stations."""
 
+from ...utilities import format_outcome
+
 # Communications constants:
 BAUDRATE = 1200
 PARITY = "E"
@@ -62,7 +64,7 @@ def set_mode_hr() -> dict:
         outcome["errors"].append("A communication error occurred.")
     else:
         outcome["result"] = "Mode set to Horizontal Right."
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
@@ -110,14 +112,14 @@ def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
                 if not _wait_for_ack():
                     outcome["errors"].append("A communication error occurred.")
                 else:
-                    outcome[
-                        "result"
-                    ] = f"Azimuth set to {degrees}° {minutes}' {seconds}."
+                    outcome["result"] = (
+                        f"Azimuth set to {degrees}° {minutes}' {seconds}\"."
+                    )
             else:
                 outcome["errors"].append("A communication error occurred.")
         else:
             outcome["errors"].extend(setmodehr["errors"])
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def take_measurement() -> dict:
@@ -151,10 +153,10 @@ def take_measurement() -> dict:
                 outcome["errors"].append(f"Unexpected data format: {measurement}.")
         except:
             if _canceled:
-                return {"notification": "Measurement canceled by user."}
+                return {"notification": "Shot canceled by user."}
             else:
                 outcome["errors"].append("Measurement failed.")
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def cancel_measurement() -> None:
