@@ -225,9 +225,7 @@ def start_surveying_session_with_azimuth(
             "z": occupied_z,
         }
         tripod.instrument_height = instrument_height
-        outcome["result"] = (
-            f"Azimuth set to {azimuthstring}, and new session ({label}) started."
-        )
+        outcome["result"] = f"Azimuth set to {azimuthstring}, and new session started."
     else:
         outcome["errors"].append(f"A problem occurred while saving the new session.")
     return format_outcome(outcome)
@@ -305,43 +303,42 @@ def start_surveying_session_with_backsight(
         return format_outcome(setazimuth)
 
     # shoot the backsight, stopping execution if it’s canceled or there are errors
-    canceled = False
     measurement = totalstation.take_measurement()
     if "notification" in measurement:
-        canceled = True
         outcome["result"] = "Backsight shot canceled by user."
+        return format_outcome(outcome)
     elif "errors" in measurement:
         outcome["errors"].extend(measurement["errors"])
+        return format_outcome(outcome)
+
+    # validate the backsight variance, using fake data so demo mode passes the test
+    if totalstation.__name__ == "core.total_stations.demo":
+        measurement["measurement"]["delta_n"] = backsight_n - occupied_n
+        measurement["measurement"]["delta_e"] = backsight_e - occupied_e
+        measurement["measurement"]["delta_z"] = backsight_z - occupied_z
+    variance = calculations._calculate_backsight_variance(
+        occupied_n,
+        occupied_e,
+        backsight_n,
+        backsight_e,
+        measurement["measurement"]["delta_n"],
+        measurement["measurement"]["delta_e"],
+    )
+    if variance >= backsighterrorlimit:
+        outcome["errors"].append(
+            f"The measured distance between the Occupied Point and the Backsight Station ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
+        )
+
+    # calculate and validate the instrument height, stopping execution if it fails
+    instrument_height = (
+        prism_height - measurement["measurement"]["delta_z"] + backsight_z - occupied_z
+    )
+    instrumentheighterror = tripod._validate_instrument_height(instrument_height)
+    if instrumentheighterror:
+        outcome["errors"].append(instrumentheighterror)
     else:
-        # fake data to make demo mode pass the following validation test
-        if totalstation.__name__ == "core.total_stations.demo":
-            measurement["measurement"]["delta_n"] = backsight_n - occupied_n
-            measurement["measurement"]["delta_e"] = backsight_e - occupied_e
-            measurement["measurement"]["delta_z"] = backsight_z - occupied_z
-        variance = calculations._calculate_backsight_variance(
-            occupied_n,
-            occupied_e,
-            backsight_n,
-            backsight_e,
-            measurement["measurement"]["delta_n"],
-            measurement["measurement"]["delta_e"],
-        )
-        if variance >= backsighterrorlimit:
-            outcome["errors"].append(
-                f"The measured distance between the Occupied Point and the Backsight Station ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
-            )
-        instrument_height = (
-            prism_height
-            - measurement["measurement"]["delta_z"]
-            + backsight_z
-            - occupied_z
-        )
-        instrumentheighterror = tripod._validate_instrument_height(instrument_height)
-        if instrumentheighterror:
-            outcome["errors"].append(instrumentheighterror)
-        else:
-            instrument_height = round(instrument_height, 3)
-    if canceled or outcome["errors"]:
+        instrument_height = round(instrument_height, 3)
+    if outcome["errors"]:
         return format_outcome(outcome)
 
     # start the new session
@@ -366,7 +363,7 @@ def start_surveying_session_with_backsight(
         }
         tripod.instrument_height = instrument_height
         outcome["result"] = (
-            f"New session ({label}) started. Please confirm that the calculated instrument height ({instrument_height}m) and azimuth to the backsight ({azimuthstring}) are correct before proceeding."
+            f"New session started. Please confirm that the calculated instrument height ({instrument_height}m) and azimuth to the backsight ({azimuthstring}) are correct before proceeding."
         )
     else:
         outcome["errors"].append("A problem occurred while saving the new session.")
@@ -405,7 +402,7 @@ def start_surveying_session_with_resection(
             outcome["errors"].append(
                 f"The left Backsight Station and right Backsight stations are the same (id = {backsight_station_1_id})."
             )
-            return
+            return None
 
         # set the atmospheric conditions
         atmosphere = set_atmospheric_conditions(temperature, pressure)
@@ -424,141 +421,158 @@ def start_surveying_session_with_resection(
         resection_backsight_2 = tripod.get_station(sites_id, backsight_station_2_id)
         if "errors" in resection_backsight_2:
             outcome["errors"].extend(resection_backsight_2["errors"])
+        return None
 
     def take_backsight_1():
         """This function takes the first (left) resection backsight."""
         global resection_backsight_1_measurement
+        nonlocal outcome
+
+        # shoot backsight 1, stopping execution if it’s canceled or there are errors
         measurement = totalstation.take_measurement()
         if "notification" in measurement:
             outcome["result"] = "Backsight shot canceled by user."
         elif "errors" in measurement:
             outcome["errors"].extend(measurement["errors"])
         else:
+            resection_backsight_1_measurement = measurement
             outcome["result"] = (
                 "Backsight #1 (left) successful. Ready to shoot Backsight #2 (right)."
             )
-            resection_backsight_1_measurement = measurement
+        return None
 
     def take_backsight_2():
-        """This function takes the second (right) resection backsight."""
+        """This function takes the second (right) resection backsight and computes the occupied point."""
         global resection_backsight_1
         global resection_backsight_2
         global resection_backsight_1_measurement
         nonlocal outcome
         nonlocal sites_id
         nonlocal backsight_station_1_id
+
         # retrieve stored values for disabled fields in new session form
         if sites_id == 0:
             sites_id = resection_backsight_1["station"]["sites_id"]
         if backsight_station_1_id == 0:
             backsight_station_1_id = resection_backsight_1["station"]["id"]
+
+        # shoot backsight 2, stopping execution if it’s canceled or there are errors
         resection_backsight_2_measurement = totalstation.take_measurement()
         if "notification" in resection_backsight_2_measurement:
             outcome["result"] = "Backsight shot canceled by user."
+            return None
         elif "errors" in resection_backsight_2_measurement:
             outcome["errors"].extend(resection_backsight_2_measurement["errors"])
+            return None
+
+        # validate the variance between the backsight stations, using fake data so demo mode passes the test
+        backsight_z_diff = (
+            resection_backsight_1["station"]["elevation"]
+            - resection_backsight_2["station"]["elevation"]
+        )
+        if totalstation.__name__ == "core.total_stations.demo":
+            measured_z_diff = backsight_z_diff
         else:
-            backsight_z_diff = (
-                resection_backsight_1["station"]["elevation"]
-                - resection_backsight_2["station"]["elevation"]
-            )
             measured_z_diff = (
                 resection_backsight_1_measurement["measurement"]["delta_z"]
                 - resection_backsight_2_measurement["measurement"]["delta_z"]
             )
-            # fake data to make demo mode pass the following validation test
-            if totalstation.__name__ == "core.total_stations.demo":
-                measured_z_diff = backsight_z_diff
-            variance = (backsight_z_diff - measured_z_diff) * 100
-            if variance >= backsighterrorlimit:
-                outcome["errors"].append(
-                    f"The measured elevation difference between the Occupied Point and the Backsight Stations ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
-                )
-            else:
-                occupied_point_ne_coords = (
-                    calculations._calculate_coordinates_by_resection(
-                        (
-                            resection_backsight_1["station"]["easting"],
-                            resection_backsight_1["station"]["northing"],
-                        ),
-                        (
-                            resection_backsight_2["station"]["easting"],
-                            resection_backsight_2["station"]["northing"],
-                        ),
-                        math.hypot(
-                            resection_backsight_1_measurement["measurement"]["delta_e"],
-                            resection_backsight_1_measurement["measurement"]["delta_n"],
-                        ),
-                        math.hypot(
-                            resection_backsight_2_measurement["measurement"]["delta_e"],
-                            resection_backsight_2_measurement["measurement"]["delta_n"],
-                        ),
-                    )
-                )
-                occupied_point_elevation = (
-                    resection_backsight_1["station"]["elevation"]
-                    + resection_backsight_1_measurement["measurement"]["delta_z"]
-                    + resection_backsight_2["station"]["elevation"]
-                    + resection_backsight_2_measurement["measurement"]["delta_z"]
-                ) / 2 - instrument_height
-                coordinatesystem = (
-                    "Site" if not resection_backsight_1["station"]["utmzone"] else "UTM"
-                )
-                outcome = tripod.save_new_station(
-                    sites_id,
-                    f"Free Station ({_get_timestamp()})",
-                    coordinatesystem,
-                    {
-                        "northing": occupied_point_ne_coords[1],
-                        "easting": occupied_point_ne_coords[0],
-                        "elevation": occupied_point_elevation,
-                        "utmzone": resection_backsight_1["station"]["utmzone"],
-                    },
-                    "Station set by resection",
-                )
-                if "errors" not in outcome:
-                    degrees, minutes, seconds = calculations._calculate_azimuth(
-                        (occupied_point_ne_coords[1], occupied_point_ne_coords[0]),
-                        (
-                            resection_backsight_2["station"]["northing"],
-                            resection_backsight_2["station"]["easting"],
-                        ),
-                    )[1:]
-                    setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
-                    if "errors" in setazimuth:
-                        outcome["errors"].extend(setazimuth["errors"])
-                        return
+        variance = (backsight_z_diff - measured_z_diff) * 100
+        if variance >= backsighterrorlimit:
+            outcome["errors"].append(
+                f"The measured elevation difference between the Occupied Point and the Backsight Stations ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
+            )
+            return None
 
-                    azimuthstring = f"{degrees}° {minutes}' {seconds}\""
-                    data = (
-                        label,
-                        surveyor,
-                        database.cursor.lastrowid,
-                        None,
-                        backsight_station_1_id,
-                        backsight_station_2_id,
-                        azimuthstring,
-                        instrument_height,
-                        pressure,
-                        temperature,
-                    )
-                    if sessionid := _save_new_session(data):
-                        tripod.occupied_point = {
-                            "n": occupied_point_ne_coords[1],
-                            "e": occupied_point_ne_coords[0],
-                            "z": occupied_point_elevation,
-                        }
-                        tripod.instrument_height = instrument_height
-                        resection_backsight_1 = {}
-                        resection_backsight_2 = {}
-                        resection_backsight_1_measurement = {}
-                        outcome["result"] = (
-                            f"New session ({label}) started. Please confirm that the azimuth to Backsight #2 ({azimuthstring}) is correct before proceeding."
-                        )
-                    else:
-                        outcome["errors"].append(
-                            f"A problem occurred while saving the new session."
-                        )
+        # calculate the coordinates of the occupied point
+        occupied_point_ne_coords = calculations._calculate_coordinates_by_resection(
+            (
+                resection_backsight_1["station"]["easting"],
+                resection_backsight_1["station"]["northing"],
+            ),
+            (
+                resection_backsight_2["station"]["easting"],
+                resection_backsight_2["station"]["northing"],
+            ),
+            math.hypot(
+                resection_backsight_1_measurement["measurement"]["delta_e"],
+                resection_backsight_1_measurement["measurement"]["delta_n"],
+            ),
+            math.hypot(
+                resection_backsight_2_measurement["measurement"]["delta_e"],
+                resection_backsight_2_measurement["measurement"]["delta_n"],
+            ),
+        )
+        occupied_point_elevation = (
+            resection_backsight_1["station"]["elevation"]
+            + resection_backsight_1_measurement["measurement"]["delta_z"]
+            + resection_backsight_2["station"]["elevation"]
+            + resection_backsight_2_measurement["measurement"]["delta_z"]
+        ) / 2 - instrument_height
+
+        # save the occupied point as a new station in the database, stopping execution on errors
+        coordinatesystem = (
+            "Site" if not resection_backsight_1["station"]["utmzone"] else "UTM"
+        )
+        outcome = tripod.save_new_station(
+            sites_id,
+            f"Free Station ({_get_timestamp()})",
+            coordinatesystem,
+            {
+                "northing": occupied_point_ne_coords[1],
+                "easting": occupied_point_ne_coords[0],
+                "elevation": occupied_point_elevation,
+                "utmzone": resection_backsight_1["station"]["utmzone"],
+            },
+            "Station set by resection",
+        )
+        if "errors" in outcome:
+            return None
+
+        # set the azimuth on the total station, stopping execution if there are errors
+        degrees, minutes, seconds = calculations._calculate_azimuth(
+            (occupied_point_ne_coords[1], occupied_point_ne_coords[0]),
+            (
+                resection_backsight_2["station"]["northing"],
+                resection_backsight_2["station"]["easting"],
+            ),
+        )[1:]
+        setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
+        if "errors" in setazimuth:
+            outcome["errors"].extend(setazimuth["errors"])
+            return
+
+        # start the new session
+        azimuthstring = f"{degrees}° {minutes}' {seconds}\""
+        data = (
+            label,
+            surveyor,
+            database.cursor.lastrowid,
+            None,
+            backsight_station_1_id,
+            backsight_station_2_id,
+            azimuthstring,
+            instrument_height,
+            pressure,
+            temperature,
+        )
+        if sessionid := _save_new_session(data):
+            tripod.occupied_point = {
+                "n": occupied_point_ne_coords[1],
+                "e": occupied_point_ne_coords[0],
+                "z": occupied_point_elevation,
+            }
+            tripod.instrument_height = instrument_height
+            resection_backsight_1 = {}
+            resection_backsight_2 = {}
+            resection_backsight_1_measurement = {}
+            outcome["result"] = (
+                f"New session started. Please confirm that the azimuth to Backsight #2 ({azimuthstring}) is correct before proceeding."
+            )
+        else:
+            outcome["errors"].append(
+                f"A problem occurred while saving the new session."
+            )
 
     outcome = {"errors": [], "result": ""}
     if not resection_backsight_1_measurement:
