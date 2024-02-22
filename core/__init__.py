@@ -6,7 +6,6 @@ import glob
 import importlib
 import serial
 
-
 from . import calculations
 from . import classifications
 from . import database
@@ -18,13 +17,9 @@ from . import tripod
 from .utilities import format_outcome
 
 
-configs = None
+configs = {}
 totalstation = None
 serialport = None
-
-
-def thingy():
-    pass
 
 
 def _load_configs_from_file() -> dict:
@@ -114,13 +109,13 @@ def _load_serial_port() -> dict:
         try:
             port = serial.Serial(
                 port=serialport,
-                baudrate=totalstation.BAUDRATE,
-                parity=totalstation.PARITY,
-                bytesize=totalstation.BYTESIZE,
-                stopbits=totalstation.STOPBITS,
-                timeout=totalstation.TIMEOUT,
+                baudrate=totalstation.BAUDRATE,  # type: ignore
+                parity=totalstation.PARITY,  # type: ignore
+                bytesize=totalstation.BYTESIZE,  # type: ignore
+                stopbits=totalstation.STOPBITS,  # type: ignore
+                timeout=totalstation.TIMEOUT,  # type: ignore
             )
-            totalstation.port = port
+            totalstation.port = port  # type: ignore
             outcome["result"] = f"Serial port {serialport} opened."
         except:
             outcome["errors"].append(
@@ -132,7 +127,7 @@ def _load_serial_port() -> dict:
 
 
 def _load_application() -> dict:
-    """This function runs the private loader funtions (above) and clears setup errors if they run cleanly."""
+    """This function runs the private loader functions (above) and clears setup errors if they run cleanly."""
     outcome = {"errors": [], "results": []}
     if (
         not configs
@@ -196,8 +191,8 @@ def get_configs() -> dict:
     front-end can provide sensible choices to the end user.
     """
     currentconfigs = {}
-    for eachsection in configs.sections():
-        for eachoption in configs.items(eachsection):
+    for eachsection in configs.sections():  # type: ignore
+        for eachoption in configs.items(eachsection):  # type: ignore
             currentconfigs[eachoption[0]] = eachoption[1]
     ports = ["demo", "auto"]
     ports.extend(glob.glob("/dev/ttyUSB*"))
@@ -233,7 +228,7 @@ def get_configs() -> dict:
 
 
 def save_config_file(
-    port: str = "", make: str = "", model: str = "", limit: int = 0
+    port: str = "", make: str = "", model: str = "", limit: float = 0
 ) -> dict:
     """
     This function creates the configs.ini and sets its values. Any parameters not passed
@@ -248,7 +243,7 @@ def save_config_file(
     if limit:
         configs["BACKSIGHT ERROR"]["limit"] = str(limit)
     with open("configs.ini", "w") as f:
-        configs.write(f)
+        configs.write(f)  # type: ignore
     outcome = _load_application()
     if "errors" not in outcome:
         del outcome["results"]

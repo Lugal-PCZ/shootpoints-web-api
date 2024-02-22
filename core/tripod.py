@@ -1,5 +1,7 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
 
+from typing import Optional
+
 from . import calculations
 from . import database
 from .utilities import format_outcome
@@ -121,7 +123,7 @@ def _validate_instrument_height(height: float) -> str:
     """This function checks the sanity of the instrument height above the occupied point."""
     errormsg = ""
     try:
-        height = round(float(height), 3)
+        height = round(height, 3)
         if height < 0:
             errormsg = f"The instrument height ({height}m) is negative."
         elif height < 0.5:
@@ -188,7 +190,7 @@ def save_new_station(
     name: str,
     coordinatesystem: str,
     coordinates: dict,
-    description: str = None,
+    description: Optional[str] = None,
 ) -> dict:
     """This function creates a new station record in the database with the given name and coordinates."""
     outcome = {"errors": [], "result": ""}

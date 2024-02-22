@@ -1,5 +1,7 @@
 """This module handles the names and descriptions of sites in the ShootPoints database."""
 
+from typing import Optional
+
 from . import database
 from .utilities import format_outcome
 
@@ -13,7 +15,7 @@ def get_all_sites() -> dict:
     return format_outcome(outcome, "sites")
 
 
-def save_site(name: str, description: str = None) -> dict:
+def save_site(name: str, description: Optional[str] = None) -> dict:
     """This function creates a new site record in the database with the given name and description."""
     outcome = {"errors": [], "result": ""}
     name = name.strip()

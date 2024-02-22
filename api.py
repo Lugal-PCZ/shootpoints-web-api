@@ -3,8 +3,7 @@
 from fastapi import FastAPI, Form, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import os, time
-
+import datetime, os, time
 
 import core
 
@@ -13,7 +12,7 @@ app = FastAPI()
 
 app.mount(
     "/webapp",
-    StaticFiles(directory="../shootpoints-web-frontend", html="index.html"),
+    StaticFiles(directory="../shootpoints-web-frontend", html=True),
     name="webapp",
 )
 
@@ -46,13 +45,13 @@ async def check_for_raspbian():
 
 @app.get("/raspbian/reboot/")
 async def reboot_rpi():
-    """This function reboots the Raspberrry Pi."""
+    """This function reboots the Raspberry Pi."""
     os.system("sudo reboot")
 
 
 @app.get("/raspbian/shutdown/")
 async def shut_down_rpi():
-    """This function shuts down the Raspberrry Pi."""
+    """This function shuts down the Raspberry Pi."""
     os.system("sudo shutdown -h now")
 
 
@@ -66,7 +65,7 @@ async def get_rpi_time():
 async def set_rpi_clock(
     datetimestring: str = Form(...),
 ):
-    """This function sets the date and time on the Raspberrry Pi."""
+    """This function sets the date and time on the Raspberry Pi."""
     os.system(f"sudo date -s '{datetimestring}'")
     return {"result": "Clock updated."}
 
@@ -404,6 +403,7 @@ def start_new_surveying_session(
     azimuth: float = Form(0.0000),  # ddd.mmss format
 ):
     """This function saves a new surveying session to the database."""
+    outcome = {}
     sessiontype = sessiontype.capitalize()
     if sessiontype == "Backsight":
         outcome = core.survey.start_surveying_session_with_backsight(

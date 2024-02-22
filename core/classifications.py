@@ -1,5 +1,7 @@
 """This module contains functions for reading, creating, and removing classes and subclasses of archaeological survey data."""
 
+from typing import Optional
+
 from . import database
 from .utilities import format_outcome
 
@@ -29,7 +31,7 @@ def get_subclasses(classes_id: int) -> dict:
     return format_outcome(outcome, "subclasses")
 
 
-def save_new_class(name: str, description: str = None) -> dict:
+def save_new_class(name: str, description: Optional[str] = None) -> dict:
     """This function saves a new class to the database."""
     outcome = {"errors": [], "results": ""}
     name = name.strip().title()
@@ -43,7 +45,9 @@ def save_new_class(name: str, description: str = None) -> dict:
     return format_outcome(outcome)
 
 
-def save_new_subclass(classes_id: int, name: str, description: str = None) -> dict:
+def save_new_subclass(
+    classes_id: int, name: str, description: Optional[str] = None
+) -> dict:
     """This function saves a new subclass to the database."""
     outcome = {"errors": [], "results": ""}
     name = name.strip().title()

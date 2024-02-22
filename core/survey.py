@@ -2,6 +2,7 @@
 
 import datetime
 import math
+from typing import Optional
 
 from . import calculations
 from . import database
@@ -199,7 +200,7 @@ def start_surveying_session_with_azimuth(
     minutes, remainder = divmod(remainder * 100, 1)
     seconds = round(remainder * 100)
     degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
-    setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
+    setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)  # type: ignore
     if "errors" in setazimuth:
         return format_outcome(setazimuth)
 
@@ -273,6 +274,7 @@ def start_surveying_session_with_backsight(
             outcome["errors"].extend(prismoffsets["errors"])
 
     # get the occupied point coordinates
+    occupied_n, occupied_e, occupied_z = 0, 0, 0
     occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
     if "errors" in occupiedpoint:
         outcome["errors"].extend(occupiedpoint["errors"])
@@ -282,6 +284,7 @@ def start_surveying_session_with_backsight(
         occupied_z = occupiedpoint["station"]["elevation"]
 
     # get the backsight station coordinates
+    backsight_n, backsight_e, backsight_z = 0, 0, 0
     backsightstation = tripod.get_station(sites_id, backsight_station_id)
     if "errors" in backsightstation:
         outcome["errors"].extend(backsightstation["errors"])
@@ -298,12 +301,12 @@ def start_surveying_session_with_backsight(
     degrees, minutes, seconds = calculations._calculate_azimuth(
         (occupied_n, occupied_e), (backsight_n, backsight_e)
     )[1:]
-    setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
+    setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)  # type: ignore
     if "errors" in setazimuth:
         return format_outcome(setazimuth)
 
     # shoot the backsight, stopping execution if it’s canceled or there are errors
-    measurement = totalstation.take_measurement()
+    measurement = totalstation.take_measurement()  # type: ignore
     if "notification" in measurement:
         outcome["result"] = "Backsight shot canceled by user."
         return format_outcome(outcome)
@@ -429,7 +432,7 @@ def start_surveying_session_with_resection(
         nonlocal outcome
 
         # shoot backsight 1, stopping execution if it’s canceled or there are errors
-        measurement = totalstation.take_measurement()
+        measurement = totalstation.take_measurement()  # type: ignore
         if "notification" in measurement:
             outcome["result"] = "Backsight shot canceled by user."
         elif "errors" in measurement:
@@ -457,7 +460,7 @@ def start_surveying_session_with_resection(
             backsight_station_1_id = resection_backsight_1["station"]["id"]
 
         # shoot backsight 2, stopping execution if it’s canceled or there are errors
-        resection_backsight_2_measurement = totalstation.take_measurement()
+        resection_backsight_2_measurement = totalstation.take_measurement()  # type: ignore
         if "notification" in resection_backsight_2_measurement:
             outcome["result"] = "Backsight shot canceled by user."
             return None
@@ -537,7 +540,7 @@ def start_surveying_session_with_resection(
                 resection_backsight_2["station"]["easting"],
             ),
         )[1:]
-        setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
+        setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)  # type: ignore
         if "errors" in setazimuth:
             outcome["errors"].extend(setazimuth["errors"])
             return
@@ -719,13 +722,16 @@ def get_current_grouping() -> dict:
 
 
 def start_new_grouping(
-    geometries_id: int, subclasses_id: int, label: str, description: str = None
+    geometries_id: int,
+    subclasses_id: int,
+    label: str,
+    description: Optional[str] = None,
 ) -> dict:
     """This function begins recording a grouping of total station measurements."""
     outcome = {"errors": [], "result": ""}
     global groupingid
     if sessionid:
-        label = label.strip() if label else None
+        label = label.strip()
         description = description.strip() if description else None
         sql = (
             "INSERT INTO groupings "
@@ -779,7 +785,7 @@ def take_shot() -> dict:
             "No shot taken because there is no active shot grouping."
         )
     else:
-        measurement = totalstation.take_measurement()
+        measurement = totalstation.take_measurement()  # type: ignore
         if "notification" in measurement:
             outcome["result"] = measurement["notification"]
         elif "errors" in measurement:
@@ -795,7 +801,7 @@ def take_shot() -> dict:
     return format_outcome(outcome)
 
 
-def save_last_shot(comment: str = None) -> dict:
+def save_last_shot(comment: Optional[str] = None) -> dict:
     """This function saves the data from the last shot to the database."""
     outcome = {"errors": [], "result": ""}
     global groupingid

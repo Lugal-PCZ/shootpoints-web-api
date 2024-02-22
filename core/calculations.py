@@ -64,9 +64,7 @@ def _calculate_wedge_offset(measurement: dict, offset: float) -> tuple:
     distance_to_prism = math.hypot(measurement["delta_n"], measurement["delta_e"])
     # Note: distance_to_point = distance_to_prism
     offset_angle = math.degrees(
-        math.acos(
-            ((2 * distance_to_prism**2) - offset**2) / (2 * distance_to_prism**2)
-        )
+        math.acos(((2 * distance_to_prism**2) - offset**2) / (2 * distance_to_prism**2))
     )
     if offset < 0:
         offset_angle *= -1

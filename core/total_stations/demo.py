@@ -80,7 +80,7 @@ def take_measurement() -> dict:
     return format_outcome(outcome)
 
 
-def cancel_measurement() -> dict:
+def cancel_measurement() -> None:
     """This function cancels a measurement in progress."""
     global _canceled
     _canceled = True

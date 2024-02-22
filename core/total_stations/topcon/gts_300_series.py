@@ -11,29 +11,30 @@ TIMEOUT = 0
 ETX = chr(3)
 ACK = chr(6) + "006"
 
-port = None  # This property is set by core/__init__.py once the serial port has been initialized.
+# This property is set by core/__init__.py once the serial port has been initialized.
+# To suppress Pylance warnings, “# type: ignore” is used below everywhere that it’s referenced.
+port = None
 
 _canceled = False
 
 
 def _read(timeout: float) -> bytes:
     """This function reads all characters waiting in the serial port's buffer."""
-    port.timeout = timeout
-    buffer = port.read_until(bytes(ETX, "ascii"))
+    port.timeout = timeout  # type: ignore
+    buffer = port.read_until(bytes(ETX, "ascii"))  # type: ignore
     return buffer
 
 
 def _write(command: str) -> None:
     """This function blindly writes the command to the serial port."""
-    command = bytes(command + ETX, "ascii")
-    port.write(command)
+    port.write(bytes(command + ETX, "ascii"))  # type: ignore
     _clear_buffers()
 
 
 def _clear_buffers() -> None:
     """This function clears the serial port buffers."""
-    port.reset_input_buffer()
-    port.reset_output_buffer()
+    port.reset_input_buffer()  # type: ignore
+    port.reset_output_buffer()  # type: ignore
 
 
 def _calculate_bcc(data: str) -> str:

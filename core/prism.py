@@ -23,6 +23,8 @@ from the occupied station.
     wedge_distance < 0 = Counter-Clockwise
 """
 
+from typing import Optional
+
 from . import database
 from .utilities import format_outcome
 
@@ -118,12 +120,12 @@ def get_raw_prism_offsets() -> dict:
 
 
 def set_prism_offsets(
-    vertical_distance: float = None,
-    latitude_distance: float = None,
-    longitude_distance: float = None,
-    radial_distance: float = None,
-    tangent_distance: float = None,
-    wedge_distance: float = None,
+    vertical_distance: Optional[float] = None,
+    latitude_distance: Optional[float] = None,
+    longitude_distance: Optional[float] = None,
+    radial_distance: Optional[float] = None,
+    tangent_distance: Optional[float] = None,
+    wedge_distance: Optional[float] = None,
 ) -> dict:
     """This function sets the prism offsets and saves them to the database."""
     global offsets
@@ -138,7 +140,7 @@ def set_prism_offsets(
                 newoffsets[f"{key} = ?"] = val
     if not outcome["errors"]:
         sql = f"UPDATE savedstate SET {', '.join(newoffsets.keys())}"
-        data = list(newoffsets.values())
+        data = tuple(newoffsets.values())
         saved = database._save_to_database(sql, data)
         if "errors" not in saved:
             for key, val in saved_args.items():
