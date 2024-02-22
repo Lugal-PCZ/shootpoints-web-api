@@ -15,11 +15,16 @@ from . import prism
 from . import sites
 from . import survey
 from . import tripod
+from .utilities import format_outcome
 
 
 configs = None
 totalstation = None
 serialport = None
+
+
+def thingy():
+    pass
 
 
 def _load_configs_from_file() -> dict:
@@ -45,8 +50,8 @@ def _load_configs_from_file() -> dict:
         error = "The config.ini file was not found, so one was created from the example file. Update your configs before proceeding."
         outcome["errors"].append(error)
         database._record_setup_error(error)
-    survey.backsighterrorlimit = configs["BACKSIGHT ERROR"]["limit"]
-    return {key: val for key, val in outcome.items() if val}
+    survey.backsighterrorlimit = float(configs["BACKSIGHT ERROR"]["limit"])
+    return format_outcome(outcome)
 
 
 def _load_total_station_model() -> dict:
@@ -69,16 +74,16 @@ def _load_total_station_model() -> dict:
             totalstation = importlib.import_module(
                 f"{__name__}.total_stations.{make}.{model}", package="core"
             )
-            outcome[
-                "result"
-            ] = f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']} total station loaded."
+            outcome["result"] = (
+                f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']} total station loaded."
+            )
         except ModuleNotFoundError:
             error = f"File total_stations/{make}/{model}.py does not exist. Specify the correct total station make and model in configs.ini before proceeding."
             outcome["errors"].append(error)
             database._record_setup_error(error)
     if not outcome["errors"]:
         survey.totalstation = totalstation
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def _load_serial_port() -> dict:
@@ -89,9 +94,9 @@ def _load_serial_port() -> dict:
     outcome = {"errors": [], "result": ""}
     global serialport
     if configs["SERIAL"]["port"] == "demo":
-        outcome[
-            "result"
-        ] = "Demo total station loaded, so no physical serial port initialized."
+        outcome["result"] = (
+            "Demo total station loaded, so no physical serial port initialized."
+        )
     elif configs["SERIAL"]["port"] == "auto":
         if glob.glob("/dev/ttyUSB*"):  # Linux with USB adapter
             serialport = glob.glob("/dev/ttyUSB*")[0]
@@ -123,7 +128,7 @@ def _load_serial_port() -> dict:
             )
     for each in outcome["errors"]:
         database._record_setup_error(each)
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def _load_application() -> dict:
@@ -133,7 +138,7 @@ def _load_application() -> dict:
         not configs
     ):  # This app is being loaded fresh or reloaded, so check to see if there's current state saved in the database, and use that to set the module variables.
         try:
-            saved_state = database.read_from_database("SELECT * FROM savedstate")[
+            saved_state = database._read_from_database("SELECT * FROM savedstate")[
                 "results"
             ][0]
             prism.offsets = {
@@ -146,9 +151,8 @@ def _load_application() -> dict:
             }
             survey.pressure = saved_state["pressure"]
             survey.temperature = saved_state["temperature"]
-            currentsession = saved_state["currentsession"]
-            currentgrouping = saved_state["currentgrouping"]
-            survey.sessionid = currentsession
+            survey.sessionid = saved_state["currentsession"]
+            survey.groupingid = saved_state["currentgrouping"]
             sql = (
                 "SELECT "
                 "  sta.northing AS n, "
@@ -161,16 +165,15 @@ def _load_application() -> dict:
                 "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
                 "WHERE sess.id = ?"
             )
-            session_info = database.read_from_database(sql, (currentsession,))[
-                "results"
-            ][0]
+            session_info = database._read_from_database(
+                sql, (saved_state["currentsession"],)
+            )["results"][0]
             tripod.occupied_point = {
                 "n": session_info["n"],
                 "e": session_info["e"],
                 "z": session_info["z"],
             }
             tripod.instrument_height = session_info["ih"]
-            survey.groupingid = currentgrouping
         except:
             pass
     loaders = [_load_configs_from_file, _load_total_station_model, _load_serial_port]
@@ -182,7 +185,7 @@ def _load_application() -> dict:
             outcome["errors"].extend(loaderoutcome["errors"])
     if len(outcome["errors"]) == 0:
         database._clear_setup_errors()
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def get_configs() -> dict:
@@ -250,7 +253,7 @@ def save_config_file(
     if "errors" not in outcome:
         del outcome["results"]
         outcome["result"] = "Configurations saved and reloaded."
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 print(_load_application())

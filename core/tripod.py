@@ -1,7 +1,8 @@
 """This module handles the coordinates of the occupied point and the instrument height."""
 
-from . import database
 from . import calculations
+from . import database
+from .utilities import format_outcome
 
 
 COORDINATESYSTEMS = ["Site", "UTM", "Lat/Lon"]
@@ -96,18 +97,18 @@ def _validate_uniqueness_of_station(
 ) -> None:
     """This function verifies that the station name is unique at this site, as is its northing and easting."""
     try:
-        sitename = database.read_from_database(
+        sitename = database._read_from_database(
             "SELECT name FROM sites WHERE id = ?", (sites_id,)
         )["results"][0]["name"]
     except:
         sitename = None
     if sitename:
-        if database.read_from_database(
+        if database._read_from_database(
             "SELECT count(*) FROM stations WHERE sites_id = ? AND upper(name) = ?",
             (sites_id, name.upper()),
         )["results"][0]["count(*)"]:
             errors.append(f"The station name “{name}” is already taken at {sitename}.")
-        if database.read_from_database(
+        if database._read_from_database(
             "SELECT count(*) FROM stations WHERE sites_id = ? AND (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)",
             (sites_id, northing, easting),
         )["results"][0]["count(*)"]:
@@ -116,18 +117,20 @@ def _validate_uniqueness_of_station(
         errors.append(f"There is no site with id {sites_id}.")
 
 
-def _validate_instrument_height(height: float, errors: list) -> dict:
+def _validate_instrument_height(height: float) -> str:
     """This function checks the sanity of the instrument height above the occupied point."""
+    errormsg = ""
     try:
         height = round(float(height), 3)
         if height < 0:
-            errors.append(f"The calculated instrument height ({height}m) is negative.")
-        elif height >= 2:
-            errors.append(
-                f"The calculated instrument height ({height}m) is unrealistically high."
-            )
+            errormsg = f"The instrument height ({height}m) is negative."
+        elif height < 0.5:
+            errormsg = f"The instrument height ({height}m) is unrealistically low."
+        elif height > 2:
+            errormsg = f"The instrument height ({height}m) is unrealistically high."
     except ValueError:
-        errors.append(f"The instrument height ({height}m) is not numeric.")
+        errormsg = f"The instrument height ({height}m) is not numeric."
+    return errormsg
 
 
 def get_stations(sites_id: int) -> dict:
@@ -135,20 +138,20 @@ def get_stations(sites_id: int) -> dict:
     outcome = {"errors": [], "stations": {}}
     if (
         len(
-            database.read_from_database(
+            database._read_from_database(
                 "SELECT id FROM sites WHERE id = ?", (sites_id,)
             )["results"]
         )
         > 0
     ):
-        query = database.read_from_database(
+        query = database._read_from_database(
             "SELECT * FROM stations WHERE sites_id = ? ORDER BY name", (sites_id,)
         )
         if "errors" not in query:
             outcome["stations"] = query["results"]
     else:
         outcome["errors"].append(f"There is no site with id {sites_id}.")
-    return {key: val for key, val in outcome.items() if val or key == "stations"}
+    return format_outcome(outcome, "stations")
 
 
 def get_station(sites_id: int, id: int) -> dict:
@@ -156,13 +159,13 @@ def get_station(sites_id: int, id: int) -> dict:
     outcome = {"errors": [], "station": {}}
     if (
         len(
-            database.read_from_database(
+            database._read_from_database(
                 "SELECT id FROM sites WHERE id = ?", (sites_id,)
             )["results"]
         )
         > 0
     ):
-        query = database.read_from_database(
+        query = database._read_from_database(
             "SELECT * FROM stations WHERE sites_id = ? AND id = ?",
             (
                 sites_id,
@@ -177,7 +180,7 @@ def get_station(sites_id: int, id: int) -> dict:
             )
     else:
         outcome["errors"].append(f"There is no site with id {sites_id}.")
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def save_new_station(
@@ -258,17 +261,17 @@ def save_new_station(
                 longitude,
                 description,
             )
-            if "errors" not in database.save_to_database(sql, newstation):
+            if "errors" not in database._save_to_database(sql, newstation):
                 outcome["result"] = f"Station “{name}” saved."
             else:
                 outcome["errors"].append(f"Station “{name}” could not be saved.")
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def delete_station(sites_id: int, id: int) -> dict:
     """This function deletes the indicated station from the database."""
     outcome = {"errors": [], "results": ""}
-    exists = database.read_from_database(
+    exists = database._read_from_database(
         "SELECT name FROM stations WHERE sites_id = ? AND id = ?",
         (
             sites_id,
@@ -281,7 +284,7 @@ def delete_station(sites_id: int, id: int) -> dict:
         ]:  # This is an empty list if there are no matches for the above query.
             name = exists["results"][0]["name"]
             sql = "DELETE FROM stations WHERE id = ?"
-            deleted = database.delete_from_database(sql, (id,))
+            deleted = database._delete_from_database(sql, (id,))
             if "errors" not in deleted:
                 outcome["result"] = f"Station “{name}” successfully deleted."
             else:
@@ -299,4 +302,4 @@ def delete_station(sites_id: int, id: int) -> dict:
             )
     else:
         outcome["errors"] = exists["errors"]
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)

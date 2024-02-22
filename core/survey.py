@@ -1,14 +1,16 @@
 """This module contains functions for handling the surveying session and associated data."""
 
 import datetime
+import math
 
-from . import database
 from . import calculations
-from . import tripod
+from . import database
 from . import prism
+from . import tripod
+from .utilities import format_outcome
 
 
-SESSIONTYPES = ["Backsight", "Azimuth"]
+SESSIONTYPES = ["Backsight", "Azimuth", "Resection"]
 
 backsighterrorlimit = 0.0
 totalstation = None
@@ -17,35 +19,51 @@ groupingid = 0
 activeshotdata = {}
 pressure = 760
 temperature = 15
+resection_backsight_1 = {}
+resection_backsight_1_measurement = {}
 
 
-def _save_new_session(data: tuple) -> int:
+def _get_timestamp() -> str:
+    """This function returns the current timestamp, formatted for saving in the database."""
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _save_new_session(data: tuple) -> int | None:
     """This function saves the surveying session information to the database."""
     global sessionid
     global groupingid
     global activeshotdata
     sql = (
-        "INSERT INTO sessions "
-        "(label, started, surveyor, stations_id_occupied, stations_id_backsight, azimuth, instrumentheight, pressure, temperature) "
-        f"VALUES(?, '{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO sessions ("
+        " label,"
+        " started,"
+        " surveyor,"
+        " stations_id_occupied,"
+        " stations_id_backsight,"
+        " stations_id_resection_left,"
+        " stations_id_resection_right,"
+        " azimuth,"
+        " instrumentheight,"
+        " pressure,"
+        " temperature"
+        f") VALUES(?, '{_get_timestamp()}', ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
-    saved = database.save_to_database(sql, data)
+    saved = database._save_to_database(sql, data)
     if "errors" not in saved:
         sessionid = database.cursor.lastrowid
-        _ = database.save_to_database(
+        _ = database._save_to_database(
             "UPDATE savedstate SET currentsession = ?", (sessionid,)
         )
     else:
         sessionid = 0
-    groupingid = 0
     activeshotdata = {}
     return sessionid
 
 
-def _save_new_station() -> dict:
+def _save_shot_as_new_station() -> dict:
     """This function checks if the last shot was a survey station, and if so saves it to the stations database table."""
-    outcome = None
-    currentgrouping = database.read_from_database(
+    outcome = {}
+    currentgrouping = database._read_from_database(
         "SELECT * FROM groupings WHERE id = ?",
         (groupingid,),
     )["results"][0]
@@ -59,7 +77,7 @@ def _save_new_station() -> dict:
             "JOIN stations sta ON sess.stations_id_occupied = sta.id "
             "WHERE sess.id = ?"
         )
-        occupiedstation = database.read_from_database(sql, (sessionid,))["results"][0]
+        occupiedstation = database._read_from_database(sql, (sessionid,))["results"][0]
         coordinatesystem = "UTM"
         if not occupiedstation["utmzone"]:
             coordinatesystem = "Site"
@@ -78,13 +96,13 @@ def _save_new_station() -> dict:
     return outcome
 
 
-def get_geometries() -> list:
+def get_geometries() -> dict:
     """This function returns the types of geometries saved in the database, for use by the application front end."""
     outcome = {"errors": [], "sites": {}}
-    query = database.read_from_database("SELECT * FROM geometries")
+    query = database._read_from_database("SELECT * FROM geometries")
     if "errors" not in query:
         outcome["geometries"] = query["results"]
-    return {key: val for key, val in outcome.items() if val or key == "geometries"}
+    return format_outcome(outcome, "geometries")
 
 
 def get_atmospheric_conditions() -> dict:
@@ -97,144 +115,40 @@ def set_atmospheric_conditions(temp: int, press: int) -> dict:
     outcome = {"errors": [], "result": ""}
     global temperature
     global pressure
+    mintemp = -10
+    maxtemp = 50
+    minpress = 720
+    maxpress = 800
     try:
-        if not 720 <= int(press) <= 800:
+        if not mintemp <= int(temp) <= maxtemp:
             outcome["errors"].append(
-                f"The value given for atmospheric pressure ({press}mmHg) is outside the normal range (720mmHg to 800mmHg)."
-            )
-    except ValueError:
-        outcome["errors"].append(
-            f"The value given for atmospheric pressure ({press}) is not numeric."
-        )
-    try:
-        if not -10 <= int(temp) <= 40:
-            outcome["errors"].append(
-                f"The value given for air temperature ({temp}°C) is outside reasonable limits (-10°C to 40°C)."
+                f"The value given for air temperature ({temp}°C) is outside reasonable limits ({mintemp}°C to {maxtemp}°C)."
             )
     except ValueError:
         outcome["errors"].append(
             f"The value given for air temperature ({temp}) is not numeric."
         )
+    try:
+        if not minpress <= int(press) <= maxpress:
+            outcome["errors"].append(
+                f"The value given for atmospheric pressure ({press}mmHg) is outside the normal range ({minpress}mmHg to {maxpress}mmHg)."
+            )
+    except ValueError:
+        outcome["errors"].append(
+            f"The value given for atmospheric pressure ({press}) is not numeric."
+        )
     if not outcome["errors"]:
         sql = "UPDATE savedstate SET pressure = ?, temperature = ?"
-        _ = database.save_to_database(sql, (press, temp))
+        _ = database._save_to_database(sql, (press, temp))
         pressure = press
         temperature = temp
         p = press * 106.036
         t = temp + 273.15
         ppm = round((279.66 - (p / t)) * pow(10, -6) * 1000000)
-        outcome[
-            "result"
-        ] = f"Temperature and pressure are now set to {temp}°C and {press}mmHg ({ppm}ppm)."
-    return {key: val for key, val in outcome.items() if val}
-
-
-def start_surveying_session_with_backsight(
-    label: str,
-    surveyor: str,
-    sites_id: int,
-    occupied_point_id: int,
-    backsight_station_id: int,
-    prism_height: float,
-) -> dict:
-    """This function starts a new surveying session with a backsight to a known point."""
-    outcome = {"errors": database.get_setup_errors(), "result": ""}
-    canceled = False
-    if not outcome["errors"]:
-        if occupied_point_id == backsight_station_id:
-            outcome["errors"].append(
-                f"The Occupied Point and Backsight Station are the same (id = {occupied_point_id})."
-            )
-        occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
-        if "errors" not in occupiedpoint:
-            occupied_n = occupiedpoint["station"]["northing"]
-            occupied_e = occupiedpoint["station"]["easting"]
-            occupied_z = occupiedpoint["station"]["elevation"]
-        else:
-            outcome["errors"].extend(occupiedpoint["errors"])
-        backsightstation = tripod.get_station(sites_id, backsight_station_id)
-        if "errors" not in backsightstation:
-            backsight_n = backsightstation["station"]["northing"]
-            backsight_e = backsightstation["station"]["easting"]
-            backsight_z = backsightstation["station"]["elevation"]
-        else:
-            outcome["errors"].extend(backsightstation["errors"])
-        if prism_height < 0:
-            outcome["errors"].append(
-                f"An invalid prism height ({prism_height}m) was entered."
-            )
-        else:
-            prism.set_prism_offsets(-prism_height, 0, 0, 0, 0, 0)
-        if not outcome["errors"]:
-            azimuth = calculations._calculate_azimuth(
-                (occupied_n, occupied_e), (backsight_n, backsight_e)
-            )
-            degrees, remainder = divmod(azimuth, 1)
-            minutes, remainder = divmod(remainder * 60, 1)
-            seconds = round(remainder * 60)
-            degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
-            setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
-            if "errors" not in setazimuth:
-                measurement = totalstation.take_measurement()
-                if "notification" in measurement:
-                    canceled = True
-                    outcome["result"] = "Backsight shot canceled by user."
-                elif "errors" in measurement:
-                    outcome["errors"].extend(measurement["errors"])
-                else:
-                    variance = calculations._calculate_backsight_variance(
-                        occupied_n,
-                        occupied_e,
-                        backsight_n,
-                        backsight_e,
-                        measurement["measurement"]["delta_n"],
-                        measurement["measurement"]["delta_e"],
-                    )
-                    if variance >= float(backsighterrorlimit):
-                        outcome["errors"].append(
-                            f"The measured distance between the Occupied Point and the Backsight Station ({variance}cm) exceeds the limit set in configs.ini ({backsighterrorlimit}cm)."
-                        )
-                    instrument_height = (
-                        prism_height
-                        - measurement["measurement"]["delta_z"]
-                        + backsight_z
-                        - occupied_z
-                    )
-                    instrument_height = round(instrument_height, 3)
-                    tripod._validate_instrument_height(
-                        instrument_height, outcome["errors"]
-                    )
-            else:
-                outcome["errors"].extend(setazimuth["errors"])
-        if not canceled and not outcome["errors"]:
-            data = (
-                label,
-                surveyor,
-                occupied_point_id,
-                backsight_station_id,
-                f"{degrees}° {minutes}' {seconds}\"",
-                instrument_height,
-                pressure,
-                temperature,
-            )
-            if sessionid := _save_new_session(data):
-                tripod.occupied_point = {
-                    "n": occupied_n,
-                    "e": occupied_e,
-                    "z": occupied_z,
-                }
-                tripod.instrument_height = instrument_height
-                newoffsets = {each_offset: 0 for each_offset in prism.offsets}
-                newoffsets["vertical_distance"] = prism_height * -1
-                prism.set_prism_offsets(**newoffsets)
-                outcome[
-                    "result"
-                ] = f"New session started. Please confirm that the measured instrument height ({instrument_height}m) is accurate before proceeding."
-            else:
-                outcome["errors"].append(
-                    "A problem occurred while saving the new session."
-                )
-    return {key: val for key, val in outcome.items() if val}
+        outcome["result"] = (
+            f"Temperature and pressure are now set to {temp}°C and {press}mmHg ({ppm}ppm)."
+        )
+    return format_outcome(outcome)
 
 
 def start_surveying_session_with_azimuth(
@@ -244,65 +158,457 @@ def start_surveying_session_with_azimuth(
     occupied_point_id: int,
     instrument_height: float,
     azimuth: float,
+    temperature: int,
+    pressure: int,
 ) -> dict:
     """This function starts a new surveying session with an azimuth to a landmark."""
-    outcome = {"errors": database.get_setup_errors(), "result": ""}
-    if not outcome["errors"]:
-        occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
-        if "errors" not in occupiedpoint:
-            occupied_n = occupiedpoint["station"]["northing"]
-            occupied_e = occupiedpoint["station"]["easting"]
-            occupied_z = occupiedpoint["station"]["elevation"]
+
+    # check for setup errors, stopping execution if there are any
+    setuperrors = database.get_setup_errors()
+    if "errors" in setuperrors:
+        return setuperrors
+
+    # set the atmospheric conditions
+    outcome = {"result": "", "errors": []}
+    atmosphere = set_atmospheric_conditions(temperature, pressure)
+    if "errors" in atmosphere:
+        outcome["errors"].extend(atmosphere["errors"])
+
+    # set the occupied point
+    occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
+    if "errors" in occupiedpoint:
+        outcome["errors"].extend(occupiedpoint["errors"])
+    else:
+        occupied_n = occupiedpoint["station"]["northing"]
+        occupied_e = occupiedpoint["station"]["easting"]
+        occupied_z = occupiedpoint["station"]["elevation"]
+
+    # check that the given instrument height is sane
+    instrumentheighterror = tripod._validate_instrument_height(instrument_height)
+    if instrumentheighterror:
+        outcome["errors"].append(instrumentheighterror)
+    else:
+        instrument_height = round(instrument_height, 3)
+
+    # stop execution if there were any errors setting the atmospheric conditions, occupied point, or instrument height
+    if outcome["errors"]:
+        return format_outcome(outcome)
+
+    # set the azimuth on the total station, stopping execution if there are any errors
+    degrees, remainder = divmod(azimuth, 1)
+    minutes, remainder = divmod(remainder * 100, 1)
+    seconds = round(remainder * 100)
+    degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
+    setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
+    if "errors" in setazimuth:
+        return format_outcome(setazimuth)
+
+    # start the new session
+    azimuthstring = f"{degrees}° {minutes}' {seconds}\""
+    data = (
+        label,
+        surveyor,
+        occupied_point_id,
+        None,
+        None,
+        None,
+        azimuthstring,
+        instrument_height,
+        pressure,
+        temperature,
+    )
+    if sessionid := _save_new_session(data):
+        print(">>> HERE <<<")
+        tripod.occupied_point = {
+            "n": occupied_n,
+            "e": occupied_e,
+            "z": occupied_z,
+        }
+        tripod.instrument_height = instrument_height
+        outcome["result"] = f"Azimuth set to {azimuthstring}, and new session started."
+    else:
+        outcome["errors"].append(f"A problem occurred while saving the new session.")
+    return format_outcome(outcome)
+
+
+def start_surveying_session_with_backsight(
+    label: str,
+    surveyor: str,
+    sites_id: int,
+    occupied_point_id: int,
+    backsight_station_id: int,
+    prism_height: float,
+    temperature: int,
+    pressure: int,
+) -> dict:
+    """This function starts a new surveying session with a backsight to a known point."""
+
+    # check for setup errors, stopping execution if there are any
+    setuperrors = database.get_setup_errors()
+    if "errors" in setuperrors:
+        return setuperrors
+
+    # ensure that the occupied point and backsight station are not the same, stopping execution if they are
+    outcome = {"results": "", "errors": []}
+    if occupied_point_id == backsight_station_id:
+        outcome["errors"] = [
+            f"The Occupied Point and Backsight Station are the same (id = {occupied_point_id})."
+        ]
+        return format_outcome(outcome)
+
+    # set the atmospheric conditions
+    outcome = {"result": "", "errors": []}
+    atmosphere = set_atmospheric_conditions(temperature, pressure)
+    if "errors" in atmosphere:
+        outcome["errors"].extend(atmosphere["errors"])
+
+    # set the prism height
+    if prism_height < 0:
+        outcome["errors"].append(
+            f"An invalid prism height ({prism_height}m) was entered."
+        )
+    else:
+        prismoffsets = prism.set_prism_offsets(-prism_height, 0, 0, 0, 0, 0)
+        if "errors" in prismoffsets:
+            outcome["errors"].extend(prismoffsets["errors"])
+
+    # get the occupied point coordinates
+    occupiedpoint = tripod.get_station(sites_id, occupied_point_id)
+    if "errors" in occupiedpoint:
+        outcome["errors"].extend(occupiedpoint["errors"])
+    else:
+        occupied_n = occupiedpoint["station"]["northing"]
+        occupied_e = occupiedpoint["station"]["easting"]
+        occupied_z = occupiedpoint["station"]["elevation"]
+
+    # get the backsight station coordinates
+    backsightstation = tripod.get_station(sites_id, backsight_station_id)
+    if "errors" in backsightstation:
+        outcome["errors"].extend(backsightstation["errors"])
+    else:
+        backsight_n = backsightstation["station"]["northing"]
+        backsight_e = backsightstation["station"]["easting"]
+        backsight_z = backsightstation["station"]["elevation"]
+
+    # stop execution if there were any errors setting the atmospheric conditions, occupied point, backsight station, or prism height
+    if outcome["errors"]:
+        return format_outcome(outcome)
+
+    # set the azimuth on the total station, stopping execution if there are any errors
+    degrees, minutes, seconds = calculations._calculate_azimuth(
+        (occupied_n, occupied_e), (backsight_n, backsight_e)
+    )[1:]
+    setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
+    if "errors" in setazimuth:
+        return format_outcome(setazimuth)
+
+    # shoot the backsight, stopping execution if it’s canceled or there are errors
+    measurement = totalstation.take_measurement()
+    if "notification" in measurement:
+        outcome["result"] = "Backsight shot canceled by user."
+        return format_outcome(outcome)
+    elif "errors" in measurement:
+        outcome["errors"].extend(measurement["errors"])
+        return format_outcome(outcome)
+
+    # validate the backsight variance, using fake data so demo mode passes the test
+    if totalstation.__name__ == "core.total_stations.demo":
+        measurement["measurement"]["delta_n"] = backsight_n - occupied_n
+        measurement["measurement"]["delta_e"] = backsight_e - occupied_e
+        measurement["measurement"]["delta_z"] = backsight_z - occupied_z
+    variance = calculations._calculate_backsight_variance(
+        occupied_n,
+        occupied_e,
+        backsight_n,
+        backsight_e,
+        measurement["measurement"]["delta_n"],
+        measurement["measurement"]["delta_e"],
+    )
+    if variance >= backsighterrorlimit:
+        outcome["errors"].append(
+            f"The measured distance between the Occupied Point and the Backsight Station ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
+        )
+
+    # calculate and validate the instrument height, stopping execution if it fails
+    instrument_height = (
+        prism_height - measurement["measurement"]["delta_z"] + backsight_z - occupied_z
+    )
+    instrumentheighterror = tripod._validate_instrument_height(instrument_height)
+    if instrumentheighterror:
+        outcome["errors"].append(instrumentheighterror)
+    else:
+        instrument_height = round(instrument_height, 3)
+    if outcome["errors"]:
+        return format_outcome(outcome)
+
+    # start the new session
+    azimuthstring = f"{degrees}° {minutes}' {seconds}\""
+    data = (
+        label,
+        surveyor,
+        occupied_point_id,
+        backsight_station_id,
+        None,
+        None,
+        azimuthstring,
+        instrument_height,
+        pressure,
+        temperature,
+    )
+    if sessionid := _save_new_session(data):
+        tripod.occupied_point = {
+            "n": occupied_n,
+            "e": occupied_e,
+            "z": occupied_z,
+        }
+        tripod.instrument_height = instrument_height
+        outcome["result"] = (
+            f"New session started. Please confirm that the calculated instrument height ({instrument_height}m) and azimuth to the backsight ({azimuthstring}) are correct before proceeding."
+        )
+    else:
+        outcome["errors"].append("A problem occurred while saving the new session.")
+    return format_outcome(outcome)
+
+
+def start_surveying_session_with_resection(
+    label: str,
+    surveyor: str,
+    sites_id: int,
+    backsight_station_1_id: int,
+    backsight_station_2_id: int,
+    instrument_height: float,
+    temperature: int,
+    pressure: int,
+) -> dict:
+    """
+    This function starts a new surveying session by resection with backsights to two
+    known points from a setup location with unknown coordinates. From the vantage point
+    of the setup station, backsight #1 must be to the left of backsight #2.
+    """
+
+    def perform_setup():
+        """This function checks all the prerequisites for starting a new session by resection."""
+        global resection_backsight_1
+        global resection_backsight_2
+        nonlocal outcome
+
+        # check for setup errors, stopping execution if there are any
+        setuperrors = database.get_setup_errors()
+        if "errors" in setuperrors:
+            return setuperrors["errors"]
+
+        # ensure that backsight stations 1 and 2 not the same, stopping execution if they are
+        if backsight_station_1_id == backsight_station_2_id:
+            outcome["errors"].append(
+                f"The left Backsight Station and right Backsight stations are the same (id = {backsight_station_1_id})."
+            )
+            return None
+
+        # set the atmospheric conditions
+        atmosphere = set_atmospheric_conditions(temperature, pressure)
+        if "errors" in atmosphere:
+            outcome["errors"].extend(atmosphere["errors"])
+
+        # check that the given instrument height is sane
+        instrumentheighterror = tripod._validate_instrument_height(instrument_height)
+        if instrumentheighterror:
+            outcome["errors"].append(instrumentheighterror)
+
+        # get the backsight station 1 and 2 coordinates
+        resection_backsight_1 = tripod.get_station(sites_id, backsight_station_1_id)
+        if "errors" in resection_backsight_1:
+            outcome["errors"].extend(resection_backsight_1["errors"])
+        resection_backsight_2 = tripod.get_station(sites_id, backsight_station_2_id)
+        if "errors" in resection_backsight_2:
+            outcome["errors"].extend(resection_backsight_2["errors"])
+        return None
+
+    def take_backsight_1():
+        """This function takes the first (left) resection backsight."""
+        global resection_backsight_1_measurement
+        nonlocal outcome
+
+        # shoot backsight 1, stopping execution if it’s canceled or there are errors
+        measurement = totalstation.take_measurement()
+        if "notification" in measurement:
+            outcome["result"] = "Backsight shot canceled by user."
+        elif "errors" in measurement:
+            outcome["errors"].extend(measurement["errors"])
         else:
-            outcome["errors"].extend(occupiedpoint["errors"])
+            resection_backsight_1_measurement = measurement
+            outcome["result"] = (
+                "Backsight #1 (left) successful. Ready to shoot Backsight #2 (right)."
+            )
+        return None
+
+    def take_backsight_2():
+        """This function takes the second (right) resection backsight and computes the occupied point."""
+        global resection_backsight_1
+        global resection_backsight_2
+        global resection_backsight_1_measurement
+        nonlocal outcome
+        nonlocal sites_id
+        nonlocal backsight_station_1_id
+
+        # retrieve stored values for disabled fields in new session form
+        if sites_id == 0:
+            sites_id = resection_backsight_1["station"]["sites_id"]
+        if backsight_station_1_id == 0:
+            backsight_station_1_id = resection_backsight_1["station"]["id"]
+
+        # shoot backsight 2, stopping execution if it’s canceled or there are errors
+        resection_backsight_2_measurement = totalstation.take_measurement()
+        if "notification" in resection_backsight_2_measurement:
+            outcome["result"] = "Backsight shot canceled by user."
+            return None
+        elif "errors" in resection_backsight_2_measurement:
+            outcome["errors"].extend(resection_backsight_2_measurement["errors"])
+            return None
+
+        # validate the variance between the backsight stations, using fake data so demo mode passes the test
+        backsight_z_diff = (
+            resection_backsight_1["station"]["elevation"]
+            - resection_backsight_2["station"]["elevation"]
+        )
+        if totalstation.__name__ == "core.total_stations.demo":
+            measured_z_diff = backsight_z_diff
+        else:
+            measured_z_diff = (
+                resection_backsight_1_measurement["measurement"]["delta_z"]
+                - resection_backsight_2_measurement["measurement"]["delta_z"]
+            )
+        variance = (backsight_z_diff - measured_z_diff) * 100
+        if variance >= backsighterrorlimit:
+            outcome["errors"].append(
+                f"The measured elevation difference between the Occupied Point and the Backsight Stations ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
+            )
+            return None
+
+        # calculate the coordinates of the occupied point
+        occupied_point_ne_coords = calculations._calculate_coordinates_by_resection(
+            (
+                resection_backsight_1["station"]["easting"],
+                resection_backsight_1["station"]["northing"],
+            ),
+            (
+                resection_backsight_2["station"]["easting"],
+                resection_backsight_2["station"]["northing"],
+            ),
+            math.hypot(
+                resection_backsight_1_measurement["measurement"]["delta_e"],
+                resection_backsight_1_measurement["measurement"]["delta_n"],
+            ),
+            math.hypot(
+                resection_backsight_2_measurement["measurement"]["delta_e"],
+                resection_backsight_2_measurement["measurement"]["delta_n"],
+            ),
+        )
+        occupied_point_elevation = (
+            resection_backsight_1["station"]["elevation"]
+            + resection_backsight_1_measurement["measurement"]["delta_z"]
+            + resection_backsight_2["station"]["elevation"]
+            + resection_backsight_2_measurement["measurement"]["delta_z"]
+        ) / 2 - instrument_height
+
+        # save the occupied point as a new station in the database, stopping execution on errors
+        coordinatesystem = (
+            "Site" if not resection_backsight_1["station"]["utmzone"] else "UTM"
+        )
+        outcome = tripod.save_new_station(
+            sites_id,
+            f"Free Station ({_get_timestamp()})",
+            coordinatesystem,
+            {
+                "northing": occupied_point_ne_coords[1],
+                "easting": occupied_point_ne_coords[0],
+                "elevation": occupied_point_elevation,
+                "utmzone": resection_backsight_1["station"]["utmzone"],
+            },
+            "Station set by resection",
+        )
+        if "errors" in outcome:
+            return None
+
+        # set the azimuth on the total station, stopping execution if there are errors
+        degrees, minutes, seconds = calculations._calculate_azimuth(
+            (occupied_point_ne_coords[1], occupied_point_ne_coords[0]),
+            (
+                resection_backsight_2["station"]["northing"],
+                resection_backsight_2["station"]["easting"],
+            ),
+        )[1:]
+        setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
+        if "errors" in setazimuth:
+            outcome["errors"].extend(setazimuth["errors"])
+            return
+
+        # start the new session
+        azimuthstring = f"{degrees}° {minutes}' {seconds}\""
+        data = (
+            label,
+            surveyor,
+            database.cursor.lastrowid,
+            None,
+            backsight_station_1_id,
+            backsight_station_2_id,
+            azimuthstring,
+            instrument_height,
+            pressure,
+            temperature,
+        )
+        if sessionid := _save_new_session(data):
+            tripod.occupied_point = {
+                "n": occupied_point_ne_coords[1],
+                "e": occupied_point_ne_coords[0],
+                "z": occupied_point_elevation,
+            }
+            tripod.instrument_height = instrument_height
+            resection_backsight_1 = {}
+            resection_backsight_2 = {}
+            resection_backsight_1_measurement = {}
+            outcome["result"] = (
+                f"New session started. Please confirm that the azimuth to Backsight #2 ({azimuthstring}) is correct before proceeding."
+            )
+        else:
+            outcome["errors"].append(
+                f"A problem occurred while saving the new session."
+            )
+
+    outcome = {"errors": [], "result": ""}
+    if not resection_backsight_1_measurement:
+        perform_setup()
+        # stop execution if there were any errors setting the atmospheric conditions, instrument height, or backsight 1 or 2
         if not outcome["errors"]:
-            degrees, remainder = divmod(azimuth, 1)
-            minutes, remainder = divmod(remainder * 100, 1)
-            seconds = round(remainder * 100)
-            degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
-            setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)
-            if "errors" not in setazimuth:
-                data = (
-                    label,
-                    surveyor,
-                    occupied_point_id,
-                    None,  # There is no backsight station in this setup, but _save_new_session() expects a value.
-                    f"{degrees}° {minutes}' {seconds}\"",
-                    instrument_height,
-                    pressure,
-                    temperature,
-                )
-                if sessionid := _save_new_session(data):
-                    tripod.occupied_point = {
-                        "n": occupied_n,
-                        "e": occupied_e,
-                        "z": occupied_z,
-                    }
-                    tripod.instrument_height = instrument_height
-                    outcome["result"] = f"New session started."
-                else:
-                    outcome["errors"].append(
-                        f"A problem occurred while saving the new session."
-                    )
-            else:
-                outcome["errors"].extend(setazimuth["errors"])
-    return {key: val for key, val in outcome.items() if val}
+            take_backsight_1()
+    else:
+        take_backsight_2()
+    return format_outcome(outcome)
+
+
+def abort_resection() -> dict:
+    """This function clears the saved values when a resection has been started, so that the operator can begin fresh."""
+    global resection_backsight_1
+    global resection_backsight_2
+    global resection_backsight_1_measurement
+    resection_backsight_1 = {}
+    resection_backsight_2 = {}
+    resection_backsight_1_measurement = {}
+    return {"result": "Resection aborted."}
 
 
 def end_current_session() -> dict:
     """This function ends the current session."""
     global sessionid
     outcome = {"errors": [], "result": ""}
-    endgrouping = end_current_grouping()
-    if not "errors" in endgrouping:
-        sessionid = 0
-        _ = database.save_to_database(
-            "UPDATE savedstate SET currentsession = ?", (sessionid,)
-        )
-        outcome["result"] = "Session ended."
+    endcurrentsession = database._save_to_database(
+        "UPDATE savedstate SET currentsession = ?", (sessionid,)
+    )
+    if "errors" in endcurrentsession:
+        outcome["errors"] = endcurrentsession["errors"]
     else:
-        outcome["errors"] = endgrouping["errors"]
-    return {key: val for key, val in outcome.items() if val}
+        sessionid = 0
+        outcome["result"] = "Session ended."
+    return format_outcome(outcome)
 
 
 def get_all_sessions() -> dict:
@@ -320,8 +626,8 @@ def get_all_sessions() -> dict:
         "LEFT OUTER JOIN shots ON grp.id = shots.groupings_id "
         "GROUP BY sess.id"
     )
-    outcome["sessions"] = database.read_from_database(sql)["results"]
-    return {key: val for key, val in outcome.items() if val or key == "sessions"}
+    outcome["sessions"] = database._read_from_database(sql)["results"]
+    return format_outcome(outcome, "sessions")
 
 
 def get_current_session() -> dict:
@@ -341,14 +647,14 @@ def get_current_session() -> dict:
             "JOIN sites on sta.sites_id = sites.id "
             "WHERE sess.id = ?"
         )
-        outcome = database.read_from_database(sql, (sessionid,))["results"][0]
-    return {key: val for key, val in outcome.items()}
+        outcome = database._read_from_database(sql, (sessionid,))["results"][0]
+    return format_outcome(outcome)
 
 
 def delete_session(id: int) -> dict:
     """This function expunges the indicated session from the database."""
     outcome = {"errors": [], "results": ""}
-    exists = database.read_from_database(
+    exists = database._read_from_database(
         "SELECT label FROM sessions WHERE id = ?", (id,)
     )
     if "errors" not in exists:
@@ -358,19 +664,19 @@ def delete_session(id: int) -> dict:
             label = exists["results"][0]["label"]
             groupings = [
                 str(x["id"])
-                for x in database.read_from_database(
+                for x in database._read_from_database(
                     "SELECT id FROM groupings WHERE sessions_id = ?", (id,)
                 )["results"]
             ]
-            shotsdeleted = database.delete_from_database(
+            shotsdeleted = database._delete_from_database(
                 f"DELETE FROM shots WHERE groupings_id in ({','.join(groupings)})", ()
             )
             if "errors" not in shotsdeleted:
-                groupingsdeleted = database.delete_from_database(
+                groupingsdeleted = database._delete_from_database(
                     f"DELETE FROM groupings WHERE id in ({','.join(groupings)})", ()
                 )
                 if "errors" not in groupingsdeleted:
-                    sessiondeleted = database.delete_from_database(
+                    sessiondeleted = database._delete_from_database(
                         "DELETE FROM sessions WHERE id = ?", (id,)
                     )
                     if "errors" not in sessiondeleted:
@@ -385,7 +691,7 @@ def delete_session(id: int) -> dict:
             outcome["errors"].append(f"Session id {id} does not exist.")
     else:
         outcome["errors"] = exists["errors"]
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def get_current_grouping() -> dict:
@@ -408,8 +714,8 @@ def get_current_grouping() -> dict:
             "LEFT OUTER JOIN shots ON grp.id = shots.groupings_id "
             "WHERE grp.id = ?"
         )
-        outcome = database.read_from_database(sql, (groupingid,))["results"][0]
-    return {key: val for key, val in outcome.items()}
+        outcome = database._read_from_database(sql, (groupingid,))["results"][0]
+    return format_outcome(outcome)
 
 
 def start_new_grouping(
@@ -426,12 +732,12 @@ def start_new_grouping(
             "(sessions_id, geometries_id, subclasses_id, label, description) "
             "VALUES(?, ?, ?, ?, ?)"
         )
-        saved = database.save_to_database(
+        saved = database._save_to_database(
             sql, (sessionid, geometries_id, subclasses_id, label, description)
         )
         if "errors" not in saved:
             groupingid = database.cursor.lastrowid
-            _ = database.save_to_database(
+            _ = database._save_to_database(
                 "UPDATE savedstate SET currentgrouping = ?", (groupingid,)
             )
             outcome["result"] = f"New grouping started."
@@ -442,7 +748,7 @@ def start_new_grouping(
             )
     else:
         outcome["errors"].append("There is no active surveying session.")
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def end_current_grouping() -> dict:
@@ -450,11 +756,14 @@ def end_current_grouping() -> dict:
     outcome = {"errors": [], "result": ""}
     global groupingid
     groupingid = 0
-    _ = database.save_to_database(
+    result = database._save_to_database(
         "UPDATE savedstate SET currentgrouping = ?", (groupingid,)
     )
-    outcome["result"] = "Grouping ended."
-    return {key: val for key, val in outcome.items() if val}
+    if "errors" in result:
+        outcome["errors"].append("An error occurred while ending the grouping.")
+    else:
+        outcome["result"] = "Grouping ended."
+    return format_outcome(outcome)
 
 
 def take_shot() -> dict:
@@ -483,7 +792,7 @@ def take_shot() -> dict:
                 measurement["measurement"]
             )
             activeshotdata = outcome["result"]
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
 
 
 def save_last_shot(comment: str = None) -> dict:
@@ -518,27 +827,30 @@ def save_last_shot(comment: str = None) -> dict:
         sql = (
             "INSERT INTO shots "
             "(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, pressure, temperature, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, comment) "
-            f"VALUES('{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            f"VALUES('{_get_timestamp}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
-        saved = database.save_to_database(sql, data)
+        saved = database._save_to_database(sql, data)
         if "errors" not in saved:
             outcome["result"] = "The last shot was saved."
-            newstation = _save_new_station()
+            newstation = _save_shot_as_new_station()
             if newstation:
                 if "errors" in newstation:
                     outcome["errors"].append(newstation["errors"][0])
                 else:
-                    outcome[
-                        "result"
-                    ] = "The last shot was saved and added to the stations list."
+                    outcome["result"] = (
+                        "The last shot was saved and added to the stations list."
+                    )
             activeshotdata = {}
             if (
-                database.read_from_database(
+                database._read_from_database(
                     "SELECT geometries_id FROM groupings WHERE id = ?", (groupingid,)
                 )["results"][0]["geometries_id"]
                 == 1
             ):
-                groupingid = 0  # The active shot is an isolated point, so reset the groupingid to 0
+                # The active shot is an isolated point, so end the current grouping
+                endcurrentgrouping = end_current_grouping()
+                if "errors" in endcurrentgrouping:
+                    outcome["errors"].extend(endcurrentgrouping["errors"])
         else:
             outcome["errors"].append("An error occurred while saving the last shot.")
-    return {key: val for key, val in outcome.items() if val}
+    return format_outcome(outcome)
