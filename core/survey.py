@@ -140,15 +140,20 @@ def set_atmospheric_conditions(temp: int, press: int) -> dict:
         )
     if not outcome["errors"]:
         sql = "UPDATE savedstate SET pressure = ?, temperature = ?"
-        _ = database._save_to_database(sql, (press, temp))
-        pressure = press
-        temperature = temp
-        p = press * 106.036
-        t = temp + 273.15
-        ppm = round((279.66 - (p / t)) * pow(10, -6) * 1000000)
-        outcome["result"] = (
-            f"Temperature and pressure are now set to {temp}°C and {press}mmHg ({ppm}ppm)."
-        )
+        savetodatabase = database._save_to_database(sql, (press, temp))
+        if "errors" in savetodatabase:
+            outcome["errors"].append(
+                "An error occurred while saving the temperature and pressure to the database."
+            )
+        else:
+            pressure = press
+            temperature = temp
+            p = press * 106.036
+            t = temp + 273.15
+            ppm = round((279.66 - (p / t)) * pow(10, -6) * 1000000)
+            outcome["result"] = (
+                f"Temperature and pressure are now set to {temp}°C and {press}mmHg ({ppm}ppm)."
+            )
     return format_outcome(outcome)
 
 
