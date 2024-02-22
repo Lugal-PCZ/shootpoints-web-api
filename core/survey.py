@@ -20,7 +20,10 @@ groupingid = 0
 activeshotdata = {}
 pressure = 760
 temperature = 15
+# cached values for second step of start_surveying_session_with_resection()
+resection_instrument_height = 0.0
 resection_backsight_1 = {}
+resection_backsight_2 = {}
 resection_backsight_1_measurement = {}
 
 
@@ -396,6 +399,7 @@ def start_surveying_session_with_resection(
 
     def perform_setup():
         """This function checks all the prerequisites for starting a new session by resection."""
+        global resection_instrument_height
         global resection_backsight_1
         global resection_backsight_2
         nonlocal outcome
@@ -421,6 +425,8 @@ def start_surveying_session_with_resection(
         instrumentheighterror = tripod._validate_instrument_height(instrument_height)
         if instrumentheighterror:
             outcome["errors"].append(instrumentheighterror)
+        else:
+            resection_instrument_height = round(instrument_height, 3)
 
         # get the backsight station 1 and 2 coordinates
         resection_backsight_1 = tripod.get_station(sites_id, backsight_station_1_id)
@@ -455,10 +461,13 @@ def start_surveying_session_with_resection(
         global resection_backsight_2
         global resection_backsight_1_measurement
         nonlocal outcome
+        nonlocal instrument_height
         nonlocal sites_id
         nonlocal backsight_station_1_id
 
         # retrieve stored values for disabled fields in new session form
+        if instrument_height == 0:
+            instrument_height = resection_instrument_height
         if sites_id == 0:
             sites_id = resection_backsight_1["station"]["sites_id"]
         if backsight_station_1_id == 0:
@@ -838,7 +847,7 @@ def save_last_shot(comment: Optional[str] = None) -> dict:
         sql = (
             "INSERT INTO shots "
             "(timestamp, delta_n, delta_e, delta_z, northing, easting, elevation, pressure, temperature, prismoffset_vertical, prismoffset_latitude, prismoffset_longitude, prismoffset_radial, prismoffset_tangent, prismoffset_wedge, groupings_id, comment) "
-            f"VALUES('{_get_timestamp}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            f"VALUES('{_get_timestamp()}', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
         saved = database._save_to_database(sql, data)
         if "errors" not in saved:
