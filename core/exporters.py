@@ -172,7 +172,7 @@ def export_session_data(sessions_id: int) -> None:
         )
         shotsdata = database._read_from_database(sql, (sessions_id,))["results"]
         # Save all shots to a flat CSV file.
-        with open("exports/shots_data.csv", "w") as f:
+        with open("exports/shots_data.csv", "w", newline="") as f:
             shotsfile = csv.DictWriter(f, fieldnames=shotsdata[0].keys())
             shotsfile.writeheader()
             shotsfile.writerows(shotsdata)
@@ -337,6 +337,7 @@ def _write_gcps_to_file(
     with open(
         f"exports/photogrammetry_gcps_gcps_for_{fileinfo['name']}.{fileinfo['type']}",
         "w",
+        newline="",
     ) as f:
         if fileinfo["type"] == "csv":
             gcpfile = csv.DictWriter(
