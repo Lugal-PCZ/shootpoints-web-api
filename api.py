@@ -176,12 +176,13 @@ async def delete_subclass(
 @app.get("/database/")
 async def download_entire_database():
     """This function downloads the ShootPoints database SQLite file in its entirety."""
+    date = str(datetime.datetime.now()).split(" ")[0]
     core.exporters.export_database_file()
     return FileResponse(
         "exports/database.zip",
         media_type="application/zip",
         headers={
-            "Content-Disposition": "attachment; filename=ShootPoints_Database.zip"
+            "Content-Disposition": f"attachment; filename=ShootPoints Database {date}.zip"
         },
     )
 
@@ -189,11 +190,17 @@ async def download_entire_database():
 @app.get("/export/{sessions_id}")
 async def export_session_data(response: Response, sessions_id: int):
     """This function downloads a ZIP file of the requested session and its shots."""
+    sql = "SELECT label FROM sessions WHERE id = ?"
+    sessionlabel = core.database._read_from_database(sql, (sessions_id,))["results"][0][
+        "label"
+    ]
     core.exporters.export_session_data(sessions_id)
     return FileResponse(
         "exports/export.zip",
         media_type="application/zip",
-        headers={"Content-Disposition": "attachment; filename=ShootPoints_Export.zip"},
+        headers={
+            "Content-Disposition": f"attachment; filename=ShootPoints Data ({sessionlabel}).zip"
+        },
     )
 
 

@@ -4,6 +4,7 @@ import json
 import csv
 import shapefile
 import os, glob
+import datetime
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from . import database
@@ -46,8 +47,12 @@ gcpfiles = [
 
 def export_database_file() -> None:
     """This function creates a ZIP file of the ShootPoints database file, for download by the browser."""
+    date = str(datetime.datetime.now()).split(" ")[0]
     with ZipFile(f"exports/database.zip", "w", compression=ZIP_DEFLATED) as f:
-        f.write("ShootPoints.db")
+        f.write(
+            "ShootPoints.db",
+            arcname=f"ShootPoints Database {date}/ShootPoints.db",
+        )
 
 
 def export_session_data(sessions_id: int) -> None:
@@ -294,7 +299,7 @@ def export_session_data(sessions_id: int) -> None:
         filesinarchive.append(
             f"photogrammetry_gcps/gcps_for_{eachfile['name']}.{eachfile['type']}"
         )
-    archivename = f"ShootPoints_Data_{sessiondata['session_started'].replace('-', '').replace(' ', '').replace(':', '')}"
+    archivename = f"ShootPoints Data ({sessiondata['session_label']})"
     with ZipFile(f"exports/export.zip", "w", compression=ZIP_DEFLATED) as f:
         for eachfile in filesinarchive:
             try:
