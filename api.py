@@ -237,17 +237,17 @@ async def get_raw_prism_offsets(response: Response):
 @app.put("/prism/", status_code=201)
 async def set_prism_offsets(
     response: Response,
-    vertical_distance: float = Form(None),
+    vertical_distance: float = Form(0),
     vertical_direction: int = Form(...),
-    latitude_distance: float = Form(None),
+    latitude_distance: float = Form(0),
     latitude_direction: int = Form(...),
-    longitude_distance: float = Form(None),
+    longitude_distance: float = Form(0),
     longitude_direction: int = Form(...),
-    radial_distance: float = Form(None),
+    radial_distance: float = Form(0),
     radial_direction: int = Form(...),
-    tangent_distance: float = Form(None),
+    tangent_distance: float = Form(0),
     tangent_direction: int = Form(...),
-    wedge_distance: float = Form(None),
+    wedge_distance: float = Form(0),
     wedge_direction: int = Form(...),
 ):
     """This function sets the prism offsets."""

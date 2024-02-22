@@ -116,7 +116,7 @@ def set_atmospheric_conditions(temp: int, press: int) -> dict:
     outcome = {"errors": [], "result": ""}
     global temperature
     global pressure
-    mintemp = -10
+    mintemp = -18
     maxtemp = 50
     minpress = 720
     maxpress = 800
