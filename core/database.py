@@ -1,7 +1,11 @@
 """This module handles reading from and writing to the ShootPoints database."""
 
+import datetime
+import os
+import shutil
 import sqlite3
 
+from .survey import end_current_session
 from .utilities import format_outcome
 
 
@@ -13,8 +17,7 @@ try:
 except sqlite3.OperationalError:
     # ShootPoints.db database is empty, so initialize it with the default schema.
     with open("blank_database.sql", "r") as f:
-        sql = f.read().split(";")
-        _ = [cursor.execute(query) for query in sql]
+        cursor.executescript(f.read())
         dbconn.commit()
 cursor.execute("PRAGMA foreign_keys = ON")
 
@@ -96,5 +99,65 @@ def get_setup_errors() -> dict:
                 outcome["errors"].append(each["error"])
         except:
             pass
-        outcome["results"] = "ShootPoints loaded without errors."
+        outcome["results"] = "ShootPoints is ready for use."
     return format_outcome(outcome)
+
+
+def reset_database(
+    preservesitesandstations: bool = True, preserveclassesandsubclasses: bool = True
+) -> dict:
+    """This function creates a new blank database, optionally with some data saved from the current one."""
+    global dbconn
+    global cursor
+    outcome = end_current_session()
+    # Cache sites, stations, classes, and subclasses if requested
+    cachedsites = []
+    cachedstations = []
+    cachedclasses = []
+    cachedsubclasses = []
+    if preservesitesandstations:
+        cachedsites = _read_from_database("SELECT * FROM sites")["results"]
+        cachedstations = _read_from_database("SELECT * FROM stations")["results"]
+    if preserveclassesandsubclasses:
+        cachedclasses = _read_from_database("SELECT * FROM classes")["results"]
+        cachedsubclasses = _read_from_database("SELECT * FROM subclasses")["results"]
+    # Back up the current database to the backups folder and restore a pristine copy
+    thedatetime = str(datetime.datetime.now()).split(".")[0]
+    shutil.copy2("ShootPoints.db", f"backups/ShootPoints ({thedatetime}).db")
+    dbconn.close()
+    os.remove("ShootPoints.db")
+    dbconn = sqlite3.connect("ShootPoints.db", check_same_thread=False)
+    dbconn.row_factory = sqlite3.Row
+    cursor = dbconn.cursor()
+    with open("blank_database.sql", "r") as f:
+        cursor.executescript(f.read())
+        dbconn.commit()
+        cursor.execute("PRAGMA foreign_keys = ON")
+    # Restore cached data
+    sql = "INSERT INTO sites (id, name, description) VALUES (?, ?, ?)"
+    cursor.executemany(sql, [tuple(each.values()) for each in cachedsites])
+    sql = "INSERT INTO stations (id, sites_id, name, description, northing, easting, elevation, utmzone, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    cursor.executemany(sql, [tuple(each.values()) for each in cachedstations])
+    if preserveclassesandsubclasses:
+        cursor.execute("DELETE FROM subclasses")
+        cursor.execute("DELETE FROM sqlite_sequence WHERE name='subclasses'")
+        cursor.execute("DELETE FROM classes")
+        cursor.execute("DELETE FROM sqlite_sequence WHERE name='classes'")
+        sql = "INSERT INTO classes (id, name, description) VALUES (?, ?, ?)"
+        cursor.executemany(sql, [tuple(each.values()) for each in cachedclasses])
+        sql = "INSERT INTO subclasses (id, classes_id, name, description) VALUES (?, ?, ?, ?)"
+        cursor.executemany(sql, [tuple(each.values()) for each in cachedsubclasses])
+    dbconn.commit()
+    # Return result message
+    outcome["result"] = "Database replaced with pristine copy."
+    if preservesitesandstations and preserveclassesandsubclasses:
+        outcome["result"] = (
+            "Database reset, preserving existing sites, stations, classes, and subclasses."
+        )
+    elif preservesitesandstations:
+        outcome["result"] = "Database reset, preserving existing sites and stations."
+    elif preserveclassesandsubclasses:
+        outcome["result"] = (
+            "Database reset, preserving existing classes and subclasses."
+        )
+    return outcome

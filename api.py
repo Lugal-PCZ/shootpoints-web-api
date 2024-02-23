@@ -209,6 +209,18 @@ async def get_setup_errors():
     return core.database.get_setup_errors()
 
 
+@app.delete("/reset/")
+async def reset_database(
+    preservesitesandstations: bool = Form(False),
+    preserveclassesandsubclasses: bool = Form(False),
+    ignore: str = Form("ignore"),
+):
+    """This function resets the ShootPoints database."""
+    return core.database.reset_database(
+        preservesitesandstations, preserveclassesandsubclasses
+    )
+
+
 ###################
 # PRISM ENDPOINTS #
 ###################
