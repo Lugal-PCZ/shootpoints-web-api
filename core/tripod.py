@@ -70,8 +70,10 @@ def _validate_utm_coordinates(
             errors.append(f"Invalid UTM Zone number given ({utmzonenumber}).")
         else:
             utmzoneletter = utmzone[-1]
-            if utmzoneletter not in "CDEFGHJKLMNPQRSTUVWX":
-                errors.append(f"Invalid UTM Zone letter given ({utmzoneletter}).")
+            if utmzoneletter not in "NS":
+                errors.append(
+                    f"Invalid UTM Zone letter given ({utmzoneletter}). It should be either N or S."
+                )
 
 
 def _validate_latlong_coordinates(

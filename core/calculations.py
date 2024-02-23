@@ -204,6 +204,10 @@ def _convert_latlon_to_utm(latitude: float, longitude: float) -> tuple:
     easting, northing, zonenumber, zoneletter = utm.from_latlon(latitude, longitude)
     northing = round(northing, 3)
     easting = round(easting, 3)
+    # The utm package returns MGRS zones instead of UTM zones, which introduces an ambiguity with Zone S, so fix this
+    zoneletter = "N"
+    if latitude < 0:
+        zoneletter = "S"
     return (northing, easting, f"{zonenumber}{zoneletter}")
 
 
