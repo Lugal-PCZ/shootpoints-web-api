@@ -229,6 +229,11 @@ def export_session_data(sessions_id: int) -> None:
         _assemble_group()  # This terminates a multi-point group that's at the end of the file
 
     # Then save the shapefiles and GCP files.
+    prjfile = (
+        f"core/prj_templates/{sessiondata['occupied_station_utmzone']}.txt"
+        if sessiondata["occupied_station_utmzone"]
+        else ""
+    )
     if allshots:
         with shapefile.Writer(
             "exports/gis_shapefiles_allshots", shapeType=shapefile.POINTZ
@@ -247,10 +252,11 @@ def export_session_data(sessions_id: int) -> None:
             for eachshot in allshots:
                 w.record(*tuple(eachshot.values()))
                 w.pointz(eachshot["E"], eachshot["N"], eachshot["Z"])
-        shutil.copy2(
-            f"core/prj_templates/{sessiondata['occupied_station_utmzone']}.txt",
-            "exports/gis_shapefiles_allshots.prj",
-        )
+        if prjfile:
+            shutil.copy2(
+                prjfile,
+                "exports/gis_shapefiles_allshots.prj",
+            )
     if closedpolygons:
         with shapefile.Writer(
             "exports/gis_shapefiles_closedpolygons", shapeType=shapefile.POLYGONZ
@@ -263,10 +269,11 @@ def export_session_data(sessions_id: int) -> None:
             for eachgroup in closedpolygons:
                 w.record(*tuple(eachgroup[0].values()))
                 w.polyz([eachgroup[1]])
-        shutil.copy2(
-            f"core/prj_templates/{sessiondata['occupied_station_utmzone']}.txt",
-            "exports/gis_shapefiles_closedpolygons.prj",
-        )
+        if prjfile:
+            shutil.copy2(
+                prjfile,
+                "exports/gis_shapefiles_allshots.prj",
+            )
     if openpolygons:
         with shapefile.Writer(
             "exports/gis_shapefiles_openpolygons", shapeType=shapefile.POLYLINEZ
@@ -279,10 +286,11 @@ def export_session_data(sessions_id: int) -> None:
             for eachgroup in openpolygons:
                 w.record(*tuple(eachgroup[0].values()))
                 w.linez([eachgroup[1]])
-        shutil.copy2(
-            f"core/prj_templates/{sessiondata['occupied_station_utmzone']}.txt",
-            "exports/gis_shapefiles_openpolygons.prj",
-        )
+        if prjfile:
+            shutil.copy2(
+                prjfile,
+                "exports/gis_shapefiles_allshots.prj",
+            )
     if pointclouds:
         with shapefile.Writer(
             "exports/gis_shapefiles_pointclouds", shapeType=shapefile.MULTIPOINTZ
@@ -295,10 +303,11 @@ def export_session_data(sessions_id: int) -> None:
             for eachgroup in pointclouds:
                 w.record(*tuple(eachgroup[0].values()))
                 w.multipointz(eachgroup[1])
-        shutil.copy2(
-            f"core/prj_templates/{sessiondata['occupied_station_utmzone']}.txt",
-            "exports/gis_shapefiles_pointclouds.prj",
-        )
+        if prjfile:
+            shutil.copy2(
+                prjfile,
+                "exports/gis_shapefiles_allshots.prj",
+            )
     if gcps:
         for eachfile in gcpfiles:
             _write_gcps_to_file(eachfile, sessiondata, gcps)
