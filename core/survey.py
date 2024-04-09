@@ -32,7 +32,7 @@ def _get_timestamp() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _save_new_session(data: tuple) -> int | None:
+def _save_new_session(data: tuple) -> Optional[int]:
     """This function saves the surveying session information to the database."""
     global sessionid
     global groupingid
