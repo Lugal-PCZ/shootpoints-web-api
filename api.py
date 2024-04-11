@@ -29,39 +29,39 @@ async def redirect(response: Response):
 ##########################
 
 
-@app.get("/raspbian/")
-async def check_for_raspbian():
-    """This function checks that the operating system is Raspbian."""
-    raspbian = False
+@app.get("/raspberrypi/")
+async def check_for_raspberrypi():
+    """This function checks that ShootPoints is running on a Raspberry Pi."""
+    raspberrypi = False
     try:
-        with open("/etc/os-release", "r") as f:
-            content = f.read().split("\n")
-            if "ID=raspbian" in content:
-                raspbian = True
+        with open("/proc/device-tree/model", "r") as f:
+            content = f.read()
+            if "Raspberry Pi" in content:
+                raspberrypi = True
     except FileNotFoundError:
         pass
-    return raspbian
+    return raspberrypi
 
 
-@app.get("/raspbian/reboot/")
+@app.get("/raspberrypi/reboot/")
 async def reboot_rpi():
     """This function reboots the Raspberry Pi."""
     os.system("sudo reboot")
 
 
-@app.get("/raspbian/shutdown/")
+@app.get("/raspberrypi/shutdown/")
 async def shut_down_rpi():
     """This function shuts down the Raspberry Pi."""
     os.system("sudo shutdown -h now")
 
 
-@app.get("/raspbian/clock/")
+@app.get("/raspberrypi/clock/")
 async def get_rpi_time():
-    """This function checks the clock on Raspbian systems."""
+    """This function checks the clock on Raspberry Pi hosts."""
     return int(time.time() * 1000)
 
 
-@app.put("/raspbian/clock/")
+@app.put("/raspberrypi/clock/")
 async def set_rpi_clock(
     datetimestring: str = Form(...),
 ):
