@@ -92,18 +92,7 @@ def _load_serial_port() -> dict:
         outcome["result"] = (
             "Demo total station loaded, so no physical serial port initialized."
         )
-    elif configs["SERIAL"]["port"] == "auto":
-        if glob.glob("/dev/ttyUSB*"):  # Linux with USB adapter
-            serialport = glob.glob("/dev/ttyUSB*")[0]
-        elif glob.glob("/dev/ttyAMA*"):  # Linux with RS232 adapter
-            serialport = glob.glob("/dev/ttyAMA*")[0]
-        elif glob.glob("/dev/cu.usbserial*"):  # Mac with USB adapter
-            serialport = glob.glob("/dev/cu.usbserial*")[0]
-        else:  # Serial port not found.
-            outcome["errors"].append(
-                "No valid serial port found. Specify the correct serial port in configs.ini before proceeding."
-            )
-    else:  # Port is specified explicitly in configs.ini file.
+    else:
         serialport = configs["SERIAL"]["port"]
     if configs["SERIAL"]["port"] != "demo" and not outcome["errors"]:
         try:
@@ -194,12 +183,10 @@ def get_configs() -> dict:
     for eachsection in configs.sections():  # type: ignore
         for eachoption in configs.items(eachsection):  # type: ignore
             currentconfigs[eachoption[0]] = eachoption[1]
-    ports = ["demo", "auto"]
+    ports = ["demo"]
     ports.extend(glob.glob("/dev/ttyUSB*"))
     ports.extend(glob.glob("/dev/ttyAMA*"))
     ports.extend(glob.glob("/dev/cu.usbserial*"))
-    if len(ports) == 2:  # No serial ports were found, so "auto" makes no sense.
-        ports = ["demo"]
     makes = list(
         set(glob.glob("core/total_stations/*"))
         - set(glob.glob("core/total_stations/_*"))
