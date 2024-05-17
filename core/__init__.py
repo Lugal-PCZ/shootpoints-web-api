@@ -5,6 +5,7 @@ import shutil
 import glob
 import importlib
 import serial
+from pathlib import Path
 
 from . import calculations
 from . import classifications
@@ -17,34 +18,45 @@ from . import tripod
 from .utilities import format_outcome
 
 
-configs = {}
+configs = configparser.ConfigParser(comment_prefixes="|", allow_no_value=True)
+configs.optionxform = str
 totalstation = None
 serialport = None
 
 
-def _load_configs_from_file() -> dict:
+def _load_configs() -> dict:
     """
-    This function loads the configurations from the configs.ini file.
-    If that file doesn't exist, it creates one from configs.ini.example.
+    This function loads the configurations from the configs.ini file,
+    and if necessary creates that file, missing sections, and/or missing options.
     """
     outcome = {"errors": [], "result": ""}
     global configs
-    configs = configparser.ConfigParser()
-    try:
-        with open("configs.ini", "r") as f:
-            pass
-    except FileNotFoundError:
-        shutil.copy("configs.ini.example", "configs.ini")
-    configs.read("configs.ini")
-    if configs.sections():
-        outcome["result"] = "Configurations loaded successfully."
-    else:
-        configs.read("configs.ini.example")
+    if not Path("configs.ini").is_file():
         with open("configs.ini", "w") as f:
-            configs.write(f)
-        error = "The config.ini file was not found, so one was created from the example file. Update your configs before proceeding."
-        outcome["errors"].append(error)
-        database._record_setup_error(error)
+            pass
+    configs.read("configs.ini")
+    # Serial Port configs
+    if not configs.has_section("SERIAL"):
+        configs.add_section("SERIAL")
+    if not configs.has_option("SERIAL", "port"):
+        configs.set("SERIAL", "; Set port to “demo” or the path (e.g., “/dev/ttyUSB0”).")
+        configs.set("SERIAL", "port", "demo")
+    # Total Station configs
+    if not configs.has_section("TOTAL STATION"):
+        configs.add_section("TOTAL STATION")
+    if not configs.has_option("TOTAL STATION", "make"):
+        configs.set("TOTAL STATION", "make", "Topcon")
+    if not configs.has_option("TOTAL STATION", "model"):
+        configs.set("TOTAL STATION", "model", "GTS-300 Series")
+    # Backsight Error configs
+    if not configs.has_section("BACKSIGHT ERROR"):
+        configs.add_section("BACKSIGHT ERROR")
+    if not configs.has_option("BACKSIGHT ERROR", "limit"):
+        configs.set("BACKSIGHT ERROR", "; Acceptable error range for backsight shots (expected horizontal distance vs. measured distance), in cm.")
+        configs.set("BACKSIGHT ERROR", "limit", "3.0")
+    with open("configs.ini", "w") as f:
+        configs.write(f)
+    outcome["result"] = "Configurations loaded successfully."
     survey.backsighterrorlimit = float(configs["BACKSIGHT ERROR"]["limit"])
     return format_outcome(outcome)
 
@@ -160,7 +172,7 @@ def _load_application() -> dict:
             tripod.instrument_height = session_info["ih"]
         except:
             pass
-    loaders = [_load_configs_from_file, _load_total_station_model, _load_serial_port]
+    loaders = [_load_configs, _load_total_station_model, _load_serial_port]
     for each in loaders:
         loaderoutcome = each()
         if "result" in loaderoutcome:
