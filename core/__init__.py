@@ -41,6 +41,9 @@ def _load_configs() -> dict:
     if not configs.has_option("SERIAL", "port"):
         configs.set("SERIAL", "; Set port to “demo” or the path (e.g., “/dev/ttyUSB0”).")
         configs.set("SERIAL", "port", "demo")
+    if not configs.has_option("SERIAL", "uart"):
+        configs.set("SERIAL", "; Change the following to “true” if a UART adapter has been connected to the Raspberry Pi’s GPIO.")
+        configs.set("SERIAL", "uart", "false")
     # Total Station configs
     if not configs.has_section("TOTAL STATION"):
         configs.add_section("TOTAL STATION")
@@ -194,11 +197,13 @@ def get_configs() -> dict:
     currentconfigs = {}
     for eachsection in configs.sections():  # type: ignore
         for eachoption in configs.items(eachsection):  # type: ignore
-            currentconfigs[eachoption[0]] = eachoption[1]
+            if not eachoption[0][0] == ';':
+                currentconfigs[eachoption[0]] = eachoption[1]
     ports = ["demo"]
     ports.extend(glob.glob("/dev/ttyUSB*"))
-    ports.extend(glob.glob("/dev/ttyAMA*"))
     ports.extend(glob.glob("/dev/cu.usbserial*"))
+    if configs["SERIAL"]["uart"] == "true":
+        ports.extend(glob.glob("/dev/ttyAMA*"))
     makes = list(
         set(glob.glob("core/total_stations/*"))
         - set(glob.glob("core/total_stations/_*"))
