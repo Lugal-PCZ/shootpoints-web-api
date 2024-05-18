@@ -200,10 +200,10 @@ def get_configs() -> dict:
             if not eachoption[0][0] == ';':
                 currentconfigs[eachoption[0]] = eachoption[1]
     ports = ["demo"]
-    ports.extend(glob.glob("/dev/ttyUSB*"))
-    ports.extend(glob.glob("/dev/cu.usbserial*"))
+    ports.extend(glob.glob("/dev/ttyUSB*"))  # USB to Serial adapter on Raspberry Pi
+    ports.extend(glob.glob("/dev/cu.usbserial*"))  # USB to Serial adapter on Mac
     if configs["SERIAL"]["uart"] == "true":
-        ports.extend(glob.glob("/dev/ttyAMA*"))
+        ports.extend(glob.glob("/dev/ttyAMA*"))  # GPIO UART adapter on Raspberry Pi
     makes = list(
         set(glob.glob("core/total_stations/*"))
         - set(glob.glob("core/total_stations/_*"))
