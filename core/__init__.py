@@ -133,48 +133,42 @@ def _load_serial_port() -> dict:
 def _load_application() -> dict:
     """This function runs the private loader functions (above) and clears setup errors if they run cleanly."""
     outcome = {"errors": [], "results": []}
-    if (
-        not configs
-    ):  # This app is being loaded fresh or reloaded, so check to see if there's current state saved in the database, and use that to set the module variables.
-        try:
-            saved_state = database._read_from_database("SELECT * FROM savedstate")[
-                "results"
-            ][0]
-            prism.offsets = {
-                "vertical_distance": saved_state["vertical_distance"],
-                "latitude_distance": saved_state["latitude_distance"],
-                "longitude_distance": saved_state["longitude_distance"],
-                "radial_distance": saved_state["radial_distance"],
-                "tangent_distance": saved_state["tangent_distance"],
-                "wedge_distance": saved_state["wedge_distance"],
-            }
-            survey.pressure = saved_state["pressure"]
-            survey.temperature = saved_state["temperature"]
-            survey.sessionid = saved_state["currentsession"]
-            survey.groupingid = saved_state["currentgrouping"]
-            sql = (
-                "SELECT "
-                "  sta.northing AS n, "
-                "  sta.easting AS e, "
-                "  sta.elevation AS z, "
-                "  sess.instrumentheight AS ih, "
-                "  max(grp.id) AS gid "
-                "FROM sessions sess "
-                "JOIN stations sta ON sess.stations_id_occupied = sta.id "
-                "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
-                "WHERE sess.id = ?"
-            )
-            session_info = database._read_from_database(
-                sql, (saved_state["currentsession"],)
-            )["results"][0]
-            tripod.occupied_point = {
-                "n": session_info["n"],
-                "e": session_info["e"],
-                "z": session_info["z"],
-            }
-            tripod.instrument_height = session_info["ih"]
-        except:
-            pass
+    saved_state = database._read_from_database("SELECT * FROM savedstate")[
+        "results"
+    ][0]
+    prism.offsets = {
+        "vertical_distance": saved_state["vertical_distance"],
+        "latitude_distance": saved_state["latitude_distance"],
+        "longitude_distance": saved_state["longitude_distance"],
+        "radial_distance": saved_state["radial_distance"],
+        "tangent_distance": saved_state["tangent_distance"],
+        "wedge_distance": saved_state["wedge_distance"],
+    }
+    survey.pressure = saved_state["pressure"]
+    survey.temperature = saved_state["temperature"]
+    survey.sessionid = saved_state["currentsession"]
+    survey.groupingid = saved_state["currentgrouping"]
+    sql = (
+        "SELECT "
+        "  sta.northing AS n, "
+        "  sta.easting AS e, "
+        "  sta.elevation AS z, "
+        "  sess.instrumentheight AS ih, "
+        "  max(grp.id) AS gid "
+        "FROM sessions sess "
+        "JOIN stations sta ON sess.stations_id_occupied = sta.id "
+        "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
+        "WHERE sess.id = ?"
+    )
+    session_info = database._read_from_database(
+        sql, (saved_state["currentsession"],)
+    )["results"][0]
+    tripod.occupied_point = {
+        "n": session_info["n"],
+        "e": session_info["e"],
+        "z": session_info["z"],
+    }
+    tripod.instrument_height = session_info["ih"]
     loaders = [_load_configs, _load_total_station_model, _load_serial_port]
     for each in loaders:
         loaderoutcome = each()
