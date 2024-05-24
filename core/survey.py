@@ -522,9 +522,9 @@ def start_surveying_session_with_resection(
         )
         occupied_point_elevation = (
             resection_backsight_1["station"]["elevation"]
-            + resection_backsight_1_measurement["measurement"]["delta_z"]
+            - resection_backsight_1_measurement["measurement"]["delta_z"]
             + resection_backsight_2["station"]["elevation"]
-            + resection_backsight_2_measurement["measurement"]["delta_z"]
+            - resection_backsight_2_measurement["measurement"]["delta_z"]
         ) / 2 - instrument_height
 
         # save the occupied point as a new station in the database, stopping execution on errors
