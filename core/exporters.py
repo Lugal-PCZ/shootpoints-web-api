@@ -58,6 +58,7 @@ def export_database_file() -> None:
 
 def export_session_data(sessions_id: int) -> None:
     """This function creates a ZIP file of a session and its shots, for download by the browser."""
+    spatialcontrol = []
     allshots = []
     pointclouds = []
     openpolygons = []
@@ -82,37 +83,62 @@ def export_session_data(sessions_id: int) -> None:
         "  sess.label AS session_label, "
         "  sess.started AS session_started, "
         "  sess.surveyor AS session_surveyor, "
-        "  site.id AS session_site_id, "
-        "  site.name AS session_site_name, "
-        "  site.description AS session_site_description, "
+        "  sites.id AS session_site_id, "
+        "  sites.name AS session_site_name, "
+        "  sites.description AS session_site_description, "
+        "  sta_occ.id AS occupied_station_id, "
+        "  sta_occ.name AS occupied_station_name, "
+        "  sta_occ.description AS occupied_station_description, "
+        "  sta_occ.northing AS occupied_station_northing, "
+        "  sta_occ.easting AS occupied_station_easting, "
+        "  sta_occ.elevation AS occupied_station_elevation, "
+        "  sta_occ.utmzone AS occupied_station_utmzone, "
+        "  sta_occ.latitude AS occupied_station_latitude, "
+        "  sta_occ.longitude AS occupied_station_longitude, "
+        "  CASE "
+        "    WHEN sess.stations_id_backsight IS NOT NULL THEN 'Backsight' "
+        "    WHEN sess.stations_id_resection_left IS NOT NULL THEN 'Resection' "
+        "    ELSE 'Azimuth' "
+        "  END AS session_type, "
+        "  sta_bs.id AS backsight_station_id, "
+        "  sta_bs.name AS backsight_station_name, "
+        "  sta_bs.description AS backsight_station_description, "
+        "  sta_bs.northing AS backsight_station_northing, "
+        "  sta_bs.easting AS backsight_station_easting, "
+        "  sta_bs.elevation AS backsight_station_elevation, "
+        "  sta_bs.utmzone AS backsight_station_utmzone, "
+        "  sta_bs.latitude AS backsight_station_latitude, "
+        "  sta_bs.longitude AS backsight_station_longitude, "
+        "  sta_rsl.id AS resection_station_left_id, "
+        "  sta_rsl.name AS resection_station_left_name, "
+        "  sta_rsl.description AS resection_station_left_description, "
+        "  sta_rsl.northing AS resection_station_left_northing, "
+        "  sta_rsl.easting AS resection_station_left_easting, "
+        "  sta_rsl.elevation AS resection_station_left_elevation, "
+        "  sta_rsl.utmzone AS resection_station_left_utmzone, "
+        "  sta_rsl.latitude AS resection_station_left_latitude, "
+        "  sta_rsl.longitude AS resection_station_left_longitude, "
+        "  sta_rsr.id AS resection_station_right_id, "
+        "  sta_rsr.name AS resection_station_right_name, "
+        "  sta_rsr.description AS resection_station_right_description, "
+        "  sta_rsr.northing AS resection_station_right_northing, "
+        "  sta_rsr.easting AS resection_station_right_easting, "
+        "  sta_rsr.elevation AS resection_station_right_elevation, "
+        "  sta_rsr.utmzone AS resection_station_right_utmzone, "
+        "  sta_rsr.latitude AS resection_station_right_latitude, "
+        "  sta_rsr.longitude AS resection_station_right_longitude, "
         "  sess.azimuth AS session_azimuth, "
         "  sess.instrumentheight AS session_instrumentheight, "
         "  sess.pressure AS session_pressure, "
         "  sess.temperature AS session_temperature, "
-        "  sta1.id AS occupied_station_id, "
-        "  sta1.name AS occupied_station_name, "
-        "  sta1.description AS occupied_station_description, "
-        "  sta1.northing AS occupied_station_northing, "
-        "  sta1.easting AS occupied_station_easting, "
-        "  sta1.elevation AS occupied_station_elevation, "
-        "  sta1.utmzone AS occupied_station_utmzone, "
-        "  sta1.latitude AS occupied_station_latitude, "
-        "  sta1.longitude AS occupied_station_longitude, "
-        "  sta2.id AS backsight_station_id, "
-        "  sta2.name AS backsight_station_name, "
-        "  sta2.description AS backsight_station_description, "
-        "  sta2.northing AS backsight_station_northing, "
-        "  sta2.easting AS backsight_station_easting, "
-        "  sta2.elevation AS backsight_station_elevation, "
-        "  sta2.utmzone AS backsight_station_utmzone, "
-        "  sta2.latitude AS backsight_station_latitude, "
-        "  sta2.longitude AS backsight_station_longitude, "
         "  count(DISTINCT grp.id) AS data_number_of_groupings, "
         "  count(shots.id) AS data_number_of_shots "
         "FROM sessions sess "
-        "JOIN stations sta1 ON  sess.stations_id_occupied = sta1.id "
-        "JOIN sites site ON sta1.sites_id = site.id "
-        "LEFT OUTER JOIN stations sta2 ON sess.stations_id_backsight = sta2.id "
+        "JOIN stations sta_occ ON sess.stations_id_occupied = sta_occ.id "
+        "JOIN sites ON sta_occ.sites_id = sites.id "
+        "LEFT OUTER JOIN stations sta_bs ON sess.stations_id_backsight = sta_bs.id "
+        "LEFT OUTER JOIN stations sta_rsl ON sess.stations_id_resection_left = sta_rsl.id "
+        "LEFT OUTER JOIN stations sta_rsr ON sess.stations_id_resection_right = sta_rsr.id "
         "LEFT OUTER JOIN groupings grp ON grp.sessions_id = sess.id "
         "LEFT OUTER JOIN shots ON shots.groupings_id = grp.id "
         "WHERE sess.id = ?"
@@ -121,18 +147,71 @@ def export_session_data(sessions_id: int) -> None:
     session = {"session": {}}
     occupied_station = {}
     backsight_station = {}
+    resection_station_left = {}
+    resection_station_right = {}
     for key, val in sessiondata.items():
         if key.startswith("session_"):
             session["session"][key[8:]] = val
-        elif key.startswith("occupied_"):
+        elif key.startswith("occupied_station_"):
             occupied_station[key[17:]] = val
-        elif key.startswith("backsight_"):
+        elif key.startswith("backsight_station_"):
             backsight_station[key[18:]] = val
+        elif key.startswith("resection_station_left_"):
+            resection_station_left[key[23:]] = val
+        elif key.startswith("resection_station_right_"):
+            resection_station_right[key[24:]] = val
         elif key.startswith("data_"):
             session["session"][key[5:]] = val
     session["session"]["occupied_station"] = occupied_station
-    if backsight_station["name"]:
+    spatialcontrol.append(
+        {
+            "id": occupied_station["id"],
+            "name": occupied_station["name"],
+            "descr": occupied_station["description"],
+            "type": "Occupied Station",
+            "N": occupied_station["northing"],
+            "E": occupied_station["easting"],
+            "Z": occupied_station["elevation"],
+        }
+    )
+    if sessiondata["session_type"] == "Backsight":
         session["session"]["backsight_station"] = backsight_station
+        spatialcontrol.append(
+            {
+                "id": backsight_station["id"],
+                "name": backsight_station["name"],
+                "descr": backsight_station["description"],
+                "type": "Backsight Station",
+                "N": backsight_station["northing"],
+                "E": backsight_station["easting"],
+                "Z": backsight_station["elevation"],
+            }
+        )
+    elif sessiondata["session_type"] == "Resection":
+        session["session"]["resection_station_left"] = resection_station_left
+        spatialcontrol.append(
+            {
+                "id": resection_station_left["id"],
+                "name": resection_station_left["name"],
+                "descr": resection_station_left["description"],
+                "type": "Left Resection Reference Station",
+                "N": resection_station_left["northing"],
+                "E": resection_station_left["easting"],
+                "Z": resection_station_left["elevation"],
+            }
+        )
+        session["session"]["resection_station_right"] = resection_station_right
+        spatialcontrol.append(
+            {
+                "id": resection_station_right["id"],
+                "name": resection_station_right["name"],
+                "descr": resection_station_right["description"],
+                "type": "Right Resection Reference Station",
+                "N": resection_station_right["northing"],
+                "E": resection_station_right["easting"],
+                "Z": resection_station_right["elevation"],
+            }
+        )
     with open("exports/session_info.json", "w") as f:
         f.write(json.dumps(session, ensure_ascii=False, indent=2))
 
@@ -234,6 +313,24 @@ def export_session_data(sessions_id: int) -> None:
         if sessiondata["occupied_station_utmzone"]
         else ""
     )
+    with shapefile.Writer(
+        "exports/gis_shapefiles_spatialcontrol", shapeType=shapefile.POINTZ
+    ) as w:
+        w.field("id", "N")
+        w.field("name", "C")
+        w.field("descr", "C")
+        w.field("type", "C")
+        w.field("N", "N", decimal=3)
+        w.field("E", "N", decimal=3)
+        w.field("Z", "N", decimal=3)
+        for eachstation in spatialcontrol:
+            w.record(*tuple(eachstation.values()))
+            w.pointz(eachstation["E"], eachstation["N"], eachstation["Z"])
+        if prjfile:
+            shutil.copy2(
+                prjfile,
+                "exports/gis_shapefiles_spatialcontrol.prj",
+            )
     if allshots:
         with shapefile.Writer(
             "exports/gis_shapefiles_allshots", shapeType=shapefile.POINTZ
@@ -317,7 +414,7 @@ def export_session_data(sessions_id: int) -> None:
         "session_info.json",
         "shots_data.csv",
     ]
-    for eachfile in ["allshots", "closedpolygons", "openpolygons", "pointclouds"]:
+    for eachfile in ["spatialcontrol", "allshots", "closedpolygons", "openpolygons", "pointclouds"]:
         filesinarchive.append(f"gis_shapefiles/{eachfile}.dbf")
         filesinarchive.append(f"gis_shapefiles/{eachfile}.shp")
         filesinarchive.append(f"gis_shapefiles/{eachfile}.shx")
