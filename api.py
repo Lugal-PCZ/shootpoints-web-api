@@ -96,6 +96,12 @@ async def set_configs(
     return outcome
 
 
+@app.get("/version/")
+async def get_version():
+    """This function gets the version of ShootPoints-Web."""
+    return {"version": core.__version__}
+
+
 #############################
 # CLASSIFICATIONS ENDPOINTS #
 #############################

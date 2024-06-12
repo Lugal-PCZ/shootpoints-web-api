@@ -1,7 +1,6 @@
 """This package controls all aspects of ShootPoints’ communications with the total station and processing and saving data."""
 
 import configparser
-import shutil
 import glob
 import importlib
 import serial
@@ -18,6 +17,7 @@ from . import tripod
 from .utilities import format_outcome
 
 
+__version__ = ""
 configs = configparser.ConfigParser(comment_prefixes="|", allow_no_value=True)
 configs.optionxform = str
 totalstation = None
@@ -39,10 +39,15 @@ def _load_configs() -> dict:
     if not configs.has_section("SERIAL"):
         configs.add_section("SERIAL")
     if not configs.has_option("SERIAL", "port"):
-        configs.set("SERIAL", "; Set port to “demo” or the path (e.g., “/dev/ttyUSB0”).")
+        configs.set(
+            "SERIAL", "; Set port to “demo” or the path (e.g., “/dev/ttyUSB0”)."
+        )
         configs.set("SERIAL", "port", "demo")
     if not configs.has_option("SERIAL", "uart"):
-        configs.set("SERIAL", "; Change the following to “true” if a UART adapter has been connected to the Raspberry Pi’s GPIO.")
+        configs.set(
+            "SERIAL",
+            "; Change the following to “true” if a UART adapter has been connected to the Raspberry Pi’s GPIO.",
+        )
         configs.set("SERIAL", "uart", "false")
     # Total Station configs
     if not configs.has_section("TOTAL STATION"):
@@ -55,7 +60,10 @@ def _load_configs() -> dict:
     if not configs.has_section("BACKSIGHT ERROR"):
         configs.add_section("BACKSIGHT ERROR")
     if not configs.has_option("BACKSIGHT ERROR", "limit"):
-        configs.set("BACKSIGHT ERROR", "; Acceptable error range for backsight shots (expected horizontal distance vs. measured distance), in cm.")
+        configs.set(
+            "BACKSIGHT ERROR",
+            "; Acceptable error range for backsight shots (expected horizontal distance vs. measured distance), in cm.",
+        )
         configs.set("BACKSIGHT ERROR", "limit", "3.0")
     with open("configs.ini", "w") as f:
         configs.write(f)
@@ -133,9 +141,10 @@ def _load_serial_port() -> dict:
 def _load_application() -> dict:
     """This function runs the private loader functions (above) and clears setup errors if they run cleanly."""
     outcome = {"errors": [], "results": []}
-    saved_state = database._read_from_database("SELECT * FROM savedstate")[
-        "results"
-    ][0]
+    global __version__
+    with open("../VERSION", "r") as f:
+        __version__ = f.readline().strip()
+    saved_state = database._read_from_database("SELECT * FROM savedstate")["results"][0]
     prism.offsets = {
         "vertical_distance": saved_state["vertical_distance"],
         "latitude_distance": saved_state["latitude_distance"],
@@ -160,9 +169,9 @@ def _load_application() -> dict:
         "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
         "WHERE sess.id = ?"
     )
-    session_info = database._read_from_database(
-        sql, (saved_state["currentsession"],)
-    )["results"][0]
+    session_info = database._read_from_database(sql, (saved_state["currentsession"],))[
+        "results"
+    ][0]
     tripod.occupied_point = {
         "n": session_info["n"],
         "e": session_info["e"],
@@ -191,7 +200,7 @@ def get_configs() -> dict:
     currentconfigs = {}
     for eachsection in configs.sections():  # type: ignore
         for eachoption in configs.items(eachsection):  # type: ignore
-            if not eachoption[0][0] == ';':
+            if not eachoption[0][0] == ";":
                 currentconfigs[eachoption[0]] = eachoption[1]
     ports = ["demo"]
     ports.extend(glob.glob("/dev/ttyUSB*"))  # USB to Serial adapter on Raspberry Pi
