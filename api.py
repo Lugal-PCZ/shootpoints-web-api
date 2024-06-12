@@ -12,7 +12,7 @@ app = FastAPI()
 
 app.mount(
     "/webapp",
-    StaticFiles(directory="../shootpoints-web-frontend", html=True),
+    StaticFiles(directory="../frontend", html=True),
     name="webapp",
 )
 
