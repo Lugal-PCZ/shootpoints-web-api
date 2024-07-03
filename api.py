@@ -67,7 +67,7 @@ async def set_rpi_clock(
 ):
     """This function sets the date and time on the Raspberry Pi."""
     os.system(f"sudo date -s '{datetimestring}'")
-    return {"result": "Clock updated."}
+    return {"result": "Raspberry Pi clock updated."}
 
 
 ##################
@@ -404,7 +404,7 @@ async def get_all_sessions():
 
 
 @app.post("/session/", status_code=201)
-def start_new_surveying_session(
+def start_new_session(
     response: Response,
     label: str = Form(...),
     surveyor: str = Form(...),

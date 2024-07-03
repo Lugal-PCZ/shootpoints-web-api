@@ -337,7 +337,7 @@ def start_surveying_session_with_backsight(
     )
     if variance >= backsighterrorlimit:
         outcome["errors"].append(
-            f"The measured distance between the Occupied Point and the Backsight Station ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
+            f"The variance in the distance measured between the Occupied Point and the Backsight Station ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
         )
 
     # calculate and validate the instrument height, stopping execution if it fails
@@ -615,15 +615,15 @@ def abort_resection() -> dict:
 
 def end_current_session() -> dict:
     """This function ends the current session."""
-    global sessionid
     outcome = {"errors": [], "result": ""}
+    global sessionid
+    sessionid = 0
     endcurrentsession = database._save_to_database(
         "UPDATE savedstate SET currentsession = ?", (sessionid,)
     )
     if "errors" in endcurrentsession:
         outcome["errors"] = endcurrentsession["errors"]
     else:
-        sessionid = 0
         outcome["result"] = "Session ended."
     return format_outcome(outcome)
 
