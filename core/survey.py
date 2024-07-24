@@ -615,16 +615,17 @@ def abort_resection() -> dict:
 
 def end_current_session() -> dict:
     """This function ends the current session."""
-    outcome = {"errors": [], "result": ""}
     global sessionid
-    sessionid = 0
-    endcurrentsession = database._save_to_database(
-        "UPDATE savedstate SET currentsession = ?", (sessionid,)
-    )
-    if "errors" in endcurrentsession:
-        outcome["errors"] = endcurrentsession["errors"]
-    else:
-        outcome["result"] = "Session ended."
+    if "errors" not in end_current_grouping():
+        outcome = {"errors": [], "result": ""}
+        sessionid = 0
+        endcurrentsession = database._save_to_database(
+            "UPDATE savedstate SET currentsession = ?", (sessionid,)
+        )
+        if "errors" in endcurrentsession:
+            outcome["errors"] = endcurrentsession["errors"]
+        else:
+            outcome["result"] = "Session ended."
     return format_outcome(outcome)
 
 
