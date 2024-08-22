@@ -19,8 +19,8 @@ CREATE TABLE `geometries` (
 );
 INSERT INTO geometries VALUES(1,'Isolated Point',0,'A discrete point that encapsulates granular information such as a point elevation or the location of a small artifact.');
 INSERT INTO geometries VALUES(2,'Point Cloud',0,'Multiple non-sequential point samples that do not carry information individually but as elements of a group that together describe an entity (such as topography).');
-INSERT INTO geometries VALUES(3,'Open Polygon',1,'Multiple sequential points that trace an outline wherein the start and end points do not connect.');
-INSERT INTO geometries VALUES(4,'Closed Polygon',1,'Multiple sequential points that trace an outline wherein the start point is connected to the end point.');
+INSERT INTO geometries VALUES(3,'Open Polygon',1,'Multiple sequential points that trace an outline wherein the start and end points do not connect (such as in a shapefile linestring).');
+INSERT INTO geometries VALUES(4,'Closed Polygon',1,'Multiple sequential points that trace an outline wherein the start point is connected to the end point (such as in a shapefile polygon).');
 CREATE TABLE `groupings` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `sessions_id` INTEGER NOT NULL
