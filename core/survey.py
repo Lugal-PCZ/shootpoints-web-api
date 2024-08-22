@@ -702,8 +702,8 @@ def export_session_for_livemap(thesession: int = 0) -> dict:
             return {}
         sitelocalcoords = False
         utmzone = sessioninfo["results"][0]["utmzone"]
-        lat = (sessioninfo["results"][0]["latitude"],)
-        lon = (sessioninfo["results"][0]["longitude"],)
+        lat = sessioninfo["results"][0]["latitude"]
+        lon = sessioninfo["results"][0]["longitude"]
         if utmzone is None:
             sitelocalcoords = True
             utmzone = "31N"
