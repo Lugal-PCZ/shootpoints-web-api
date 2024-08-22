@@ -162,6 +162,7 @@ def _load_application() -> dict:
         "  sta.northing AS n, "
         "  sta.easting AS e, "
         "  sta.elevation AS z, "
+        "  sta.utmzone AS utmzone, "
         "  sess.instrumentheight AS ih, "
         "  max(grp.id) AS gid "
         "FROM sessions sess "
@@ -176,6 +177,7 @@ def _load_application() -> dict:
         "n": session_info["n"],
         "e": session_info["e"],
         "z": session_info["z"],
+        "utmzone": session_info["utmzone"],
     }
     tripod.instrument_height = session_info["ih"]
     loaders = [_load_configs, _load_total_station_model, _load_serial_port]

@@ -1,5 +1,6 @@
 """This module contains the API for ShootPoints."""
 
+from typing import Optional
 from fastapi import FastAPI, Form, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -390,6 +391,12 @@ async def end_current_grouping(response: Response):
     if "errors" in outcome:
         response.status_code = 400
     return outcome
+
+
+@app.get("/livemap/")
+async def export_session_for_livemap(sessions_id: Optional[int] = None):
+    """This function gets a survey data from a session to be plotted by leafletjs."""
+    return core.survey.export_session_for_livemap(sessions_id)
 
 
 @app.get("/session/")

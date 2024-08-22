@@ -13,6 +13,7 @@ occupied_point = {
     "n": 0.0,
     "e": 0.0,
     "z": 0.0,
+    "utmzone": "",
 }
 instrument_height = 0.0
 

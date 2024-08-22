@@ -191,6 +191,7 @@ def start_surveying_session_with_azimuth(
         occupied_n = occupiedpoint["station"]["northing"]
         occupied_e = occupiedpoint["station"]["easting"]
         occupied_z = occupiedpoint["station"]["elevation"]
+        utmzone = occupiedpoint["station"]["utmzone"]
 
     # check that the given instrument height is sane
     instrumentheighterror = tripod._validate_instrument_height(instrument_height)
@@ -231,6 +232,7 @@ def start_surveying_session_with_azimuth(
             "n": occupied_n,
             "e": occupied_e,
             "z": occupied_z,
+            "utmzone": utmzone,
         }
         tripod.instrument_height = instrument_height
         outcome["result"] = f"Azimuth set to {azimuthstring}, and new session started."
@@ -291,6 +293,7 @@ def start_surveying_session_with_backsight(
         occupied_n = occupiedpoint["station"]["northing"]
         occupied_e = occupiedpoint["station"]["easting"]
         occupied_z = occupiedpoint["station"]["elevation"]
+        utmzone = occupiedpoint["station"]["utmzone"]
 
     # get the backsight station coordinates
     backsight_n, backsight_e, backsight_z = 0, 0, 0
@@ -372,6 +375,7 @@ def start_surveying_session_with_backsight(
             "n": occupied_n,
             "e": occupied_e,
             "z": occupied_z,
+            "utmzone": utmzone,
         }
         tripod.instrument_height = instrument_height
         outcome["result"] = (
@@ -581,6 +585,7 @@ def start_surveying_session_with_resection(
                 "n": occupied_point_ne_coords[1],
                 "e": occupied_point_ne_coords[0],
                 "z": occupied_point_elevation,
+                "utmzone": resection_backsight_1["station"]["utmzone"],
             }
             tripod.instrument_height = instrument_height
             resection_backsight_1 = {}
@@ -670,6 +675,136 @@ def get_current_session() -> dict:
         )
         outcome = database._read_from_database(sql, (sessionid,))["results"][0]
     return format_outcome(outcome)
+
+
+def export_session_for_livemap(thesession: int = 0) -> dict:
+    """This function returns a dictionary of survey data that can be plotted by leafletjs."""
+    thesession = thesession or sessionid
+    sql = (
+        "SELECT "
+        "	sessions.label, "
+        "	stations.name, "
+        "	stations.northing, "
+        "	stations.easting, "
+        "	stations.latitude, "
+        "	stations.longitude, "
+        "	stations.utmzone, "
+        "	savedstate.currentgrouping "
+        "FROM savedstate "
+        "LEFT OUTER JOIN sessions ON savedstate.currentsession = sessions.id "
+        "LEFT OUTER JOIN stations ON sessions.stations_id_occupied = stations.id "
+        "WHERE savedstate.currentsession = ? "
+        "LIMIT 1"
+    )
+    sessioninfo = database._read_from_database(sql, (thesession,))
+    if "errors" not in sessioninfo:
+        if sessioninfo["results"][0]["name"] is None:
+            return {}
+        sitelocalcoords = False
+        utmzone = sessioninfo["results"][0]["utmzone"]
+        lat = (sessioninfo["results"][0]["latitude"],)
+        lon = (sessioninfo["results"][0]["longitude"],)
+        if utmzone is None:
+            sitelocalcoords = True
+            utmzone = "31N"
+            lat, lon = calculations._convert_utm_to_latlon(
+                sessioninfo["results"][0]["northing"] + 200000,
+                sessioninfo["results"][0]["easting"] + 200000,
+                int(utmzone[:-1]),
+                utmzone[-1],
+            )
+        outcome = {
+            "occupiedstation": {
+                "label": [
+                    f"{sessioninfo['results'][0]['label']}",
+                    sessioninfo["results"][0]["name"],
+                ],
+                "sitelocalcoords": sitelocalcoords,
+                "coords": [
+                    lat,
+                    lon,
+                ],
+            },
+            "currentgrouping": sessioninfo["results"][0]["currentgrouping"],
+        }
+    else:
+        return format_outcome(sessioninfo)
+    sql = (
+        "SELECT "
+        "	groupings.id AS groupings_id, "
+        "	groupings.geometries_id, "
+        "	subclasses.name AS subclass, "
+        "	groupings.label, "
+        "	shots.northing, "
+        "	shots.easting "
+        "FROM groupings "
+        "JOIN shots ON groupings.id = shots.groupings_id "
+        "LEFT OUTER JOIN subclasses ON groupings.subclasses_id = subclasses.id "
+        "LEFT OUTER JOIN sessions ON groupings.sessions_id = sessions.id "
+        "WHERE groupings.sessions_id = ? "
+        "ORDER BY groupings.id"
+    )
+    surveydata = database._read_from_database(sql, (thesession,))
+    if "errors" not in surveydata:
+        shots = []
+        for each_shot in surveydata["results"]:
+            northing = each_shot["northing"]
+            easting = each_shot["easting"]
+            if sitelocalcoords:
+                northing += 200000
+                easting += 200000
+            lat, lon = calculations._convert_utm_to_latlon(
+                northing,
+                easting,
+                int(utmzone[:-1]),
+                utmzone[-1],
+            )
+            shots.append(
+                (
+                    each_shot["groupings_id"],
+                    each_shot["geometries_id"],
+                    [each_shot["subclass"], each_shot["label"]],
+                    lat,
+                    lon,
+                )
+            )
+        closedpolys = [shot for shot in shots if shot[1] == 4]
+        openpolys = [shot for shot in shots if shot[1] == 3]
+        leafletpolygons = {}
+        for each_shot in closedpolys:
+            if each_shot[0] not in leafletpolygons:
+                leafletpolygons[each_shot[0]] = {
+                    "groupingid": each_shot[0],
+                    "label": each_shot[2],
+                    "coords": [],
+                }
+            leafletpolygons[each_shot[0]]["coords"].append([each_shot[3], each_shot[4]])
+        leafletpolylines = {}
+        for each_shot in openpolys:
+            if each_shot[0] not in leafletpolylines:
+                leafletpolylines[each_shot[0]] = {
+                    "groupingid": each_shot[0],
+                    "label": each_shot[2],
+                    "coords": [],
+                }
+            leafletpolylines[each_shot[0]]["coords"].append(
+                [each_shot[3], each_shot[4]]
+            )
+        leafletpoints = []
+        for each_shot in shots:
+            leafletpoints.append(
+                {
+                    "groupingid": each_shot[0],
+                    "label": each_shot[2],
+                    "coords": [each_shot[3], each_shot[4]],
+                }
+            )
+        outcome["polylines"] = list(leafletpolylines.values())
+        outcome["polygons"] = list(leafletpolygons.values())
+        outcome["points"] = leafletpoints
+    else:
+        outcome = surveydata
+    return format_outcome(outcome, ["polylines", "polygons", "points"])
 
 
 def delete_session(id: int) -> dict:
@@ -814,6 +949,21 @@ def take_shot() -> dict:
             )
             outcome["result"] = calculations._apply_offsets_to_measurement(
                 measurement["measurement"]
+            )
+            northing = measurement["measurement"]["calculated_n"]
+            easting = measurement["measurement"]["calculated_e"]
+            utmzone = tripod.occupied_point["utmzone"]
+            if not utmzone:
+                northing += 200000
+                easting += 200000
+                utmzone = "31N"
+            outcome["result"]["calculated_lat"], outcome["result"]["calculated_lon"] = (
+                calculations._convert_utm_to_latlon(
+                    northing,
+                    easting,
+                    int(utmzone[:-1]),
+                    utmzone[-1],
+                )
             )
             activeshotdata = outcome["result"]
     return format_outcome(outcome)
