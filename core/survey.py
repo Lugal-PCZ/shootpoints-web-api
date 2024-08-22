@@ -227,7 +227,6 @@ def start_surveying_session_with_azimuth(
         temperature,
     )
     if sessionid := _save_new_session(data):
-        print(">>> HERE <<<")
         tripod.occupied_point = {
             "n": occupied_n,
             "e": occupied_e,
