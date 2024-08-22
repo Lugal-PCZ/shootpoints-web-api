@@ -385,6 +385,7 @@ async def start_new_grouping(
 
 @app.put("/grouping/")
 async def end_current_grouping(response: Response):
+    """This function ends the current grouping."""
     outcome = core.survey.end_current_grouping()
     if "errors" in outcome:
         response.status_code = 400
