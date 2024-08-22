@@ -235,7 +235,9 @@ def start_surveying_session_with_azimuth(
         tripod.instrument_height = instrument_height
         outcome["result"] = f"Azimuth set to {azimuthstring}, and new session started."
     else:
-        outcome["errors"].append(f"A problem occurred while saving the new session.")
+        outcome["errors"].append(
+            f"A database error occurred while saving the new session."
+        )
     return format_outcome(outcome)
 
 
@@ -376,7 +378,9 @@ def start_surveying_session_with_backsight(
             f"New session started. Please confirm that the calculated instrument height ({instrument_height}m) and azimuth to the backsight ({azimuthstring}) are correct before proceeding."
         )
     else:
-        outcome["errors"].append("A problem occurred while saving the new session.")
+        outcome["errors"].append(
+            "A database error occurred while saving the new session."
+        )
     return format_outcome(outcome)
 
 
@@ -587,7 +591,7 @@ def start_surveying_session_with_resection(
             )
         else:
             outcome["errors"].append(
-                f"A problem occurred while saving the new session."
+                f"A database error occurred while saving the new session."
             )
 
     outcome = {"errors": [], "result": ""}
