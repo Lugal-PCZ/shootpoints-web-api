@@ -50,7 +50,7 @@ def _read_from_database(sql: str, params: tuple = ()) -> dict:
             outcome["errors"].append(str(err))
     else:
         outcome["errors"].append("The given sql does not appear to be a SELECT query.")
-    return format_outcome(outcome, "results")
+    return format_outcome(outcome, ["results"])
 
 
 def _delete_from_database(sql: str, params: tuple) -> dict:
@@ -69,7 +69,7 @@ def _delete_from_database(sql: str, params: tuple) -> dict:
             outcome["errors"].append(str(err))
     else:
         outcome["errors"].append("The given sql does not appear to be a DELETE query.")
-    return format_outcome(outcome, "results")
+    return format_outcome(outcome, ["results"])
 
 
 def _record_setup_error(error: str) -> None:

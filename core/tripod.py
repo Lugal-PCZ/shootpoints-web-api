@@ -155,7 +155,7 @@ def get_stations(sites_id: int) -> dict:
             outcome["stations"] = query["results"]
     else:
         outcome["errors"].append(f"There is no site with id {sites_id}.")
-    return format_outcome(outcome, "stations")
+    return format_outcome(outcome, ["stations"])
 
 
 def get_station(sites_id: int, id: int) -> dict:

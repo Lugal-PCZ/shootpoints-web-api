@@ -106,7 +106,7 @@ def get_geometries() -> dict:
     query = database._read_from_database("SELECT * FROM geometries")
     if "errors" not in query:
         outcome["geometries"] = query["results"]
-    return format_outcome(outcome, "geometries")
+    return format_outcome(outcome, ["geometries"])
 
 
 def get_atmospheric_conditions() -> dict:
@@ -645,7 +645,7 @@ def get_all_sessions() -> dict:
         "GROUP BY sess.id"
     )
     outcome["sessions"] = database._read_from_database(sql)["results"]
-    return format_outcome(outcome, "sessions")
+    return format_outcome(outcome, ["sessions"])
 
 
 def get_current_session() -> dict:

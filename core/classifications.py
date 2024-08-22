@@ -14,7 +14,7 @@ def get_all_classes() -> dict:
         outcome["classes"] = classes["results"]
     else:
         outcome["errors"] = classes["errors"]
-    return format_outcome(outcome, "results")
+    return format_outcome(outcome, ["results"])
 
 
 def get_subclasses(classes_id: int) -> dict:
@@ -28,7 +28,7 @@ def get_subclasses(classes_id: int) -> dict:
         outcome["subclasses"] = subclasses["results"]
     else:
         outcome["errors"] = subclasses["errors"]
-    return format_outcome(outcome, "subclasses")
+    return format_outcome(outcome, ["subclasses"])
 
 
 def save_new_class(name: str, description: Optional[str] = None) -> dict:

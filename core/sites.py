@@ -12,7 +12,7 @@ def get_all_sites() -> dict:
     query = database._read_from_database("SELECT * FROM sites ORDER BY name")
     if "errors" not in query:
         outcome["sites"] = query["results"]
-    return format_outcome(outcome, "sites")
+    return format_outcome(outcome, ["sites"])
 
 
 def save_site(name: str, description: Optional[str] = None) -> dict:
