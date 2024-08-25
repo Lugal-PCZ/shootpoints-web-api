@@ -326,7 +326,7 @@ def start_surveying_session_with_backsight(
         outcome["errors"].extend(measurement["errors"])
         return format_outcome(outcome)
 
-    # validate the backsight variance, using fake data so demo mode passes the test
+    # check the backsight variance, using fake data when in demo mode so that it passes the test
     if totalstation.__name__ == "core.total_stations.demo":
         measurement["measurement"]["delta_n"] = backsight_n - occupied_n
         measurement["measurement"]["delta_e"] = backsight_e - occupied_e
@@ -395,6 +395,7 @@ def start_surveying_session_with_resection(
     backsight_station_1_id: int,
     backsight_station_2_id: int,
     instrument_height: float,
+    prism_height: float,
     temperature: int,
     pressure: int,
 ) -> dict:
@@ -435,6 +436,16 @@ def start_surveying_session_with_resection(
         else:
             resection_instrument_height = round(instrument_height, 3)
 
+        # set the prism height
+        if prism_height < 0:
+            outcome["errors"].append(
+                f"An invalid prism height ({prism_height}m) was entered."
+            )
+        else:
+            prismoffsets = prism.set_prism_offsets(-prism_height, 0, 0, 0, 0, 0)
+            if "errors" in prismoffsets:
+                outcome["errors"].extend(prismoffsets["errors"])
+
         # get the backsight station 1 and 2 coordinates
         resection_backsight_1 = tripod.get_station(sites_id, backsight_station_1_id)
         if "errors" in resection_backsight_1:
@@ -458,7 +469,7 @@ def start_surveying_session_with_resection(
         else:
             resection_backsight_1_measurement = measurement
             outcome["result"] = (
-                "Backsight #1 (left) successful. Ready to shoot Backsight #2 (right)."
+                "Left Backsight successful. Ready to shoot Right Backsight."
             )
         return None
 
@@ -489,19 +500,26 @@ def start_surveying_session_with_resection(
             outcome["errors"].extend(resection_backsight_2_measurement["errors"])
             return None
 
-        # validate the variance between the backsight stations, using fake data so demo mode passes the test
-        backsight_z_diff = (
+        # check the variance between the backsight stations, using fake data when in demo mode so that it passes the test
+        occupied_point_z_left_reading = (
             resection_backsight_1["station"]["elevation"]
-            - resection_backsight_2["station"]["elevation"]
+            - prism.get_raw_prism_offsets()["vertical_distance"]
+            + resection_backsight_1_measurement["measurement"]["delta_z"]
+            - tripod.instrument_height
+        )
+        occupied_point_z_right_reading = (
+            resection_backsight_2["station"]["elevation"]
+            - prism.get_raw_prism_offsets()["vertical_distance"]
+            + resection_backsight_2_measurement["measurement"]["delta_z"]
+            - tripod.instrument_height
         )
         if totalstation.__name__ == "core.total_stations.demo":
-            measured_z_diff = backsight_z_diff
+            variance = 0
         else:
-            measured_z_diff = (
-                resection_backsight_1_measurement["measurement"]["delta_z"]
-                - resection_backsight_2_measurement["measurement"]["delta_z"]
+            variance = (
+                abs(occupied_point_z_left_reading - occupied_point_z_right_reading)
+                * 100
             )
-        variance = (backsight_z_diff - measured_z_diff) * 100
         if variance >= backsighterrorlimit:
             outcome["errors"].append(
                 f"The measured elevation difference between the Occupied Point and the Backsight Stations ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
@@ -528,11 +546,8 @@ def start_surveying_session_with_resection(
             ),
         )
         occupied_point_elevation = (
-            resection_backsight_1["station"]["elevation"]
-            - resection_backsight_1_measurement["measurement"]["delta_z"]
-            + resection_backsight_2["station"]["elevation"]
-            - resection_backsight_2_measurement["measurement"]["delta_z"]
-        ) / 2 - instrument_height
+            occupied_point_z_left_reading + occupied_point_z_right_reading
+        ) / 2
 
         # save the occupied point as a new station in the database, stopping execution on errors
         coordinatesystem = (
@@ -592,7 +607,7 @@ def start_surveying_session_with_resection(
             resection_backsight_2 = {}
             resection_backsight_1_measurement = {}
             outcome["result"] = (
-                f"New session started. Please confirm that the azimuth to Backsight #2 ({azimuthstring}) is correct before proceeding."
+                f"New session started. Please confirm that the azimuth to the Right Backsight ({azimuthstring}) is correct before proceeding."
             )
         else:
             outcome["errors"].append(
