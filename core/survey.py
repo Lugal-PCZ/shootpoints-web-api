@@ -455,7 +455,7 @@ def start_surveying_session_with_resection(
             outcome["errors"].extend(resection_backsight_2["errors"])
         return None
 
-    def take_backsight_1():
+    def shoot_backsight_1():
         """This function takes the first (left) resection backsight."""
         global resection_backsight_1_measurement
         nonlocal outcome
@@ -473,7 +473,7 @@ def start_surveying_session_with_resection(
             )
         return None
 
-    def take_backsight_2():
+    def shoot_backsight_2():
         """This function takes the second (right) resection backsight and computes the occupied point."""
         global resection_backsight_1
         global resection_backsight_2
@@ -619,9 +619,9 @@ def start_surveying_session_with_resection(
         perform_setup()
         # stop execution if there were any errors setting the atmospheric conditions, instrument height, or backsight 1 or 2
         if not outcome["errors"]:
-            take_backsight_1()
+            shoot_backsight_1()
     else:
-        take_backsight_2()
+        shoot_backsight_2()
     return format_outcome(outcome)
 
 
