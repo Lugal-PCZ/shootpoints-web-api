@@ -6,6 +6,8 @@ for when ShootPoints is run in demo mode.
 from time import sleep as _sleep
 from random import randint as _randint
 
+from .. import calculations
+from ..survey import pressure, temperature
 from ..utilities import format_outcome
 
 
@@ -70,11 +72,15 @@ def take_measurement() -> dict:
     delta_n = round((496337 + _randint(-50000, 50000)) / 10000, 3)
     delta_e = round((311930 + _randint(-50000, 50000)) / 10000, 3)
     delta_z = round((95802 + _randint(-10000, 10000)) / 10000, 3)
-    outcome["measurement"] = {
-        "delta_n": delta_n,
-        "delta_e": delta_e,
-        "delta_z": delta_z,
-    }
+    outcome["measurement"] = calculations._apply_atmospheric_correction(
+        {
+            "delta_n": delta_n,
+            "delta_e": delta_e,
+            "delta_z": delta_z,
+        },
+        pressure,
+        temperature,
+    )
     return format_outcome(outcome)
 
 

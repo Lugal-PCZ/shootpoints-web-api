@@ -1,5 +1,7 @@
 """This module contains constants and methods for communicating with Topcon GTS-300 Series total stations."""
 
+from .. import calculations
+from ...survey import pressure, temperature
 from ...utilities import format_outcome
 
 # Communications constants:
@@ -149,11 +151,15 @@ def take_measurement() -> dict:
                 delta_e = round(float(measurement[12:23]) / 10000, 3)
                 delta_n = round(float(measurement[1:12]) / 10000, 3)
                 delta_z = round(float(measurement[23:34]) / 10000, 3)
-                outcome["measurement"] = {
-                    "delta_n": delta_n,
-                    "delta_e": delta_e,
-                    "delta_z": delta_z,
-                }
+                outcome["measurement"] = calculations._apply_atmospheric_correction(
+                    {
+                        "delta_n": delta_n,
+                        "delta_e": delta_e,
+                        "delta_z": delta_z,
+                    },
+                    pressure,
+                    temperature,
+                )
             else:
                 outcome["errors"].append(f"Unexpected data format: {measurement}.")
         except:

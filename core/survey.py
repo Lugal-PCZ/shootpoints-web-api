@@ -959,9 +959,6 @@ def take_shot() -> dict:
         elif "errors" in measurement:
             outcome["errors"] = measurement["errors"]
         else:
-            outcome["result"] = calculations._apply_atmospheric_correction(
-                measurement["measurement"], pressure, temperature
-            )
             outcome["result"] = calculations._apply_offsets_to_measurement(
                 measurement["measurement"]
             )
