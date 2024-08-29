@@ -61,13 +61,11 @@ def take_measurement() -> dict:
     """This function tells the total station to begin measuring a point."""
     outcome = {"errors": [], "measurement": {}, "notification": ""}
     global _canceled
-    if _canceled:
-        _canceled = False
+    _canceled = False
     delay = 4
     for i in range(delay):
         _sleep(1)
         if _canceled:
-            _canceled = False
             return {"notification": "Shot canceled by user."}
     delta_n = round((496337 + _randint(-50000, 50000)) / 10000, 3)
     delta_e = round((311930 + _randint(-50000, 50000)) / 10000, 3)

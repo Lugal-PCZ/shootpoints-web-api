@@ -71,6 +71,8 @@ def set_mode_hr() -> dict:
 def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
     """This function sets the azimuth reading on the total station."""
     outcome = {"errors": [], "result": ""}
+    global _canceled
+    _canceled = False
     try:
         degrees = int(degrees)
         if not 0 <= degrees <= 359:
@@ -126,6 +128,8 @@ def set_azimuth(degrees: int = 0, minutes: int = 0, seconds: int = 0) -> dict:
 def take_measurement() -> dict:
     """This function tells the total station to begin measuring a point."""
     outcome = {"errors": [], "measurement": {}, "notification": ""}
+    global _canceled
+    _canceled = False
     measurement = b""
     _write("Z64088")
     if _wait_for_ack():
@@ -154,8 +158,10 @@ def take_measurement() -> dict:
                 outcome["errors"].append(f"Unexpected data format: {measurement}.")
         except:
             if _canceled:
+                _canceled = False
                 return {"notification": "Shot canceled by user."}
             else:
+                set_mode_hr()
                 outcome["errors"].append("Measurement failed.")
     return format_outcome(outcome)
 
@@ -165,5 +171,4 @@ def cancel_measurement() -> None:
     global _canceled
     _canceled = True  # Flag to short circuit _wait_for_ack() and take_measurement().
     set_mode_hr()  # Issue harmless command that interrupts the GTS.
-    _canceled = False  # Reset flag.
     return
