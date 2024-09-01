@@ -504,14 +504,14 @@ def start_surveying_session_with_resection(
         occupied_point_z_left_reading = (
             resection_backsight_1["station"]["elevation"]
             - prism.get_raw_prism_offsets()["vertical_distance"]
-            + resection_backsight_1_measurement["measurement"]["delta_z"]
-            - tripod.instrument_height
+            - resection_backsight_1_measurement["measurement"]["delta_z"]
+            - resection_instrument_height
         )
         occupied_point_z_right_reading = (
             resection_backsight_2["station"]["elevation"]
             - prism.get_raw_prism_offsets()["vertical_distance"]
-            + resection_backsight_2_measurement["measurement"]["delta_z"]
-            - tripod.instrument_height
+            - resection_backsight_2_measurement["measurement"]["delta_z"]
+            - resection_instrument_height
         )
         if totalstation.__name__ == "core.total_stations.demo":
             variance = 0
