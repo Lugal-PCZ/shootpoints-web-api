@@ -147,7 +147,9 @@ def _load_application() -> dict:
             "app": f.readline().strip().split("=")[1],
             "database": f.readline().strip().split("=")[1],
         }
-        print(f">>> {__version__} <<<")
+        print(
+            f"ShootPoints-Web v{__version__['app']}\nDatabase v{__version__['database']}"
+        )
     saved_state = database._read_from_database("SELECT * FROM savedstate")["results"][0]
     prism.offsets = {
         "vertical_distance": saved_state["vertical_distance"],
