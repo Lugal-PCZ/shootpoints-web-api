@@ -1,6 +1,6 @@
 """This module contains constants and methods for communicating with Topcon GTS-300 Series total stations."""
 
-from .. import calculations
+from ... import calculations
 from ...survey import pressure, temperature
 from ...utilities import format_outcome
 
