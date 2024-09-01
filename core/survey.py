@@ -392,6 +392,7 @@ def start_surveying_session_with_resection(
     label: str,
     surveyor: str,
     sites_id: int,
+    new_station_name: str,
     backsight_station_1_id: int,
     backsight_station_2_id: int,
     instrument_height: float,
@@ -461,6 +462,7 @@ def start_surveying_session_with_resection(
         global resection_backsight_1_measurement
         nonlocal outcome
 
+        end_current_session()
         # shoot backsight 1, stopping execution if it’s canceled or there are errors
         measurement = totalstation.take_measurement()  # type: ignore
         if "notification" in measurement:
@@ -556,7 +558,7 @@ def start_surveying_session_with_resection(
         )
         outcome = tripod.save_new_station(
             sites_id,
-            f"Free Station ({_get_timestamp()})",
+            new_station_name,
             coordinatesystem,
             {
                 "northing": occupied_point_ne_coords[1],
