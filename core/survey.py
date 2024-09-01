@@ -434,6 +434,7 @@ def start_surveying_session_with_resection(
         if instrumentheighterror:
             outcome["errors"].append(instrumentheighterror)
         else:
+            tripod.instrument_height = round(instrument_height, 3)
             resection_instrument_height = round(instrument_height, 3)
 
         # set the prism height
