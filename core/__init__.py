@@ -17,7 +17,7 @@ from . import tripod
 from .utilities import format_outcome
 
 
-__version__ = ""
+__version__ = {}
 configs = configparser.ConfigParser(comment_prefixes="|", allow_no_value=True)
 configs.optionxform = str
 totalstation = None
@@ -143,7 +143,11 @@ def _load_application() -> dict:
     outcome = {"errors": [], "results": []}
     global __version__
     with open("../VERSION", "r") as f:
-        __version__ = f.readline().strip()
+        __version__ = {
+            "app": f.readline().strip().split("=")[1],
+            "database": f.readline().strip().split("=")[1],
+        }
+        print(f">>> {__version__} <<<")
     saved_state = database._read_from_database("SELECT * FROM savedstate")["results"][0]
     prism.offsets = {
         "vertical_distance": saved_state["vertical_distance"],

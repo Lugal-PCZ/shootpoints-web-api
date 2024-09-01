@@ -99,7 +99,7 @@ async def set_configs(
 
 @app.get("/version/")
 async def get_version():
-    """This function gets the version of ShootPoints-Web."""
+    """This function gets the version of ShootPoints-Web app and database."""
     return {"version": core.__version__}
 
 
