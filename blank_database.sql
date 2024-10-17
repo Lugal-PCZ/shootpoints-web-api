@@ -3,7 +3,7 @@ BEGIN TRANSACTION;
 CREATE TABLE `classes` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` TEXT COLLATE NOCASE NOT NULL
-,  `description` TEXT DEFAULT NULL
+,  `description` TEXT
 ,  UNIQUE (`name`)
 );
 INSERT INTO classes VALUES(1,'Operation','Excavation units, controls, grids, and measurements.');
@@ -27,7 +27,7 @@ CREATE TABLE `groupings` (
 ,  `geometries_id` INTEGER NOT NULL
 ,  `subclasses_id` INTEGER NOT NULL
 ,  `label` TEXT NOT NULL
-,  `description` TEXT DEFAULT NULL
+,  `description` TEXT
 ,  CONSTRAINT `groupings_ibfk_1` FOREIGN KEY (`sessions_id`) REFERENCES `sessions` (`id`)
 ,  CONSTRAINT `groupings_ibfk_2` FOREIGN KEY (`geometries_id`) REFERENCES `geometries` (`id`)
 ,  CONSTRAINT `groupings_ibfk_3` FOREIGN KEY (`subclasses_id`) REFERENCES `subclasses` (`id`)
@@ -51,9 +51,9 @@ CREATE TABLE `sessions` (
 ,  `started` TEXT NULL DEFAULT current_timestamp
 ,  `surveyor` TEXT NOT NULL
 ,  `stations_id_occupied` INTEGER NOT NULL
-,  `stations_id_backsight` INTEGER  DEFAULT NULL
-,  `stations_id_resection_left` INTEGER  DEFAULT NULL
-,  `stations_id_resection_right` INTEGER  DEFAULT NULL
+,  `stations_id_backsight` INTEGER
+,  `stations_id_resection_left` INTEGER
+,  `stations_id_resection_right` INTEGER
 ,  `azimuth` TEXT NOT NULL DEFAULT '0° 0'' 0"'
 ,  `instrumentheight` REAL NOT NULL
 ,  `pressure` INTEGER NOT NULL DEFAULT 760
@@ -70,7 +70,7 @@ CREATE TABLE `setuperrors` (
 CREATE TABLE `shots` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `groupings_id` INTEGER NOT NULL
-,  `comment` TEXT DEFAULT NULL
+,  `comment` TEXT
 ,  `timestamp` TEXT NOT NULL DEFAULT current_timestamp
 ,  `pressure` INTEGER NOT NULL DEFAULT 760
 ,  `temperature` INTEGER NOT NULL DEFAULT 15
@@ -91,20 +91,20 @@ CREATE TABLE `shots` (
 CREATE TABLE `sites` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` TEXT COLLATE NOCASE NOT NULL
-,  `description` TEXT DEFAULT NULL
+,  `description` TEXT
 ,  UNIQUE (`name`)
 );
 CREATE TABLE `stations` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `sites_id` INTEGER NOT NULL
 ,  `name` TEXT COLLATE NOCASE NOT NULL
-,  `description` TEXT DEFAULT NULL
+,  `description` TEXT
 ,  `northing` REAL NOT NULL
 ,  `easting` REAL NOT NULL
 ,  `elevation` REAL NOT NULL
-,  `utmzone` TEXT DEFAULT ''
-,  `latitude` REAL DEFAULT NULL
-,  `longitude` REAL DEFAULT NULL
+,  `utmzone` TEXT
+,  `latitude` REAL
+,  `longitude` REAL
 ,  UNIQUE (`name`,`sites_id`)
 ,  UNIQUE (`northing`,`easting`,`sites_id`)
 ,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`sites_id`) REFERENCES `sites` (`id`)
@@ -113,7 +113,7 @@ CREATE TABLE `subclasses` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `classes_id` INTEGER NOT NULL
 ,  `name` TEXT COLLATE NOCASE NOT NULL
-,  `description` TEXT DEFAULT NULL
+,  `description` TEXT
 ,  UNIQUE (`classes_id`,`name`)
 ,  CONSTRAINT `subclasses_ibfk_1` FOREIGN KEY (`classes_id`) REFERENCES `classes` (`id`)
 );
