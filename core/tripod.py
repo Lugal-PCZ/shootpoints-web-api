@@ -86,8 +86,8 @@ def _validate_latlong_coordinates(
     except ValueError:
         errors.append(f"Non-numeric latitude given ({latitude}).")
     else:
-        if not 0 <= latitude <= 90:
-            errors.append("Latitude given is out of range (0–90°).")
+        if not -90 <= latitude <= 90:
+            errors.append("Latitude given is out of range (±90°).")
     try:
         longitude = float(longitude)
     except ValueError:
