@@ -154,8 +154,16 @@ def _calculate_azimuth(point_a: tuple, point_b: tuple) -> tuple:
         azimuth += 360.0
     degrees, remainder = divmod(azimuth, 1)
     minutes, remainder = divmod(remainder * 60, 1)
-    seconds, remainder = divmod(remainder * 60, 1)
+    seconds = round(remainder * 60)
     degrees, minutes, seconds = int(degrees), int(minutes), int(seconds)
+    if seconds == 60:
+        seconds = 0
+        minutes += 1
+    if minutes == 60:
+        minutes = 0
+        degrees += 1
+    if degrees == 360:
+        degrees = 0
     return (
         azimuth,
         degrees,
