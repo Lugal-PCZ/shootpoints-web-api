@@ -661,8 +661,12 @@ def get_all_sessions() -> dict:
     sql = (
         "SELECT "
         "  sess.id, "
-        "  sites.name || '; Started ' || sess.started || ' (' || count(shots.id) || ' shots)' AS description, "
-        "  sess.label AS name "
+        "  sess.label, "
+        "  sess.started, "
+        "  sites.name AS sites_name, "
+        "  sta.name AS stations_name, "
+        "  printf('%.3f', sess.instrumentheight) AS instrumentheight, "
+        "  count(shots.id) AS num_shots "
         "FROM sessions sess "
         "LEFT OUTER JOIN stations sta ON sess.stations_id_occupied = sta.id "
         "LEFT OUTER JOIN sites on sta.sites_id = sites.id "
@@ -685,14 +689,18 @@ def get_current_session() -> dict:
             "  sess.started, "
             "  sites.name AS sites_name, "
             "  sta.name AS stations_name, "
-            "  printf('%.3f', sess.instrumentheight) AS instrumentheight "
+            "  printf('%.3f', sess.instrumentheight) AS instrumentheight, "
+            "  count(shots.id) AS num_shots "
             "FROM sessions sess "
-            "JOIN stations sta ON sess.stations_id_occupied = sta.id "
-            "JOIN sites on sta.sites_id = sites.id "
-            "WHERE sess.id = ?"
+            "LEFT OUTER JOIN stations sta ON sess.stations_id_occupied = sta.id "
+            "LEFT OUTER JOIN sites on sta.sites_id = sites.id "
+            "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
+            "LEFT OUTER JOIN shots ON grp.id = shots.groupings_id "
+            "WHERE sess.id = ? "
+            "GROUP BY sess.id"
         )
         outcome = database._read_from_database(sql, (sessionid,))["results"][0]
-    return format_outcome(outcome)
+    return format_outcome(outcome, ["num_shots"])
 
 
 def export_session_for_livemap(thesession: int = 0) -> dict:
