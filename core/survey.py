@@ -216,8 +216,8 @@ def start_surveying_session_with_azimuth(
     # start the new session
     azimuthstring = f"{degrees}° {minutes}' {seconds}\""
     data = (
-        label,
-        surveyor,
+        label.strip(),
+        surveyor.strip(),
         occupied_point_id,
         None,
         None,
@@ -359,8 +359,8 @@ def start_surveying_session_with_backsight(
     # start the new session
     azimuthstring = f"{degrees}° {minutes}' {seconds}\""
     data = (
-        label,
-        surveyor,
+        label.strip(),
+        surveyor.strip(),
         occupied_point_id,
         backsight_station_id,
         None,
@@ -587,8 +587,8 @@ def start_surveying_session_with_resection(
         # start the new session
         azimuthstring = f"{degrees}° {minutes}' {seconds}\""
         data = (
-            label,
-            surveyor,
+            label.strip(),
+            surveyor.strip(),
             database.cursor.lastrowid,
             None,
             backsight_station_1_id,
