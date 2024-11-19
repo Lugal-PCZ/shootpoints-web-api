@@ -121,7 +121,7 @@ def set_atmospheric_conditions(temp: int, press: int) -> dict:
     global pressure
     mintemp = -18
     maxtemp = 50
-    minpress = 720
+    minpress = 480
     maxpress = 800
     try:
         if not mintemp <= int(temp) <= maxtemp:
