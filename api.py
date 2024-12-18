@@ -197,9 +197,12 @@ async def download_entire_database():
 async def export_session_data(response: Response, sessions_id: int):
     """This function downloads a ZIP file of the requested session and its shots."""
     sql = "SELECT label FROM sessions WHERE id = ?"
-    sessionlabel = core.database._read_from_database(sql, (sessions_id,))["results"][0][
-        "label"
-    ]
+    sessionlabel = (
+        core.database._read_from_database(sql, (sessions_id,))["results"][0]["label"]
+        .replace("/", "_")
+        .replace(":", "_")
+        .replace("\\", "_")
+    )
     core.exporters.export_session_data(sessions_id)
     return FileResponse(
         "exports/export.zip",

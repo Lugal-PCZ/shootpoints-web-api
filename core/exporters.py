@@ -1,11 +1,13 @@
 """This module handles exporting ShootPoints data."""
 
-import json
 import csv
-import shapefile
-import os, glob
-import shutil
 import datetime
+import glob
+import json
+import os
+import shapefile
+import shutil
+from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from . import database
@@ -49,10 +51,12 @@ gcpfiles = [
 def export_database_file() -> None:
     """This function creates a ZIP file of the ShootPoints database file, for download by the browser."""
     date = str(datetime.datetime.now()).split(" ")[0]
-    with ZipFile(f"exports/database.zip", "w", compression=ZIP_DEFLATED) as f:
+    with ZipFile(
+        str(Path("exports") / "database.zip"), "w", compression=ZIP_DEFLATED
+    ) as f:
         f.write(
             "ShootPoints.db",
-            arcname=f"ShootPoints Database {date}/ShootPoints.db",
+            arcname=str(Path(f"ShootPoints Database {date}") / "ShootPoints.db"),
         )
 
 
@@ -212,7 +216,7 @@ def export_session_data(sessions_id: int) -> None:
                 "Z": resection_station_right["elevation"],
             }
         )
-    with open("exports/session_info.json", "w") as f:
+    with open(str(Path("exports") / "session_info.json"), "w", encoding="utf8") as f:
         f.write(json.dumps(session, ensure_ascii=False, indent=2))
 
     # Next, get all the shots in the session, and handle them accordingly.
@@ -252,7 +256,9 @@ def export_session_data(sessions_id: int) -> None:
         )
         shotsdata = database._read_from_database(sql, (sessions_id,))["results"]
         # Save all shots to a flat CSV file.
-        with open("exports/shots_data.csv", "w", newline="") as f:
+        with open(
+            str(Path("exports") / "shots_data.csv"), "w", encoding="utf8", newline=""
+        ) as f:
             shotsfile = csv.DictWriter(f, fieldnames=shotsdata[0].keys())
             shotsfile.writeheader()
             shotsfile.writerows(shotsdata)
@@ -309,12 +315,17 @@ def export_session_data(sessions_id: int) -> None:
 
     # Then save the shapefiles and GCP files.
     prjfile = (
-        f"core/prj_templates/{sessiondata['occupied_station_utmzone']}.txt"
+        str(
+            Path("core")
+            / "prj_templates"
+            / f"{sessiondata['occupied_station_utmzone']}.txt"
+        )
         if sessiondata["occupied_station_utmzone"]
         else ""
     )
     with shapefile.Writer(
-        "exports/gis_shapefiles_spatialcontrol", shapeType=shapefile.POINTZ
+        str(Path("exports") / "gis_shapefiles_spatialcontrol"),
+        shapeType=shapefile.POINTZ,
     ) as w:
         w.field("id", "N")
         w.field("name", "C")
@@ -329,11 +340,11 @@ def export_session_data(sessions_id: int) -> None:
         if prjfile:
             shutil.copy2(
                 prjfile,
-                "exports/gis_shapefiles_spatialcontrol.prj",
+                str(Path("exports") / "gis_shapefiles_spatialcontrol.prj"),
             )
     if allshots:
         with shapefile.Writer(
-            "exports/gis_shapefiles_allshots", shapeType=shapefile.POINTZ
+            str(Path("exports") / "gis_shapefiles_allshots"), shapeType=shapefile.POINTZ
         ) as w:
             w.field("group_id", "N")
             w.field("shot_id", "N")
@@ -352,11 +363,12 @@ def export_session_data(sessions_id: int) -> None:
             if prjfile:
                 shutil.copy2(
                     prjfile,
-                    "exports/gis_shapefiles_allshots.prj",
+                    str(Path("exports") / "gis_shapefiles_allshots.prj"),
                 )
     if closedpolygons:
         with shapefile.Writer(
-            "exports/gis_shapefiles_closedpolygons", shapeType=shapefile.POLYGONZ
+            str(Path("exports") / "gis_shapefiles_closedpolygons"),
+            shapeType=shapefile.POLYGONZ,
         ) as w:
             w.field("group_id", "N")
             w.field("label", "C")
@@ -369,11 +381,12 @@ def export_session_data(sessions_id: int) -> None:
             if prjfile:
                 shutil.copy2(
                     prjfile,
-                    "exports/gis_shapefiles_closedpolygons.prj",
+                    str(Path("exports") / "gis_shapefiles_closedpolygons.prj"),
                 )
     if openpolygons:
         with shapefile.Writer(
-            "exports/gis_shapefiles_openpolygons", shapeType=shapefile.POLYLINEZ
+            str(Path("exports") / "gis_shapefiles_openpolygons"),
+            shapeType=shapefile.POLYLINEZ,
         ) as w:
             w.field("group_id", "N")
             w.field("label", "C")
@@ -386,11 +399,12 @@ def export_session_data(sessions_id: int) -> None:
             if prjfile:
                 shutil.copy2(
                     prjfile,
-                    "exports/gis_shapefiles_openpolygons.prj",
+                    str(Path("exports") / "gis_shapefiles_openpolygons.prj"),
                 )
     if pointclouds:
         with shapefile.Writer(
-            "exports/gis_shapefiles_pointclouds", shapeType=shapefile.MULTIPOINTZ
+            str(Path("exports") / "gis_shapefiles_pointclouds"),
+            shapeType=shapefile.MULTIPOINTZ,
         ) as w:
             w.field("group_id", "N")
             w.field("label", "C")
@@ -403,7 +417,7 @@ def export_session_data(sessions_id: int) -> None:
             if prjfile:
                 shutil.copy2(
                     prjfile,
-                    "exports/gis_shapefiles_pointclouds.prj",
+                    str(Path("exports") / "gis_shapefiles_pointclouds.prj"),
                 )
     if gcps:
         for eachfile in gcpfiles:
@@ -421,27 +435,33 @@ def export_session_data(sessions_id: int) -> None:
         "openpolygons",
         "pointclouds",
     ]:
-        filesinarchive.append(f"gis_shapefiles/{eachfile}.dbf")
-        filesinarchive.append(f"gis_shapefiles/{eachfile}.shp")
-        filesinarchive.append(f"gis_shapefiles/{eachfile}.shx")
-        filesinarchive.append(f"gis_shapefiles/{eachfile}.prj")
+        for eachext in ["dbf", "shp", "shx", "prj"]:
+            filesinarchive.append(str(Path("gis_shapefiles") / f"{eachfile}.{eachext}"))
     for eachfile in gcpfiles:
         filesinarchive.append(
-            f"photogrammetry_gcps/gcps_for_{eachfile['name']}.{eachfile['type']}"
+            str(
+                Path("photogrammetry_gcps")
+                / f"gcps_for_{eachfile['name']}.{eachfile['type']}"
+            )
         )
-    archivename = f"ShootPoints Data ({sessiondata['session_label']})"
-    with ZipFile(f"exports/export.zip", "w", compression=ZIP_DEFLATED) as f:
+    archivename = f"ShootPoints Data ({sessiondata['session_label'].replace('/', '_').replace(':', '_').replace('\\', '_')})"
+    with ZipFile(
+        str(Path("exports") / "export.zip"), "w", compression=ZIP_DEFLATED
+    ) as f:
         for eachfile in filesinarchive:
             try:
                 f.write(
-                    f"exports/{eachfile.replace('/', '_')}",
-                    arcname=f"{archivename}/{eachfile}",
+                    str(
+                        Path("exports")
+                        / f"{eachfile.replace('/', '_').replace('\\', '_')}"
+                    ),
+                    arcname=str(Path(archivename) / eachfile),
                 )
             except FileNotFoundError:
                 pass
     cleanup = []
     for eachfiletype in ["csv", "dbf", "json", "prj", "shp", "shx", "txt"]:
-        cleanup.extend(glob.glob(f"exports/*.{eachfiletype}"))
+        cleanup.extend(glob.glob(str(Path("exports") / f"*.{eachfiletype}")))
     for eachfile in cleanup:
         os.remove(eachfile)
 
@@ -465,8 +485,12 @@ def _write_gcps_to_file(
             for eachheader in fileinfo["headers"]
         ]
     with open(
-        f"exports/photogrammetry_gcps_gcps_for_{fileinfo['name']}.{fileinfo['type']}",
+        str(
+            Path("exports")
+            / f"photogrammetry_gcps_gcps_for_{fileinfo['name']}.{fileinfo['type']}"
+        ),
         "w",
+        encoding="utf8",
         newline="",
     ) as f:
         if fileinfo["type"] == "csv":

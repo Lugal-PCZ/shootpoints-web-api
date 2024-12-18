@@ -4,6 +4,7 @@ import datetime
 import os
 import shutil
 import sqlite3
+from pathlib import Path
 
 from .survey import end_current_session
 from .utilities import format_outcome
@@ -122,9 +123,11 @@ def reset_database(
         cachedclasses = _read_from_database("SELECT * FROM classes")["results"]
         cachedsubclasses = _read_from_database("SELECT * FROM subclasses")["results"]
     # Back up the current database to the backups folder and restore a pristine copy
-    thedatetime = str(datetime.datetime.now()).split(".")[0]
-    shutil.copy2("ShootPoints.db", f"backups/ShootPoints ({thedatetime}).db")
     dbconn.close()
+    thedatetime = str(datetime.datetime.now()).split(".")[0].replace(":", "-")
+    shutil.copy2(
+        "ShootPoints.db", str(Path("backups") / f"ShootPoints ({thedatetime}).db")
+    )
     os.remove("ShootPoints.db")
     dbconn = sqlite3.connect("ShootPoints.db", check_same_thread=False)
     dbconn.row_factory = sqlite3.Row

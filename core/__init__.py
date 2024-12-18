@@ -3,7 +3,9 @@
 import configparser
 import glob
 import importlib
+import re
 import serial
+import serial.tools.list_ports
 from pathlib import Path
 
 from . import calculations
@@ -96,7 +98,7 @@ def _load_total_station_model() -> dict:
                 f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']} total station loaded."
             )
         except ModuleNotFoundError:
-            error = f"File total_stations/{make}/{model}.py does not exist. Specify the correct total station make and model in configs.ini before proceeding."
+            error = f"There is no module for the {make} {model} total station. Specify the correct total station make and model in configs.ini before proceeding."
             outcome["errors"].append(error)
             database._record_setup_error(error)
     if not outcome["errors"]:
@@ -211,24 +213,33 @@ def get_configs() -> dict:
             if not eachoption[0][0] == ";":
                 currentconfigs[eachoption[0]] = eachoption[1]
     ports = ["demo"]
-    ports.extend(glob.glob("/dev/ttyUSB*"))  # USB to Serial adapter on Raspberry Pi
-    ports.extend(glob.glob("/dev/cu.usbserial*"))  # USB to Serial adapter on Mac
-    if configs["SERIAL"]["uart"] == "true":
-        ports.extend(glob.glob("/dev/ttyAMA*"))  # GPIO UART adapter on Raspberry Pi
-    makes = list(
-        set(glob.glob("core/total_stations/*"))
-        - set(glob.glob("core/total_stations/_*"))
-        - set(["core/total_stations/demo.py"])
-    )
+    for port in list(serial.tools.list_ports.comports()):
+        if (
+            # USB to Serial adapter on Raspberry Pi
+            re.fullmatch("/dev/ttyUSB\\d+", port[0])
+            # USB to Serial adapter on Mac
+            or re.fullmatch("/dev/cu.usbserial-\\d+", port[0])
+            # USB to Serial adapter on Windows
+            or re.fullmatch("COM\\d+", port[0])
+        ):
+            ports.append(port[0])
+        # GPIO UART adapter on Raspberry Pi
+        if configs["SERIAL"]["uart"] == "true" and re.fullmatch(
+            "/dev/ttyAMA\\d+", port[0]
+        ):
+            ports.append(port[0])
+    makes = list(glob.glob(str(Path("core") / "total_stations" / "*")))
     makes.sort()
     models = {}
     for eachmake in makes:
         themodels = list(
-            set(glob.glob(f"{eachmake}/*.py")) - set(glob.glob(f"{eachmake}/_*"))
+            set(glob.glob(str(Path(eachmake) / "*.py")))
+            - set(glob.glob(str(Path(eachmake) / "__init__.py")))
         )
         themodels.sort()
-        models[eachmake.split("/")[2].replace("_", " ").title()] = [
-            x.split("/")[3]
+        models[eachmake.replace("\\", "/").split("/")[2].replace("_", " ").title()] = [
+            x.replace("\\", "/")
+            .split("/")[3]
             .replace(".py", "")
             .replace("_", " ")
             .title()
