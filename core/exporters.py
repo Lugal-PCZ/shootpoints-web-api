@@ -444,7 +444,7 @@ def export_session_data(sessions_id: int) -> None:
                 / f"gcps_for_{eachfile['name']}.{eachfile['type']}"
             )
         )
-    archivename = f"ShootPoints Data ({sessiondata['session_label'].replace('/', '_').replace(':', '_').replace('\\', '_')})"
+    archivename = f"ShootPoints Data ({sessiondata['session_label'].replace('/', '_').replace(':', '_').replace(chr(92), '_')})"
     with ZipFile(
         str(Path("exports") / "export.zip"), "w", compression=ZIP_DEFLATED
     ) as f:
@@ -453,7 +453,7 @@ def export_session_data(sessions_id: int) -> None:
                 f.write(
                     str(
                         Path("exports")
-                        / f"{eachfile.replace('/', '_').replace('\\', '_')}"
+                        / f"{eachfile.replace('/', '_').replace(chr(92), '_')}"
                     ),
                     arcname=str(Path(archivename) / eachfile),
                 )
