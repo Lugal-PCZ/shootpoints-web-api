@@ -90,6 +90,29 @@ def _clear_setup_errors() -> None:
         pass
 
 
+def _upgrade_database(latestversion: int) -> dict:
+    """This function upgrades the database to the version indicated in the VERSION file."""
+    outcome = {"errors": [], "result": ""}
+    if latestversion == 1:
+        outcome = _read_from_database("SELECT dbversion FROM savedstate")
+        if "errors" in outcome and outcome["errors"][0] == "no such column: dbversion":
+            cursor.execute(
+                "ALTER TABLE savedstate ADD COLUMN dbversion INTEGER NOT NULL DEFAULT 1"
+            )
+            dbconn.commit()
+    currentversion = int(
+        _read_from_database("SELECT dbversion FROM savedstate")["results"][0][
+            "dbversion"
+        ]
+    )
+    for i in range(currentversion, latestversion):
+        match i + 1:
+            case 2:  # upgrade from version 1 to version 2
+                pass
+            case 3:  # upgrade from version 2 to version 3
+                pass
+
+
 def get_setup_errors() -> dict:
     """This function returns any setup errors logged on app load."""
     outcome = _read_from_database("SELECT * FROM setuperrors")

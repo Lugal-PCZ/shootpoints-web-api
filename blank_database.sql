@@ -33,7 +33,8 @@ CREATE TABLE `groupings` (
 ,  CONSTRAINT `groupings_ibfk_3` FOREIGN KEY (`subclasses_id`) REFERENCES `subclasses` (`id`)
 );
 CREATE TABLE `savedstate` (
-  `vertical_distance` REAL NOT NULL DEFAULT 0
+  `dbversion` INTEGER NOT NULL DEFAULT 1
+,  `vertical_distance` REAL NOT NULL DEFAULT 0
 ,  `latitude_distance` REAL NOT NULL DEFAULT 0
 ,  `longitude_distance` REAL NOT NULL DEFAULT 0
 ,  `radial_distance` REAL NOT NULL DEFAULT 0
@@ -44,7 +45,7 @@ CREATE TABLE `savedstate` (
 ,  `currentsession` INTEGER NOT NULL DEFAULT 0
 ,  `currentgrouping` INTEGER NOT NULL DEFAULT 0
 );
-INSERT INTO savedstate VALUES(0.0,0.0,0.0,0.0,0.0,0.0,760,15,0,0);
+INSERT INTO savedstate VALUES(1,0.0,0.0,0.0,0.0,0.0,0.0,760,15,0,0);
 CREATE TABLE `sessions` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `label` TEXT NOT NULL
