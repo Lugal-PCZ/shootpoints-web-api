@@ -9,6 +9,7 @@ from pathlib import Path
 from .survey import end_current_session
 from .utilities import format_outcome
 
+latestversion = 0
 
 dbconn = sqlite3.connect("ShootPoints.db", check_same_thread=False)
 dbconn.row_factory = sqlite3.Row
@@ -90,9 +91,8 @@ def _clear_setup_errors() -> None:
         pass
 
 
-def _upgrade_database(latestversion: int) -> dict:
+def _upgrade_database() -> dict:
     """This function upgrades the database to the version indicated in the VERSION file."""
-    outcome = {"errors": [], "result": ""}
     if latestversion == 1:
         outcome = _read_from_database("SELECT dbversion FROM savedstate")
         if "errors" in outcome and outcome["errors"][0] == "no such column: dbversion":
@@ -105,12 +105,18 @@ def _upgrade_database(latestversion: int) -> dict:
             "dbversion"
         ]
     )
+    outcome = {"errors": [], "result": ""}
     for i in range(currentversion, latestversion):
         match i + 1:
             case 2:  # upgrade from version 1 to version 2
                 pass
             case 3:  # upgrade from version 2 to version 3
                 pass
+    if latestversion != currentversion:
+        outcome["result"] = (
+            f"ShootPoints database upgraded from version {currentversion} to version {latestversion}."
+        )
+    return format_outcome(outcome)
 
 
 def get_setup_errors() -> dict:

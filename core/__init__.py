@@ -152,7 +152,7 @@ def _load_application() -> dict:
         print(
             f"ShootPoints-Web v{__version__['app']}\nDatabase v{__version__['database']}"
         )
-    database._upgrade_database(int(__version__["database"]))
+    database.latestversion = int(__version__["database"])
     saved_state = database._read_from_database("SELECT * FROM savedstate")["results"][0]
     prism.offsets = {
         "vertical_distance": saved_state["vertical_distance"],
@@ -189,7 +189,12 @@ def _load_application() -> dict:
         "utmzone": session_info["utmzone"],
     }
     tripod.instrument_height = session_info["ih"]
-    loaders = [_load_configs, _load_total_station_model, _load_serial_port]
+    loaders = [
+        _load_configs,
+        _load_total_station_model,
+        _load_serial_port,
+        database._upgrade_database,
+    ]
     for each in loaders:
         loaderoutcome = each()
         if "result" in loaderoutcome:
