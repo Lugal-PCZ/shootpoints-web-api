@@ -98,7 +98,7 @@ def _load_total_station_model() -> dict:
                 f"{configs['TOTAL STATION']['make']} {configs['TOTAL STATION']['model']} total station loaded."
             )
         except ModuleNotFoundError:
-            error = f"There is no module for the {make} {model} total station. Specify the correct total station make and model in configs.ini before proceeding."
+            error = f"There is no module for the {make} {model} total station. Specify the correct total station make and model in Setup > Set Configs before proceeding."
             outcome["errors"].append(error)
             database._record_setup_error(error)
     if not outcome["errors"]:
@@ -133,7 +133,7 @@ def _load_serial_port() -> dict:
             outcome["result"] = f"Serial port {serialport} opened."
         except:
             outcome["errors"].append(
-                f"Serial port {serialport} could not be opened. Check your serial adapter and cable connections before proceeding."
+                f"Serial port {serialport} could not be opened. Check your serial cable connections, refresh this page, and re-select the proper port in Setup > Set Configs before proceeding."
             )
     for each in outcome["errors"]:
         database._record_setup_error(each)
