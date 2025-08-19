@@ -341,7 +341,7 @@ def start_surveying_session_with_backsight(
     )
     if variance > backsighterrorlimit:
         outcome["errors"].append(
-            f"The variance in the distance measured between the Occupied Point and the Backsight Station ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
+            f"The variance in the distance measured between the Occupied Point and the Backsight Station ({round(variance, 1)}cm) exceeds the configured limit ({round(backsighterrorlimit, 1)}cm)."
         )
 
     # calculate and validate the instrument height, stopping execution if it fails
@@ -525,7 +525,7 @@ def start_surveying_session_with_resection(
             )
         if variance > backsighterrorlimit:
             outcome["errors"].append(
-                f"The measured elevation difference between the Occupied Point and the Backsight Stations ({round(variance, 1)}cm) exceeds the limit set in configs.ini ({round(backsighterrorlimit, 1)}cm)."
+                f"The measured elevation difference between the Occupied Point and the Backsight Stations ({round(variance, 1)}cm) exceeds the configured limit ({round(backsighterrorlimit, 1)}cm)."
             )
             return None
 
