@@ -227,7 +227,7 @@ def start_surveying_session_with_azimuth(
         pressure,
         temperature,
     )
-    if sessionid := _save_new_session(data):
+    if _ := _save_new_session(data):
         tripod.occupied_point = {
             "n": occupied_n,
             "e": occupied_e,
@@ -238,7 +238,7 @@ def start_surveying_session_with_azimuth(
         outcome["result"] = f"Azimuth set to {azimuthstring}, and new session started."
     else:
         outcome["errors"].append(
-            f"A database error occurred while saving the new session."
+            "A database error occurred while saving the new session."
         )
     return format_outcome(outcome)
 
@@ -327,7 +327,7 @@ def start_surveying_session_with_backsight(
         return format_outcome(outcome)
 
     # check the backsight variance, using fake data when in demo mode so that it passes the test
-    if totalstation.__name__ == "core.total_stations.demo":
+    if totalstation.__name__ == "core.total_stations.demo":  # type: ignore
         measurement["measurement"]["delta_n"] = backsight_n - occupied_n
         measurement["measurement"]["delta_e"] = backsight_e - occupied_e
         measurement["measurement"]["delta_z"] = backsight_z - occupied_z
@@ -370,7 +370,7 @@ def start_surveying_session_with_backsight(
         pressure,
         temperature,
     )
-    if sessionid := _save_new_session(data):
+    if _ := _save_new_session(data):
         tripod.occupied_point = {
             "n": occupied_n,
             "e": occupied_e,
@@ -516,7 +516,7 @@ def start_surveying_session_with_resection(
             - resection_backsight_2_measurement["measurement"]["delta_z"]
             - resection_instrument_height
         )
-        if totalstation.__name__ == "core.total_stations.demo":
+        if totalstation.__name__ == "core.total_stations.demo":  # type: ignore
             variance = 0
         else:
             variance = (
@@ -598,7 +598,7 @@ def start_surveying_session_with_resection(
             pressure,
             temperature,
         )
-        if sessionid := _save_new_session(data):
+        if _ := _save_new_session(data):
             tripod.occupied_point = {
                 "n": occupied_point_ne_coords[1],
                 "e": occupied_point_ne_coords[0],
@@ -614,7 +614,7 @@ def start_surveying_session_with_resection(
             )
         else:
             outcome["errors"].append(
-                f"A database error occurred while saving the new session."
+                "A database error occurred while saving the new session."
             )
 
     outcome = {"errors": [], "result": ""}
@@ -925,7 +925,7 @@ def start_new_grouping(
             _ = database._save_to_database(
                 "UPDATE savedstate SET currentgrouping = ?", (groupingid,)
             )
-            outcome["result"] = f"New grouping started."
+            outcome["result"] = "New grouping started."
         else:
             groupingid = 0
             outcome["errors"].append(

@@ -14,7 +14,7 @@ ETX = chr(3)
 ACK = chr(6) + "006"
 
 # This property is set by core/__init__.py once the serial port has been initialized.
-# To suppress Pylance warnings, “# type: ignore” is used below everywhere that it’s referenced.
+# To suppress linter warnings, “# type: ignore” is used below everywhere that it’s referenced.
 port = None
 
 _canceled = False
@@ -162,7 +162,7 @@ def take_measurement() -> dict:
                 )
             else:
                 outcome["errors"].append(f"Unexpected data format: {measurement}.")
-        except:
+        except Exception:
             if _canceled:
                 _canceled = False
                 return {"notification": "Shot canceled by user."}

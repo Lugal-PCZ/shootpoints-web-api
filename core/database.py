@@ -64,7 +64,7 @@ def _delete_from_database(sql: str, params: tuple) -> dict:
             dbconn.commit()
             affected = cursor.rowcount
             if affected == 1:
-                outcome["result"] = f"1 row was deleted."
+                outcome["result"] = f"{affected} row was deleted."
             else:
                 outcome["result"] = f"{affected} rows were deleted."
         except sqlite3.Error as err:
@@ -87,7 +87,7 @@ def _clear_setup_errors() -> None:
     try:
         cursor.execute("DELETE FROM setuperrors")
         dbconn.commit()
-    except:
+    except Exception:
         pass
 
 
@@ -127,7 +127,7 @@ def get_setup_errors() -> dict:
         try:
             for each in outcome["results"]:
                 outcome["errors"].append(each["error"])
-        except:
+        except Exception:
             pass
         outcome["results"] = "ShootPoints is ready for use."
     return format_outcome(outcome)

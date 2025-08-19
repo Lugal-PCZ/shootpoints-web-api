@@ -265,7 +265,7 @@ def export_session_data(sessions_id: int) -> None:
         # Parse shotsdata to build the shapefiles and GCP files.
         for eachshot in shotsdata:
             if (
-                not "group_id" in thisgroupinfo
+                "group_id" not in thisgroupinfo
                 # This is the first shot in shotsdata.
                 or eachshot["group_id"] != thisgroupinfo["group_id"]
                 # This is the first shot in a new grouping.

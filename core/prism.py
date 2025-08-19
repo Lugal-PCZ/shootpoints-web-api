@@ -133,7 +133,7 @@ def set_prism_offsets(
     outcome = {"errors": [], "result": ""}
     newoffsets = {}
     for key, val in saved_args.items():
-        if val != None:
+        if val is not None:
             if key not in offsets.keys():
                 outcome["errors"].append(f"“{key}” is not a valid offset.")
             else:
@@ -144,12 +144,12 @@ def set_prism_offsets(
         saved = database._save_to_database(sql, data)
         if "errors" not in saved:
             for key, val in saved_args.items():
-                if val != None:
+                if val is not None:
                     offsets[key] = val
             readable_offsets = get_readable_prism_offsets()["offsets"]
             if len(readable_offsets):
                 outcome["result"] = (
-                    f'Prism offsets are now {", ".join(readable_offsets)}.'
+                    f"Prism offsets are now {', '.join(readable_offsets)}."
                 )
             else:
                 outcome["result"] = "Prism offsets are 0 in all directions."

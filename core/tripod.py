@@ -63,7 +63,7 @@ def _validate_utm_coordinates(
         utmzone = str(utmzone).upper()
         utmzonenumber = int(utmzone[:-1])
     except KeyError:
-        errors.append(f"UTM Zone not given.")
+        errors.append("UTM Zone not given.")
     except ValueError:
         errors.append(f"Non-numeric UTM Zone number given ({utmzonenumber}).")
     else:
@@ -105,7 +105,7 @@ def _validate_uniqueness_of_station(
         sitename = database._read_from_database(
             "SELECT name FROM sites WHERE id = ?", (sites_id,)
         )["results"][0]["name"]
-    except:
+    except IndexError:
         sitename = None
     if sitename:
         if database._read_from_database(
@@ -296,9 +296,9 @@ def delete_station(sites_id: int, id: int) -> dict:
                 outcome["errors"] = deleted["errors"]
             try:
                 if outcome["errors"][0] == "FOREIGN KEY constraint failed":
-                    outcome["errors"][
-                        0
-                    ] = f"Station “{name}” could not be deleted because it is the occupied station or backsight station for one or more sessions."
+                    outcome["errors"][0] = (
+                        f"Station “{name}” could not be deleted because it is the occupied station or backsight station for one or more sessions."
+                    )
             except IndexError:
                 pass
         else:

@@ -8,20 +8,20 @@ import serial
 import serial.tools.list_ports
 from pathlib import Path
 
-from . import calculations
-from . import classifications
-from . import database
-from . import exporters
-from . import prism
-from . import sites
-from . import survey
-from . import tripod
+from . import calculations as calculations
+from . import classifications as classifications
+from . import database as database
+from . import exporters as exporters
+from . import prism as prism
+from . import sites as sites
+from . import survey as survey
+from . import tripod as tripod
 from .utilities import format_outcome
 
 
 __version__ = {}
 configs = configparser.ConfigParser(comment_prefixes="|", allow_no_value=True)
-configs.optionxform = str
+configs.optionxform = str  # type: ignore
 totalstation = None
 serialport = None
 
@@ -131,7 +131,7 @@ def _load_serial_port() -> dict:
             )
             totalstation.port = port  # type: ignore
             outcome["result"] = f"Serial port {serialport} opened."
-        except:
+        except serial.SerialException:
             outcome["errors"].append(
                 f"Serial port {serialport} could not be opened. Check your serial cable connections, refresh this page, and re-select the proper port in Setup > Set Configs before proceeding."
             )
