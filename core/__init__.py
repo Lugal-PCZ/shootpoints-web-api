@@ -144,6 +144,7 @@ def _load_application() -> dict:
     """This function runs the private loader functions (above) and clears setup errors if they run cleanly."""
     outcome = {"errors": [], "results": []}
     global __version__
+    database._clear_setup_errors()
     with open("../VERSION", "r") as f:
         __version__ = {
             "app": f.readline().strip().split("=")[1],
