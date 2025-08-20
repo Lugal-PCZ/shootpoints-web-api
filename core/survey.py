@@ -703,7 +703,7 @@ def get_current_session() -> dict:
     return format_outcome(outcome, ["num_shots"])
 
 
-def export_session_for_livemap(thesession: int = 0) -> dict:
+def export_session_for_livemap(thesession: Optional[int] = None) -> dict:
     """This function returns a dictionary of survey data that can be plotted by leafletjs."""
     thesession = thesession or sessionid
     sql = (
@@ -715,16 +715,21 @@ def export_session_for_livemap(thesession: int = 0) -> dict:
         "	stations.latitude, "
         "	stations.longitude, "
         "	stations.utmzone, "
-        "	savedstate.currentgrouping "
-        "FROM savedstate "
-        "LEFT OUTER JOIN sessions ON savedstate.currentsession = sessions.id "
+    )
+    sql += (
+        f"	savedstate.currentgrouping "
+        if thesession == sessionid
+        else "	0 AS currentgrouping "
+    )
+    sql += (
+        "FROM sessions "
         "LEFT OUTER JOIN stations ON sessions.stations_id_occupied = stations.id "
-        "WHERE savedstate.currentsession = ? "
-        "LIMIT 1"
+        f"LEFT OUTER JOIN savedstate ON sessions.id = {thesession} "
+        "WHERE sessions.id = ?"
     )
     sessioninfo = database._read_from_database(sql, (thesession,))
     if "errors" not in sessioninfo:
-        if sessioninfo["results"][0]["name"] is None:
+        if len(sessioninfo["results"]) == 0:
             return {}
         sitelocalcoords = False
         utmzone = sessioninfo["results"][0]["utmzone"]
