@@ -109,10 +109,19 @@ def _upgrade_database() -> dict:
     for i in range(currentversion, latestversion):
         match i + 1:
             case 2:  # upgrade from version 1 to version 2
-                pass
+                sqlstatements = [
+                    "ALTER TABLE savedstate ADD COLUMN resection_instrumentheight REAL NOT NULL DEFAULT 0",
+                    "ALTER TABLE savedstate ADD COLUMN resection_backsight1 TEXT NOT NULL DEFAULT '{}'",
+                    "ALTER TABLE savedstate ADD COLUMN resection_backsight2 TEXT NOT NULL DEFAULT '{}'",
+                    "ALTER TABLE savedstate ADD COLUMN resection_backsight1_measurement TEXT NOT NULL DEFAULT '{}'",
+                ]
+                for each_statement in sqlstatements:
+                    cursor.execute(each_statement)
             case 3:  # upgrade from version 2 to version 3
                 pass
     if latestversion != currentversion:
+        cursor.execute(f"UPDATE savedstate SET dbversion = {latestversion}")
+        dbconn.commit()
         outcome["result"] = (
             f"ShootPoints database upgraded from version {currentversion} to version {latestversion}."
         )

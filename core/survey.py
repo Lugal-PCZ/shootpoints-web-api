@@ -1,6 +1,7 @@
 """This module contains functions for handling the surveying session and associated data."""
 
 import datetime
+import json
 import math
 from typing import Optional
 
@@ -20,11 +21,25 @@ groupingid = 0
 activeshotdata = {}
 pressure = 760
 temperature = 15
-# cached values for second step of start_surveying_session_with_resection()
-resection_instrument_height = 0.0
-resection_backsight_1 = {}
-resection_backsight_2 = {}
-resection_backsight_1_measurement = {}
+
+
+def _clear_resection_saved_state() -> None:
+    sql = (
+        "UPDATE savedstate SET "
+        "resection_instrumentheight = ?, "
+        "resection_backsight1 = ?, "
+        "resection_backsight2 = ?, "
+        "resection_backsight1_measurement = ?"
+    )
+    _ = database._save_to_database(
+        sql,
+        (
+            0,
+            "{}",
+            "{}",
+            "{}",
+        ),
+    )
 
 
 def _get_timestamp() -> str:
@@ -405,13 +420,22 @@ def start_surveying_session_with_resection(
     known points from a setup location with unknown coordinates. From the vantage point
     of the setup station, backsight #1 must be to the left of backsight #2.
     """
+    outcome = {"errors": [], "result": ""}
+    sql = "SELECT resection_instrumentheight, resection_backsight1, resection_backsight2, resection_backsight1_measurement FROM savedstate"
+    savedstate = database._read_from_database(sql)
+    resection_instrumentheight = savedstate["results"][0]["resection_instrumentheight"]
+    resection_backsight1 = json.loads(savedstate["results"][0]["resection_backsight1"])
+    resection_backsight2 = json.loads(savedstate["results"][0]["resection_backsight2"])
+    resection_backsight1_measurement = json.loads(
+        savedstate["results"][0]["resection_backsight1_measurement"]
+    )
 
     def perform_setup():
         """This function checks all the prerequisites for starting a new session by resection."""
-        global resection_instrument_height
-        global resection_backsight_1
-        global resection_backsight_2
         nonlocal outcome
+        nonlocal resection_instrumentheight
+        nonlocal resection_backsight1
+        nonlocal resection_backsight2
 
         # check for setup errors, stopping execution if there are any
         setuperrors = database.get_setup_errors()
@@ -436,7 +460,10 @@ def start_surveying_session_with_resection(
             outcome["errors"].append(instrumentheighterror)
         else:
             tripod.instrument_height = round(instrument_height, 3)
-            resection_instrument_height = round(instrument_height, 3)
+            _ = database._save_to_database(
+                "UPDATE savedstate SET resection_instrumentheight = ?",
+                (round(instrument_height, 3),),
+            )
 
         # set the prism height
         if prism_height < 0:
@@ -449,18 +476,24 @@ def start_surveying_session_with_resection(
                 outcome["errors"].extend(prismoffsets["errors"])
 
         # get the backsight station 1 and 2 coordinates
-        resection_backsight_1 = tripod.get_station(sites_id, backsight_station_1_id)
-        if "errors" in resection_backsight_1:
-            outcome["errors"].extend(resection_backsight_1["errors"])
-        resection_backsight_2 = tripod.get_station(sites_id, backsight_station_2_id)
-        if "errors" in resection_backsight_2:
-            outcome["errors"].extend(resection_backsight_2["errors"])
+        _ = database._save_to_database(
+            "UPDATE savedstate SET resection_backsight1 = ?",
+            (json.dumps(tripod.get_station(sites_id, backsight_station_1_id)),),
+        )
+        if "errors" in resection_backsight1:
+            outcome["errors"].extend(resection_backsight1["errors"])
+        _ = database._save_to_database(
+            "UPDATE savedstate SET resection_backsight2 = ?",
+            (json.dumps(tripod.get_station(sites_id, backsight_station_2_id)),),
+        )
+        if "errors" in resection_backsight2:
+            outcome["errors"].extend(resection_backsight2["errors"])
         return None
 
     def shoot_backsight_1():
         """This function takes the first (left) resection backsight."""
-        global resection_backsight_1_measurement
         nonlocal outcome
+        nonlocal resection_backsight1_measurement
 
         end_current_session()
         # shoot backsight 1, stopping execution if it’s canceled or there are errors
@@ -470,7 +503,10 @@ def start_surveying_session_with_resection(
         elif "errors" in measurement:
             outcome["errors"].extend(measurement["errors"])
         else:
-            resection_backsight_1_measurement = measurement
+            _ = database._save_to_database(
+                "UPDATE savedstate SET resection_backsight1_measurement = ?",
+                (json.dumps(measurement),),
+            )
             outcome["result"] = (
                 "Left Backsight successful. Ready to shoot Right Backsight."
             )
@@ -478,43 +514,43 @@ def start_surveying_session_with_resection(
 
     def shoot_backsight_2():
         """This function takes the second (right) resection backsight and computes the occupied point."""
-        global resection_backsight_1
-        global resection_backsight_2
-        global resection_backsight_1_measurement
         nonlocal outcome
         nonlocal instrument_height
         nonlocal sites_id
         nonlocal backsight_station_1_id
+        nonlocal resection_backsight1
+        nonlocal resection_backsight2
+        nonlocal resection_backsight1_measurement
 
         # retrieve stored values for disabled fields in new session form
         if instrument_height == 0:
-            instrument_height = resection_instrument_height
+            instrument_height = resection_instrumentheight
         if sites_id == 0:
-            sites_id = resection_backsight_1["station"]["sites_id"]
+            sites_id = resection_backsight1["station"]["sites_id"]
         if backsight_station_1_id == 0:
-            backsight_station_1_id = resection_backsight_1["station"]["id"]
+            backsight_station_1_id = resection_backsight1["station"]["id"]
 
         # shoot backsight 2, stopping execution if it’s canceled or there are errors
-        resection_backsight_2_measurement = totalstation.take_measurement()  # type: ignore
-        if "notification" in resection_backsight_2_measurement:
+        resection_backsight2_measurement = totalstation.take_measurement()  # type: ignore
+        if "notification" in resection_backsight2_measurement:
             outcome["result"] = "Backsight shot canceled by user."
             return None
-        elif "errors" in resection_backsight_2_measurement:
-            outcome["errors"].extend(resection_backsight_2_measurement["errors"])
+        elif "errors" in resection_backsight2_measurement:
+            outcome["errors"].extend(resection_backsight2_measurement["errors"])
             return None
 
         # check the variance between the backsight stations, using fake data when in demo mode so that it passes the test
         occupied_point_z_left_reading = (
-            resection_backsight_1["station"]["elevation"]
+            resection_backsight1["station"]["elevation"]
             - prism.get_raw_prism_offsets()["vertical_distance"]
-            - resection_backsight_1_measurement["measurement"]["delta_z"]
-            - resection_instrument_height
+            - resection_backsight1_measurement["measurement"]["delta_z"]
+            - resection_instrumentheight
         )
         occupied_point_z_right_reading = (
-            resection_backsight_2["station"]["elevation"]
+            resection_backsight2["station"]["elevation"]
             - prism.get_raw_prism_offsets()["vertical_distance"]
-            - resection_backsight_2_measurement["measurement"]["delta_z"]
-            - resection_instrument_height
+            - resection_backsight2_measurement["measurement"]["delta_z"]
+            - resection_instrumentheight
         )
         if totalstation.__name__ == "core.total_stations.demo":  # type: ignore
             variance = 0
@@ -532,20 +568,20 @@ def start_surveying_session_with_resection(
         # calculate the coordinates of the occupied point
         occupied_point_ne_coords = calculations._calculate_coordinates_by_resection(
             (
-                resection_backsight_1["station"]["easting"],
-                resection_backsight_1["station"]["northing"],
+                resection_backsight1["station"]["easting"],
+                resection_backsight1["station"]["northing"],
             ),
             (
-                resection_backsight_2["station"]["easting"],
-                resection_backsight_2["station"]["northing"],
+                resection_backsight2["station"]["easting"],
+                resection_backsight2["station"]["northing"],
             ),
             math.hypot(
-                resection_backsight_1_measurement["measurement"]["delta_e"],
-                resection_backsight_1_measurement["measurement"]["delta_n"],
+                resection_backsight1_measurement["measurement"]["delta_e"],
+                resection_backsight1_measurement["measurement"]["delta_n"],
             ),
             math.hypot(
-                resection_backsight_2_measurement["measurement"]["delta_e"],
-                resection_backsight_2_measurement["measurement"]["delta_n"],
+                resection_backsight2_measurement["measurement"]["delta_e"],
+                resection_backsight2_measurement["measurement"]["delta_n"],
             ),
         )
         occupied_point_elevation = (
@@ -554,7 +590,7 @@ def start_surveying_session_with_resection(
 
         # save the occupied point as a new station in the database, stopping execution on errors
         coordinatesystem = (
-            "Site" if not resection_backsight_1["station"]["utmzone"] else "UTM"
+            "Site" if not resection_backsight1["station"]["utmzone"] else "UTM"
         )
         outcome = tripod.save_new_station(
             sites_id,
@@ -564,7 +600,7 @@ def start_surveying_session_with_resection(
                 "northing": occupied_point_ne_coords[1],
                 "easting": occupied_point_ne_coords[0],
                 "elevation": occupied_point_elevation,
-                "utmzone": resection_backsight_1["station"]["utmzone"],
+                "utmzone": resection_backsight1["station"]["utmzone"],
             },
             "Station set by resection",
         )
@@ -575,8 +611,8 @@ def start_surveying_session_with_resection(
         degrees, minutes, seconds = calculations._calculate_azimuth(
             (occupied_point_ne_coords[1], occupied_point_ne_coords[0]),
             (
-                resection_backsight_2["station"]["northing"],
-                resection_backsight_2["station"]["easting"],
+                resection_backsight2["station"]["northing"],
+                resection_backsight2["station"]["easting"],
             ),
         )[1:]
         setazimuth = totalstation.set_azimuth(degrees, minutes, seconds)  # type: ignore
@@ -603,12 +639,10 @@ def start_surveying_session_with_resection(
                 "n": occupied_point_ne_coords[1],
                 "e": occupied_point_ne_coords[0],
                 "z": occupied_point_elevation,
-                "utmzone": resection_backsight_1["station"]["utmzone"],
+                "utmzone": resection_backsight1["station"]["utmzone"],
             }
             tripod.instrument_height = instrument_height
-            resection_backsight_1 = {}
-            resection_backsight_2 = {}
-            resection_backsight_1_measurement = {}
+            _clear_resection_saved_state()
             outcome["result"] = (
                 f"New session started. Please confirm that the azimuth to the Right Backsight ({azimuthstring}) is correct before proceeding."
             )
@@ -617,8 +651,7 @@ def start_surveying_session_with_resection(
                 "A database error occurred while saving the new session."
             )
 
-    outcome = {"errors": [], "result": ""}
-    if not resection_backsight_1_measurement:
+    if not resection_backsight1_measurement:
         perform_setup()
         # stop execution if there were any errors setting the atmospheric conditions, instrument height, or backsight 1 or 2
         if not outcome["errors"]:
@@ -630,12 +663,7 @@ def start_surveying_session_with_resection(
 
 def abort_resection() -> dict:
     """This function clears the saved values when a resection has been started, so that the operator can begin fresh."""
-    global resection_backsight_1
-    global resection_backsight_2
-    global resection_backsight_1_measurement
-    resection_backsight_1 = {}
-    resection_backsight_2 = {}
-    resection_backsight_1_measurement = {}
+    _clear_resection_saved_state()
     return {"result": "Resection aborted."}
 
 
@@ -717,7 +745,7 @@ def export_session_for_livemap(thesession: Optional[int] = None) -> dict:
         "	stations.utmzone, "
     )
     sql += (
-        f"	savedstate.currentgrouping "
+        "	savedstate.currentgrouping "
         if thesession == sessionid
         else "	0 AS currentgrouping "
     )
