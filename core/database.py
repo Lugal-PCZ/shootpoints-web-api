@@ -27,7 +27,7 @@ cursor.execute("PRAGMA foreign_keys = ON")
 def _save_to_database(sql: str, data: tuple) -> dict:
     """This function performs an INSERT or UPDATE of the given data using the provided query string."""
     outcome = {"errors": [], "result": ""}
-    if sql[:11].upper().find("INSERT INTO") == 0 or sql[:6].upper().find("UPDATE") == 0:
+    if sql.upper().startswith("INSERT INTO") or sql.upper().startswith("UPDATE"):
         try:
             cursor.execute(sql, data)
             dbconn.commit()
@@ -44,7 +44,7 @@ def _save_to_database(sql: str, data: tuple) -> dict:
 def _read_from_database(sql: str, params: tuple = ()) -> dict:
     """This function performs a SELECT query on the database, with optional parameters."""
     outcome = {"errors": [], "results": []}
-    if sql[:6].upper().find("SELECT") == 0:
+    if sql.upper().startswith("SELECT"):
         try:
             cursor.execute(sql, params)
             outcome["results"].extend([dict(row) for row in cursor.fetchall()])
@@ -58,7 +58,7 @@ def _read_from_database(sql: str, params: tuple = ()) -> dict:
 def _delete_from_database(sql: str, params: tuple) -> dict:
     """This function deletes data from the database"""
     outcome = {"errors": [], "result": ""}
-    if sql[:6].upper().find("DELETE") == 0:
+    if sql.upper().startswith("DELETE"):
         try:
             cursor.execute(sql, params)
             dbconn.commit()
