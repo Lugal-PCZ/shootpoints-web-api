@@ -113,11 +113,13 @@ def _validate_uniqueness_of_station(
             (sites_id, name.upper()),
         )["results"][0]["count(*)"]:
             errors.append(f"The station name “{name}” is already taken at {sitename}.")
-        if database._read_from_database(
-            "SELECT count(*) FROM stations WHERE sites_id = ? AND (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)",
-            (sites_id, northing, easting),
-        )["results"][0]["count(*)"]:
-            errors.append(f"The station coordinates are not unique at {sitename}.")
+        # The following check has been commented out because there are cases where one might want to re-shoot a station.
+        # Code left here in case I want to re-introduce this check as a warning instead of an error.
+        # if database._read_from_database(
+        #     "SELECT count(*) FROM stations WHERE sites_id = ? AND (? BETWEEN northing-0.1 AND northing+0.1) AND (? BETWEEN easting-0.1 AND easting+0.1)",
+        #     (sites_id, northing, easting),
+        # )["results"][0]["count(*)"]:
+        #     errors.append("The station coordinates are not unique at this site.")
     else:
         errors.append(f"There is no site with id {sites_id}.")
 
