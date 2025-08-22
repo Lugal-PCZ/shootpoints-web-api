@@ -113,13 +113,8 @@ def _load_serial_port() -> dict:
     """
     outcome = {"errors": [], "result": ""}
     global serialport
-    if configs["SERIAL"]["port"] == "demo":
-        outcome["result"] = (
-            "Demo total station loaded, so no physical serial port initialized."
-        )
-    else:
-        serialport = configs["SERIAL"]["port"]
     if configs["SERIAL"]["port"] != "demo" and not outcome["errors"]:
+        serialport = configs["SERIAL"]["port"]
         try:
             port = serial.Serial(
                 port=serialport,
