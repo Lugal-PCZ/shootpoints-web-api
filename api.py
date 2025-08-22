@@ -87,9 +87,9 @@ async def get_configs():
 @app.put("/configs/", status_code=201)
 async def set_configs(
     response: Response,
-    port: str = Form(None),
-    make: str = Form(None),
-    model: str = Form(None),
+    port: Optional[str] = Form(None),
+    make: Optional[str] = Form(None),
+    model: Optional[str] = Form(None),
     limit: float = Form(0.0),
 ):
     """This function sets the application configs in the configs.ini file."""
@@ -130,7 +130,7 @@ async def get_subclasses(response: Response, classes_id: int):
 
 @app.post("/class/", status_code=201)
 async def save_new_class(
-    response: Response, name: str = Form(...), description: str = Form(None)
+    response: Response, name: str = Form(...), description: Optional[str] = Form(None)
 ):
     """This function saves a new class to the database."""
     outcome = core.classifications.save_new_class(name, description)
@@ -156,7 +156,7 @@ async def save_new_subclass(
     response: Response,
     classes_id: int = Form(...),
     name: str = Form(...),
-    description: str = Form(None),
+    description: Optional[str] = Form(None),
 ):
     """This function saves a new subclass to the database."""
     outcome = core.classifications.save_new_subclass(classes_id, name, description)
@@ -309,7 +309,7 @@ async def get_all_sites(response: Response):
 async def save_new_site(
     response: Response,
     name: str = Form(...),
-    description: str = Form(None),
+    description: Optional[str] = Form(None),
 ):
     """This function saves a new site to the database."""
     outcome = core.sites.save_site(name, description)
@@ -379,7 +379,7 @@ async def start_new_grouping(
     geometries_id: int = Form(...),
     subclasses_id: int = Form(...),
     label: str = Form(...),
-    description: str = Form(None),
+    description: Optional[str] = Form(None),
 ):
     """This function saves a new grouping to the database."""
     outcome = core.survey.start_new_grouping(
@@ -511,7 +511,7 @@ def take_shot(response: Response):
 @app.post("/shot/", status_code=201)
 async def save_last_shot(
     response: Response,
-    comment: str = Form(None),
+    comment: Optional[str] = Form(None),
 ):
     """This function saves the last shot to the database."""
     outcome = core.survey.save_last_shot(comment)
@@ -552,13 +552,13 @@ async def save_new_station(
     sites_id: int = Form(...),
     name: str = Form(...),
     coordinatesystem: str = Form(...),
-    northing: float = Form(None),
-    easting: float = Form(None),
-    elevation: float = Form(None),
-    utmzone: str = Form(None),
-    latitude: float = Form(None),
-    longitude: float = Form(None),
-    description: str = Form(None),
+    northing: Optional[float] = Form(0),
+    easting: Optional[float] = Form(0),
+    elevation: Optional[float] = Form(0),
+    utmzone: Optional[str] = Form(None),
+    latitude: Optional[float] = Form(0),
+    longitude: Optional[float] = Form(0),
+    description: Optional[str] = Form(None),
 ):
     """This function saves a new survey station to the database."""
     coordinates = {}
