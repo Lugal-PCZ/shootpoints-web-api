@@ -93,7 +93,7 @@ def _clear_setup_errors() -> None:
 
 def _upgrade_database() -> dict:
     """This function upgrades the database to the version indicated in the VERSION file."""
-    if latestversion == 1:
+    if latestversion > 0:
         outcome = _read_from_database("SELECT dbversion FROM savedstate")
         if "errors" in outcome and outcome["errors"][0] == "no such column: dbversion":
             cursor.execute(
