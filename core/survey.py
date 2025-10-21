@@ -700,7 +700,8 @@ def get_all_sessions() -> dict:
         "LEFT OUTER JOIN sites on sta.sites_id = sites.id "
         "LEFT OUTER JOIN groupings grp ON sess.id = grp.sessions_id "
         "LEFT OUTER JOIN shots ON grp.id = shots.groupings_id "
-        "GROUP BY sess.id"
+        "GROUP BY sess.id "
+        "ORDER BY sess.started DESC"
     )
     outcome["sessions"] = database._read_from_database(sql)["results"]
     return format_outcome(outcome, ["sessions"])
