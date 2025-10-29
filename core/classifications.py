@@ -80,9 +80,9 @@ def delete_class(id: int) -> dict:
                 outcome["errors"] = deleted["errors"]
             try:
                 if outcome["errors"][0] == "FOREIGN KEY constraint failed":
-                    outcome["errors"][
-                        0
-                    ] = f"Class “{name}” could not be deleted because it has one or more subclasses."
+                    outcome["errors"][0] = (
+                        f"Class “{name}” could not be deleted because it has one or more subclasses."
+                    )
             except IndexError:
                 pass
         else:
@@ -96,9 +96,7 @@ def delete_subclass(classes_id: int, id: int) -> dict:
     """This function deletes the indicated subclass from the database."""
     outcome = {"errors": [], "results": ""}
     if id == 1:
-        outcome["errors"].append(
-            "The Survey Station subclass (id 1) cannot be deleted."
-        )
+        outcome["errors"].append("The Survey Station subclass cannot be deleted.")
     else:
         exists = database._read_from_database(
             "SELECT name FROM subclasses WHERE classes_id = ? AND id = ?",
@@ -120,9 +118,9 @@ def delete_subclass(classes_id: int, id: int) -> dict:
                     outcome["errors"] = deleted["errors"]
                 try:
                     if outcome["errors"][0] == "FOREIGN KEY constraint failed":
-                        outcome["errors"][
-                            0
-                        ] = f"Subclass “{name}” could not be deleted because it is the subclass of one or more groupings."
+                        outcome["errors"][0] = (
+                            f"Subclass “{name}” could not be deleted because it is the subclass of one or more groupings."
+                        )
                 except IndexError:
                     pass
             else:
