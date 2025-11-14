@@ -90,10 +90,10 @@ async def set_configs(
     port: Optional[str] = Form(None),
     make: Optional[str] = Form(None),
     model: Optional[str] = Form(None),
-    limit: float = Form(0.0),
+    tolerance: float = Form(0.0),
 ):
     """This function sets the application configs in the configs.ini file."""
-    outcome = core.save_config_file(port, make, model, limit)
+    outcome = core.save_configs(port, make, model, tolerance)
     if "errors" in outcome:
         response.status_code = 400
     return outcome
