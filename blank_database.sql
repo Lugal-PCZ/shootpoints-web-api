@@ -10,6 +10,14 @@ INSERT INTO classes VALUES(1,'Operation','Excavation units, controls, grids, and
 INSERT INTO classes VALUES(2,'Architecture','Human-built structures.');
 INSERT INTO classes VALUES(3,'Artifact','Objects made, modified, or used by people.');
 INSERT INTO classes VALUES(4,'Feature','Natural formations or immovable, non-architectural, human creations.');
+CREATE TABLE `configs` (
+  `serial_port` TEXT NOT NULL DEFAULT 'demo'  -- Set port to “demo” or the path (e.g., “/dev/ttyUSB0”).
+,  `serial_uart` INTEGER NOT NULL DEFAULT 0  -- Change this to 1 if a UART adapter has been connected to the Raspberry Pi’s GPIO.
+,  `totalstation_make` TEXT NOT NULL DEFAULT 'Topcon'
+,  `totalstation_model` TEXT NOT NULL DEFAULT 'GTS-300 Series'
+,  `backsight_tolerance` REAL NOT NULL DEFAULT 3.0  -- Acceptable error range for backsight shots (expected horizontal distance vs. measured distance), in cm.
+);
+INSERT INTO configs VALUES('demo',0,'Topcon','GTS-300 Series',3.0);
 CREATE TABLE `geometries` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` TEXT COLLATE NOCASE NOT NULL

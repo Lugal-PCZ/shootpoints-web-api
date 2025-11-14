@@ -4,6 +4,7 @@ import datetime
 import os
 import shutil
 import sqlite3
+from configparser import ConfigParser
 from pathlib import Path
 
 from .survey import end_current_session
@@ -118,7 +119,39 @@ def _upgrade_database() -> dict:
                 for each_statement in sqlstatements:
                     cursor.execute(each_statement)
             case 3:  # upgrade from version 2 to version 3
-                pass
+                sqlstatements = [
+                    (
+                        "CREATE TABLE `configs` ("
+                        "  `serial_port` TEXT NOT NULL DEFAULT 'demo'"
+                        ",  `serial_uart` INTEGER NOT NULL DEFAULT 0"
+                        ",  `totalstation_make` TEXT NOT NULL DEFAULT 'Topcon'"
+                        ",  `totalstation_model` TEXT NOT NULL DEFAULT 'GTS-300 Series'"
+                        ",  `backsight_tolerance` REAL NOT NULL DEFAULT 3.0"
+                        ");"
+                    ),
+                    "INSERT INTO configs VALUES('demo',0,'Topcon','GTS-300 Series',3.0);",
+                ]
+                for each_statement in sqlstatements:
+                    cursor.execute(each_statement)
+                if Path("configs.ini").is_file():
+                    configsfile = ConfigParser(
+                        comment_prefixes="|", allow_no_value=True
+                    )
+                    configsfile.optionxform = str  # type: ignore
+                    configsfile.read("configs.ini")
+                    sql = "UPDATE configs SET serial_port = ?, serial_uart = ?, totalstation_make = ?, totalstation_model = ?, backsight_tolerance = ?"
+                    uart = 0
+                    if configsfile["SERIAL"]["uart"] == "true":
+                        uart = 1
+                    data = (
+                        configsfile["SERIAL"]["port"],
+                        uart,
+                        configsfile["TOTAL STATION"]["make"],
+                        configsfile["TOTAL STATION"]["model"],
+                        float(configsfile["BACKSIGHT ERROR"]["limit"]),
+                    )
+                    _save_to_database(sql, data)
+                    os.remove("configs.ini")
     if latestversion != currentversion:
         cursor.execute(f"UPDATE savedstate SET dbversion = {latestversion}")
         dbconn.commit()
