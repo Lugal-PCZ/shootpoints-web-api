@@ -15,9 +15,10 @@ CREATE TABLE `configs` (
 ,  `serial_uart` INTEGER NOT NULL DEFAULT 0  -- Change this to 1 if a UART adapter has been connected to the Raspberry Pi’s GPIO.
 ,  `totalstation_make` TEXT NOT NULL DEFAULT 'Topcon'
 ,  `totalstation_model` TEXT NOT NULL DEFAULT 'GTS-300 Series'
-,  `backsight_tolerance` REAL NOT NULL DEFAULT 3.0  -- Acceptable error range for backsight shots (expected horizontal distance vs. measured distance), in cm.
+,  `backsight_tolerance_h` REAL NOT NULL DEFAULT 3.0  -- Acceptable error range for backsight shots (expected horizontal distance vs. measured distance), in cm.
+,  `backsight_tolerance_v` REAL NOT NULL DEFAULT 3.0  -- Acceptable error range for backsight shots (expected vertical distance vs. measured distance), in cm.
 );
-INSERT INTO configs VALUES('demo',0,'Topcon','GTS-300 Series',3.0);
+INSERT INTO configs VALUES('demo',0,'Topcon','GTS-300 Series',3.0, 3.0);
 CREATE TABLE `geometries` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` TEXT COLLATE NOCASE NOT NULL

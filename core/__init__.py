@@ -34,7 +34,8 @@ def _load_saved_state() -> None:
         "tangent_distance": saved_state["tangent_distance"],
         "wedge_distance": saved_state["wedge_distance"],
     }
-    survey.backsighttolerance = configs["backsight_tolerance"]
+    survey.backsighttolerance_h = configs["backsight_tolerance_h"]
+    survey.backsighttolerance_v = configs["backsight_tolerance_v"]
     survey.pressure = saved_state["pressure"]
     survey.temperature = saved_state["temperature"]
     survey.sessionid = saved_state["currentsession"]
@@ -175,7 +176,8 @@ def get_configs() -> dict:
         "  serial_uart AS uart, "
         "  totalstation_make AS make, "
         "  totalstation_model AS model, "
-        "  backsight_tolerance AS tolerance "
+        "  backsight_tolerance_h AS tolerance_h, "
+        "  backsight_tolerance_v AS tolerance_v "
         "FROM configs"
     )
     currentconfigs = database._read_from_database(sql)["results"][0]
@@ -219,7 +221,11 @@ def get_configs() -> dict:
 
 
 def save_configs(
-    port: str = "", make: str = "", model: str = "", tolerance: float = 0
+    port: str = "",
+    make: str = "",
+    model: str = "",
+    tolerance_h: float = 0,
+    tolerance_v: float = 0,
 ) -> dict:
     """
     This function creates saves the app configs to the database. Any parameters
@@ -236,9 +242,12 @@ def save_configs(
     if model:
         sqlfields.append("totalstation_model = ?")
         configstoupate.append(model)
-    if tolerance:
-        sqlfields.append("backsight_tolerance = ?")
-        configstoupate.append(tolerance)
+    if tolerance_h:
+        sqlfields.append("backsight_tolerance_h = ?")
+        configstoupate.append(tolerance_h)
+    if tolerance_v:
+        sqlfields.append("backsight_tolerance_v = ?")
+        configstoupate.append(tolerance_v)
     sql = f"UPDATE configs SET {', '.join(sqlfields)}"
     database._save_to_database(sql, tuple(configstoupate))
     outcome = _load_application()

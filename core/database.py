@@ -152,6 +152,21 @@ def _upgrade_database() -> dict:
                     )
                     _save_to_database(sql, data)
                     os.remove("configs.ini")
+            case 4:  # upgrade from version 3 to version 4
+                currentbacksighttolerance = float(
+                    _read_from_database("SELECT backsight_tolerance FROM configs")[
+                        "results"
+                    ][0]["backsight_tolerance"]
+                )
+                sqlstatements = [
+                    "ALTER TABLE configs DROP COLUMN backsight_tolerance",
+                    "ALTER TABLE configs ADD COLUMN backsight_tolerance_h REAL NOT NULL DEFAULT 3.0",
+                    "ALTER TABLE configs ADD COLUMN backsight_tolerance_v REAL NOT NULL DEFAULT 3.0",
+                    f"UPDATE configs SET backsight_tolerance_h={currentbacksighttolerance}",
+                    "UPDATE configs SET backsight_tolerance_v=3.0",
+                ]
+                for each_statement in sqlstatements:
+                    cursor.execute(each_statement)
     if latestversion != currentversion:
         cursor.execute(f"UPDATE savedstate SET dbversion = {latestversion}")
         dbconn.commit()
