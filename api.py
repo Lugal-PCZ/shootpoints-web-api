@@ -446,6 +446,7 @@ def start_new_session(
             sites_id,
             occupied_point_id,
             backsight_station_id,
+            instrument_height,
             prism_height,
             temperature,
             pressure,

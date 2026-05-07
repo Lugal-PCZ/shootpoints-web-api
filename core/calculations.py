@@ -230,17 +230,23 @@ def _convert_utm_to_latlon(
 def _calculate_backsight_variance(
     occupied_northing: float,
     occupied_easting: float,
+    occupied_elevation: float,
     backsight_northing: float,
     backsight_easting: float,
+    backsight_elevation: float,
     delta_n: float,
     delta_e: float,
-) -> float:
+    delta_z: float,
+) -> tuple:
     """
-    This function calculates the variance between the expected
-    backsight distance and the measured backsight distance.
+    This function calculates the horizontal and vertical variances between the expected
+    backsight and the measured backsight.
     """
-    expected_distance = math.hypot(
+    expected_distance_h = math.hypot(
         occupied_northing - backsight_northing, occupied_easting - backsight_easting
     )
-    measured_distance = math.hypot(delta_n, delta_e)
-    return round(abs(expected_distance - measured_distance) * 100, 1)
+    measured_distance_h = math.hypot(delta_n, delta_e)
+    expected_distance_v = backsight_elevation - occupied_elevation
+    variance_h = round(abs(expected_distance_h - measured_distance_h) * 100, 1)
+    variance_z = round(abs(expected_distance_v - delta_z) * 100, 1)
+    return variance_h, variance_z

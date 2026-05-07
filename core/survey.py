@@ -187,14 +187,19 @@ def start_surveying_session_with_azimuth(
     pressure: int,
 ) -> dict:
     """This function starts a new surveying session with an azimuth to a landmark."""
+    outcome = {"result": "", "errors": []}
 
     # check for setup errors, stopping execution if there are any
     setuperrors = database.get_setup_errors()
     if "errors" in setuperrors:
         return setuperrors
 
+    # end the current session
+    endcurrentsession = end_current_session()
+    if "errors" in endcurrentsession:
+        outcome["errors"].extend(endcurrentsession["errors"])
+
     # set the atmospheric conditions
-    outcome = {"result": "", "errors": []}
     atmosphere = set_atmospheric_conditions(temperature, pressure)
     if "errors" in atmosphere:
         outcome["errors"].extend(atmosphere["errors"])
@@ -214,7 +219,7 @@ def start_surveying_session_with_azimuth(
     if instrumentheighterror:
         outcome["errors"].append(instrumentheighterror)
     else:
-        instrument_height = round(instrument_height, 3)
+        tripod.instrument_height = round(instrument_height, 3)
 
     # stop execution if there were any errors setting the atmospheric conditions, occupied point, or instrument height
     if outcome["errors"]:
@@ -265,11 +270,13 @@ def start_surveying_session_with_backsight(
     sites_id: int,
     occupied_point_id: int,
     backsight_station_id: int,
+    instrument_height: float,
     prism_height: float,
     temperature: int,
     pressure: int,
 ) -> dict:
     """This function starts a new surveying session with a backsight to a known point."""
+    outcome = {"result": "", "errors": []}
 
     # check for setup errors, stopping execution if there are any
     setuperrors = database.get_setup_errors()
@@ -277,18 +284,28 @@ def start_surveying_session_with_backsight(
         return setuperrors
 
     # ensure that the occupied point and backsight station are not the same, stopping execution if they are
-    outcome = {"results": "", "errors": []}
     if occupied_point_id == backsight_station_id:
         outcome["errors"] = [
             f"The Occupied Point and Backsight Station are the same (id = {occupied_point_id})."
         ]
         return format_outcome(outcome)
 
+    # end the current session
+    endcurrentsession = end_current_session()
+    if "errors" in endcurrentsession:
+        outcome["errors"].extend(endcurrentsession["errors"])
+
     # set the atmospheric conditions
-    outcome = {"result": "", "errors": []}
     atmosphere = set_atmospheric_conditions(temperature, pressure)
     if "errors" in atmosphere:
         outcome["errors"].extend(atmosphere["errors"])
+
+    # check that the given instrument height is sane
+    instrumentheighterror = tripod._validate_instrument_height(instrument_height)
+    if instrumentheighterror:
+        outcome["errors"].append(instrumentheighterror)
+    else:
+        tripod.instrument_height = round(instrument_height, 3)
 
     # set the prism height
     if prism_height < 0:
@@ -321,7 +338,7 @@ def start_surveying_session_with_backsight(
         backsight_e = backsightstation["station"]["easting"]
         backsight_z = backsightstation["station"]["elevation"]
 
-    # stop execution if there were any errors setting the atmospheric conditions, occupied point, backsight station, or prism height
+    # stop execution if there were any errors setting the atmospheric conditions, occupied point, backsight station, instrument height, or prism height
     if outcome["errors"]:
         return format_outcome(outcome)
 
@@ -350,26 +367,23 @@ def start_surveying_session_with_backsight(
     variance = calculations._calculate_backsight_variance(
         occupied_n,
         occupied_e,
+        occupied_z + instrument_height,
         backsight_n,
         backsight_e,
+        backsight_z + prism_height,
         measurement["measurement"]["delta_n"],
         measurement["measurement"]["delta_e"],
+        measurement["measurement"]["delta_z"],
     )
-    if variance > backsighttolerance_h:
+    if variance[0] > backsighttolerance_h:
         outcome["errors"].append(
-            f"The variance in the distance measured between the Occupied Point and the Backsight Station ({round(variance, 1)}cm) exceeds the configured limit ({round(backsighttolerance_h, 1)}cm)."
+            f"The variance in the horizontal distance measured between the Occupied Point and the Backsight Station ({round(variance[0], 1)}cm) exceeds the configured limit ({round(backsighttolerance_h, 1)}cm)."
         )
-
-    # calculate and validate the instrument height, stopping execution if it fails
-    instrument_height = (
-        prism_height - measurement["measurement"]["delta_z"] + backsight_z - occupied_z
-    )
-    instrumentheighterror = tripod._validate_instrument_height(instrument_height)
-    if instrumentheighterror:
-        outcome["errors"].append(instrumentheighterror)
-    else:
-        instrument_height = round(instrument_height, 3)
-    if outcome["errors"]:
+        return format_outcome(outcome)
+    if variance[1] > backsighttolerance_v:
+        outcome["errors"].append(
+            f"The variance in the vertical distance measured between the Occupied Point and the Backsight Station ({round(variance[1], 1)}cm) exceeds the configured limit ({round(backsighttolerance_v, 1)}cm)."
+        )
         return format_outcome(outcome)
 
     # start the new session
@@ -395,7 +409,7 @@ def start_surveying_session_with_backsight(
         }
         tripod.instrument_height = instrument_height
         outcome["result"] = (
-            f"New session started. Please confirm that the calculated instrument height ({instrument_height}m) and azimuth to the backsight ({azimuthstring}) are correct before proceeding."
+            f"New session started. Please confirm that the azimuth to the backsight ({azimuthstring}) is correct before proceeding."
         )
     else:
         outcome["errors"].append(
@@ -441,14 +455,19 @@ def start_surveying_session_with_resection(
         # check for setup errors, stopping execution if there are any
         setuperrors = database.get_setup_errors()
         if "errors" in setuperrors:
-            return setuperrors["errors"]
+            return setuperrors
 
         # ensure that backsight stations 1 and 2 not the same, stopping execution if they are
         if backsight_station_1_id == backsight_station_2_id:
-            outcome["errors"].append(
+            outcome["errors"] = [
                 f"The left Backsight Station and right Backsight stations are the same (id = {backsight_station_1_id})."
-            )
-            return None
+            ]
+            return format_outcome(outcome)
+
+        # end the current session
+        endcurrentsession = end_current_session()
+        if "errors" in endcurrentsession:
+            outcome["errors"].extend(endcurrentsession["errors"])
 
         # set the atmospheric conditions
         atmosphere = set_atmospheric_conditions(temperature, pressure)
@@ -496,7 +515,6 @@ def start_surveying_session_with_resection(
         nonlocal outcome
         nonlocal resection_backsight1_measurement
 
-        end_current_session()
         # shoot backsight 1, stopping execution if it’s canceled or there are errors
         measurement = totalstation.take_measurement()  # type: ignore
         if "notification" in measurement:
@@ -678,7 +696,7 @@ def end_current_session() -> dict:
             "UPDATE savedstate SET currentsession = ?", (sessionid,)
         )
         if "errors" in endcurrentsession:
-            outcome["errors"] = endcurrentsession["errors"]
+            outcome["errors"] = ["An error occurred while ending the current session."]
         else:
             outcome["result"] = "Session ended."
     return format_outcome(outcome)
