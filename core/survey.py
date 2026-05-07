@@ -603,9 +603,9 @@ def start_surveying_session_with_resection(
                 resection_backsight2_measurement["measurement"]["delta_n"],
             ),
         )
-        occupied_point_elevation = (
-            occupied_point_z_left_reading + occupied_point_z_right_reading
-        ) / 2
+        occupied_point_elevation = round(
+            (occupied_point_z_left_reading + occupied_point_z_right_reading) / 2, 3
+        )
 
         # save the occupied point as a new station in the database, stopping execution on errors
         coordinatesystem = (
