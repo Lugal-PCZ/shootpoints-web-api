@@ -107,6 +107,7 @@ def _upgrade_database() -> dict:
         ]
     )
     outcome = {"errors": [], "result": ""}
+    sqlstatements = []
     for i in range(currentversion, latestversion):
         match i + 1:
             case 2:  # upgrade from version 1 to version 2
@@ -116,8 +117,6 @@ def _upgrade_database() -> dict:
                     "ALTER TABLE savedstate ADD COLUMN resection_backsight2 TEXT NOT NULL DEFAULT '{}'",
                     "ALTER TABLE savedstate ADD COLUMN resection_backsight1_measurement TEXT NOT NULL DEFAULT '{}'",
                 ]
-                for each_statement in sqlstatements:
-                    cursor.execute(each_statement)
             case 3:  # upgrade from version 2 to version 3
                 sqlstatements = [
                     (
@@ -131,8 +130,6 @@ def _upgrade_database() -> dict:
                     ),
                     "INSERT INTO configs VALUES('demo',0,'Topcon','GTS-300 Series',3.0);",
                 ]
-                for each_statement in sqlstatements:
-                    cursor.execute(each_statement)
                 if Path("configs.ini").is_file():
                     configsfile = ConfigParser(
                         comment_prefixes="|", allow_no_value=True
@@ -153,11 +150,16 @@ def _upgrade_database() -> dict:
                     _save_to_database(sql, data)
                     os.remove("configs.ini")
             case 4:  # upgrade from version 3 to version 4
-                currentbacksighttolerance = float(
-                    _read_from_database("SELECT backsight_tolerance FROM configs")[
-                        "results"
-                    ][0]["backsight_tolerance"]
-                )
+                try:
+                    currentbacksighttolerance = float(
+                        _read_from_database("SELECT backsight_tolerance FROM configs")[
+                            "results"
+                        ][0]["backsight_tolerance"]
+                    )
+                except IndexError:
+                    currentbacksighttolerance = (
+                        3.0  # this is the default value for a blank database
+                    )
                 sqlstatements = [
                     "ALTER TABLE configs DROP COLUMN backsight_tolerance",
                     "ALTER TABLE configs ADD COLUMN backsight_tolerance_h REAL NOT NULL DEFAULT 3.0",
@@ -165,8 +167,12 @@ def _upgrade_database() -> dict:
                     f"UPDATE configs SET backsight_tolerance_h={currentbacksighttolerance}",
                     "UPDATE configs SET backsight_tolerance_v=3.0",
                 ]
-                for each_statement in sqlstatements:
-                    cursor.execute(each_statement)
+    if sqlstatements:
+        for each_statement in sqlstatements:
+            try:
+                cursor.execute(each_statement)
+            except sqlite3.OperationalError:
+                pass
     if latestversion != currentversion:
         cursor.execute(f"UPDATE savedstate SET dbversion = {latestversion}")
         dbconn.commit()
