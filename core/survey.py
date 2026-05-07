@@ -571,18 +571,16 @@ def start_surveying_session_with_resection(
             - resection_backsight2_measurement["measurement"]["delta_z"]
             - resection_instrumentheight
         )
-        if totalstation.__name__ == "core.total_stations.demo":  # type: ignore
-            variance = 0
-        else:
+        if totalstation.__name__ != "core.total_stations.demo":  # type: ignore
             variance = (
                 abs(occupied_point_z_left_reading - occupied_point_z_right_reading)
                 * 100
             )
-        if variance > backsighttolerance_h:
-            outcome["errors"].append(
-                f"The measured elevation difference between the Occupied Point and the Backsight Stations ({round(variance, 1)}cm) exceeds the configured limit ({round(backsighttolerance_h, 1)}cm)."
-            )
-            return None
+            if variance > backsighttolerance_v:
+                outcome["errors"].append(
+                    f"The measured elevation difference between the Backsight Stations ({round(variance, 1)}cm) exceeds the configured limit ({round(backsighttolerance_v, 1)}cm)."
+                )
+                return None
 
         # calculate the coordinates of the occupied point
         occupied_point_ne_coords = calculations._calculate_coordinates_by_resection(
