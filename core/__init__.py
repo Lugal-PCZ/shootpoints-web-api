@@ -139,13 +139,16 @@ def _load_application() -> dict:
             "app": f.readline().strip().split("=")[1],
             "database": f.readline().strip().split("=")[1],
         }
-        print(
-            f"ShootPoints-Web v{__version__['app']}\nDatabase v{__version__['database']}"
-        )
+        status = [
+            "",
+            "\033[1m\033[4m\033[33mLoading ShootPoints-Web\033[0m",
+            f"> Application version {__version__['app']}.",
+            f"> Database version {__version__['database']}.",
+        ]
     database.latestversion = int(__version__["database"])
     dbupgrade = database._upgrade_database()
     if "result" in dbupgrade:
-        print(dbupgrade["result"])
+        outcome["results"].append(dbupgrade["result"])
     elif "errors" in dbupgrade:
         outcome["errors"].append(dbupgrade["errors"])
     configs = database._read_from_database("SELECT * FROM configs")["results"][0]
@@ -159,9 +162,19 @@ def _load_application() -> dict:
             outcome["results"].append(loaderoutcome["result"])
         elif "errors" in loaderoutcome:
             outcome["errors"].extend(loaderoutcome["errors"])
-    if len(outcome["errors"]) == 0:
+    if not outcome["errors"]:
         database._clear_setup_errors()
     _load_saved_state()
+    for each in status:
+        print(each)
+    if outcome["results"]:
+        for each in outcome["results"]:
+            print(f"> {each}")
+    if outcome["errors"]:
+        for each in outcome["errors"]:
+            print()
+            print(f"\033[1m\033[31mERROR:\033[0m {each}")
+    print()
     return format_outcome(outcome)
 
 
@@ -259,4 +272,4 @@ def save_configs(
     return format_outcome(outcome)
 
 
-print(_load_application())
+_load_application()
