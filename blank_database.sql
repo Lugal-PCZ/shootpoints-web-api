@@ -11,7 +11,7 @@ INSERT INTO classes VALUES(2,'Architecture','Human-built structures.');
 INSERT INTO classes VALUES(3,'Artifact','Objects made, modified, or used by people.');
 INSERT INTO classes VALUES(4,'Feature','Natural formations or immovable, non-architectural, human creations.');
 CREATE TABLE `configs` (
-  `serial_port` TEXT NOT NULL DEFAULT 'demo'  -- Set port to “demo” or the path (e.g., “/dev/ttyUSB0”).
+  `serial_port` TEXT NOT NULL DEFAULT 'demo'  -- Set port to "demo" or the path (e.g., "/dev/ttyUSB0").
 ,  `serial_uart` INTEGER NOT NULL DEFAULT 0  -- Change this to 1 if a UART adapter has been connected to the Raspberry Pi’s GPIO.
 ,  `totalstation_make` TEXT NOT NULL DEFAULT 'Topcon'
 ,  `totalstation_model` TEXT NOT NULL DEFAULT 'GTS-300 Series'
