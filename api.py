@@ -219,6 +219,7 @@ async def export_session_data(response: Response, sessions_id: int):
 @app.get("/setuperrors/")
 async def get_setup_errors():
     """This function returns any ShootPoints setup errors."""
+    core._load_application()
     return core.database.get_setup_errors()
 
 
