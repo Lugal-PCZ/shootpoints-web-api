@@ -775,7 +775,7 @@ def export_session_for_livemap(thesession: Optional[int] = None) -> dict:
     )
     sessioninfo = database._read_from_database(sql, (thesession,))
     if "errors" not in sessioninfo:
-        if len(sessioninfo["results"]) == 0:
+        if not sessioninfo["results"]:
             return {}
         sitelocalcoords = False
         utmzone = sessioninfo["results"][0]["utmzone"]
