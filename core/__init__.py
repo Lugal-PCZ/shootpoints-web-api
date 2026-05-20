@@ -107,6 +107,8 @@ def _load_serial_port() -> dict:
     if configs["serial_port"] != "demo" and not outcome["errors"]:
         serialport = configs["serial_port"]
         try:
+            if totalstation.port:
+                totalstation.port.close()
             port = serial.Serial(
                 port=serialport,
                 baudrate=totalstation.BAUDRATE,  # type: ignore
