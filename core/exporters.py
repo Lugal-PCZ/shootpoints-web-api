@@ -48,9 +48,43 @@ gcpfiles = [
 ]
 
 
+def export_classes_file() -> None:
+    """This function creates a JSON file of all the classes and subclasses in the database, for download by the browser."""
+    sql = (
+        "SELECT "
+        " classes.name AS 'class_name', "
+        " classes.description AS 'class_description', "
+        " subclasses.name AS 'subclass_name', "
+        " subclasses.description AS 'subclass_description' "
+        "FROM classes "
+        "JOIN subclasses ON classes.id = subclasses.classes_id "
+        "ORDER BY class_name, subclass_name"
+    )
+    classes = database._read_from_database(sql)["results"]
+    classesdict = {}
+    current_class = ""
+    for eachclass in classes:
+        if eachclass["class_name"] == current_class:
+            classesdict[current_class]["subclasses"][eachclass["subclass_name"]] = {
+                "description": eachclass["subclass_description"]
+            }
+        else:
+            current_class = eachclass["class_name"]
+            classesdict[current_class] = {
+                "description": eachclass["class_description"],
+                "subclasses": {},
+            }
+    with open(
+        str(Path("exports") / "classes_export.json"),
+        "w",
+        encoding="utf8",
+    ) as f:
+        f.write(json.dumps(classesdict, ensure_ascii=False, indent=2))
+
+
 def export_database_file() -> None:
     """This function creates a ZIP file of the ShootPoints database file, for download by the browser."""
-    date = str(datetime.datetime.now()).split(" ")[0]
+    date = str(datetime.datetime.now()).split()[0]
     with ZipFile(
         str(Path("exports") / "database.zip"), "w", compression=ZIP_DEFLATED
     ) as f:
@@ -464,6 +498,50 @@ def export_session_data(sessions_id: int) -> None:
         cleanup.extend(glob.glob(str(Path("exports") / f"*.{eachfiletype}")))
     for eachfile in cleanup:
         os.remove(eachfile)
+
+
+def export_stations_file(sites_id: int) -> None:
+    """This function creates a JSON file of all the stations at the indicated site, for download by the browser."""
+    sql = (
+        "SELECT "
+        "  sites.name AS 'site_name', "
+        "  sites.description AS 'site_description', "
+        "  stations.name AS 'station_name', "
+        "  stations.description AS 'station_description', "
+        "  stations.northing, "
+        "  stations.easting, "
+        "  stations.elevation, "
+        "  stations.utmzone, "
+        "  stations.latitude, "
+        "  stations.longitude "
+        "FROM sites "
+        "JOIN stations ON sites.id = stations.sites_id "
+        "WHERE sites_id = ?"
+    )
+    stations = database._read_from_database(sql, (sites_id,))["results"]
+    stationsdict = {
+        "site": "",
+        "description": "",
+        "stations": {},
+    }
+    for eachstation in stations:
+        stationsdict["site"] = eachstation["site_name"]
+        stationsdict["description"] = eachstation["site_description"]
+        stationsdict["stations"][eachstation["station_name"]] = {
+            "description": eachstation["station_description"],
+            "northing": eachstation["northing"],
+            "easting": eachstation["easting"],
+            "elevation": eachstation["elevation"],
+            "utmzone": eachstation["utmzone"],
+            "latitude": eachstation["latitude"],
+            "longitude": eachstation["longitude"],
+        }
+    with open(
+        str(Path("exports") / "stations_export.json"),
+        "w",
+        encoding="utf8",
+    ) as f:
+        f.write(json.dumps(stationsdict, ensure_ascii=False, indent=2))
 
 
 def _write_gcps_to_file(

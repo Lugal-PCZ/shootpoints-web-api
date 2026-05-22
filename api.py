@@ -100,6 +100,13 @@ async def set_configs(
     return outcome
 
 
+@app.get("/setuperrors/")
+async def get_setup_errors():
+    """This function returns any ShootPoints setup errors."""
+    core._load_application()
+    return core.database.get_setup_errors()
+
+
 @app.get("/version/")
 async def get_version():
     """This function gets the version of ShootPoints-Web app and database."""
@@ -168,7 +175,9 @@ async def save_new_subclass(
 
 @app.delete("/subclass/")
 async def delete_subclass(
-    response: Response, classes_id: int = Form(...), subclasses_id: int = Form(...)
+    response: Response,
+    classes_id: int = Form(...),
+    subclasses_id: int = Form(...),
 ):
     """This function deletes the indicated subclass from the database."""
     outcome = core.classifications.delete_subclass(classes_id, subclasses_id)
@@ -177,15 +186,15 @@ async def delete_subclass(
     return outcome
 
 
-######################
-# DATABASE ENDPOINTS #
-######################
+############################
+# DATA EXPORTING ENDPOINTS #
+############################
 
 
-@app.get("/database/")
+@app.get("/export/database/")
 async def download_entire_database():
     """This function downloads the ShootPoints database SQLite file in its entirety."""
-    date = str(datetime.datetime.now()).split(" ")[0]
+    date = str(datetime.datetime.now()).split()[0]
     core.exporters.export_database_file()
     return FileResponse(
         "exports/database.zip",
@@ -196,8 +205,21 @@ async def download_entire_database():
     )
 
 
-@app.get("/export/{sessions_id}")
-async def export_session_data(response: Response, sessions_id: int):
+@app.get("/export/classes/")
+async def export_all_classes():
+    """This function downloads all the classes and subclasses as a JSON file."""
+    core.exporters.export_classes_file()
+    return FileResponse(
+        "exports/classes_export.json",
+        media_type="application/json",
+        headers={
+            "Content-Disposition": "attachment; filename=ShootPoints Classes and Subclasses.json"
+        },
+    )
+
+
+@app.get("/export/session/{sessions_id}")
+async def export_session_data(sessions_id: int):
     """This function downloads a ZIP file of the requested session and its shots."""
     sql = "SELECT label FROM sessions WHERE id = ?"
     sessionlabel = (
@@ -216,11 +238,29 @@ async def export_session_data(response: Response, sessions_id: int):
     )
 
 
-@app.get("/setuperrors/")
-async def get_setup_errors():
-    """This function returns any ShootPoints setup errors."""
-    core._load_application()
-    return core.database.get_setup_errors()
+@app.get("/export/stations/{sites_id}")
+async def export_stations(sites_id: int):
+    """This function downloads all the stations of the indicated site as a JSON file."""
+    sql = "SELECT name FROM sites WHERE id = ?"
+    sitename = (
+        core.database._read_from_database(sql, (sites_id,))["results"][0]["name"]
+        .replace("/", "_")
+        .replace(":", "_")
+        .replace("\\", "_")
+    )
+    core.exporters.export_stations_file(sites_id)
+    return FileResponse(
+        "exports/stations_export.json",
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f"attachment; filename=Stations at {sitename}.json"
+        },
+    )
+
+
+######################
+# DATABASE ENDPOINTS #
+######################
 
 
 @app.delete("/reset/")
@@ -247,14 +287,14 @@ async def get_offset_types_and_directions():
 
 
 @app.get("/prism/")
-async def get_readable_prism_offsets(response: Response):
+async def get_readable_prism_offsets():
     """This function gets the prism offsets."""
     outcome = ", ".join(core.prism.get_readable_prism_offsets()["offsets"])
     return outcome
 
 
 @app.get("/prism_raw/")
-async def get_raw_prism_offsets(response: Response):
+async def get_raw_prism_offsets():
     """This function gets the prism offsets."""
     outcome = core.prism.get_raw_prism_offsets()
     return outcome
