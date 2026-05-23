@@ -61,7 +61,7 @@ def export_classes_file() -> None:
         "ORDER BY class_name, subclass_name"
     )
     classes = database._read_from_database(sql)["results"]
-    date = str(datetime.datetime.now()).split()[0]
+    date = datetime.datetime.now().strftime("%Y-%m-%d")
     dbversion = int(
         database._read_from_database("SELECT dbversion FROM savedstate")["results"][0][
             "dbversion"
@@ -92,7 +92,7 @@ def export_classes_file() -> None:
 
 def export_database_file() -> None:
     """This function creates a ZIP file of the ShootPoints database file, for download by the browser."""
-    date = str(datetime.datetime.now()).split()[0]
+    date = datetime.datetime.now().strftime("%Y-%m-%d")
     with ZipFile(
         str(Path("exports") / "database.zip"), "w", compression=ZIP_DEFLATED
     ) as f:
@@ -527,7 +527,7 @@ def export_stations_file(sites_id: int) -> None:
         "WHERE sites_id = ?"
     )
     stations = database._read_from_database(sql, (sites_id,))["results"]
-    date = str(datetime.datetime.now()).split()[0]
+    date = datetime.datetime.now().strftime("%Y-%m-%d")
     dbversion = int(
         database._read_from_database("SELECT dbversion FROM savedstate")["results"][0][
             "dbversion"

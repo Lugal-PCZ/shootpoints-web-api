@@ -216,7 +216,7 @@ def reset_database(
         cachedsubclasses = _read_from_database("SELECT * FROM subclasses")["results"]
     # Back up the current database to the backups folder and restore a pristine copy
     dbconn.close()
-    thedatetime = str(datetime.datetime.now()).split(".")[0].replace(":", "-")
+    thedatetime = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
     shutil.copy2(
         "ShootPoints.db", str(Path("backups") / f"ShootPoints ({thedatetime}).db")
     )
