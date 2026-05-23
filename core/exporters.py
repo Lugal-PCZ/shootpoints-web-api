@@ -61,16 +61,24 @@ def export_classes_file() -> None:
         "ORDER BY class_name, subclass_name"
     )
     classes = database._read_from_database(sql)["results"]
-    classesdict = {}
+    date = str(datetime.datetime.now()).split()[0]
+    dbversion = int(
+        database._read_from_database("SELECT dbversion FROM savedstate")["results"][0][
+            "dbversion"
+        ]
+    )
+    classesdict = {
+        "_comment": f"ShootPoints classes and subclasses. Database version {dbversion}. Exported on {date}."
+    }
     current_class = ""
     for eachclass in classes:
         if eachclass["class_name"] == current_class:
-            classesdict[current_class]["subclasses"][eachclass["subclass_name"]] = {
+            classesdict[current_class]["subclasses"][eachclass["subclass_name"]] = {  # type: ignore
                 "description": eachclass["subclass_description"]
             }
         else:
             current_class = eachclass["class_name"]
-            classesdict[current_class] = {
+            classesdict[current_class] = {  # type: ignore
                 "description": eachclass["class_description"],
                 "subclasses": {},
             }
@@ -519,14 +527,19 @@ def export_stations_file(sites_id: int) -> None:
         "WHERE sites_id = ?"
     )
     stations = database._read_from_database(sql, (sites_id,))["results"]
+    date = str(datetime.datetime.now()).split()[0]
+    dbversion = int(
+        database._read_from_database("SELECT dbversion FROM savedstate")["results"][0][
+            "dbversion"
+        ]
+    )
     stationsdict = {
-        "site": "",
-        "description": "",
+        "_comment": f"ShootPoints stations for {stations[0]['site_name']}. Database version {dbversion}. Exported on {date}.",
+        "site": stations[0]["site_name"],
+        "description": stations[0]["site_description"],
         "stations": {},
     }
     for eachstation in stations:
-        stationsdict["site"] = eachstation["site_name"]
-        stationsdict["description"] = eachstation["site_description"]
         stationsdict["stations"][eachstation["station_name"]] = {
             "description": eachstation["station_description"],
             "northing": eachstation["northing"],
