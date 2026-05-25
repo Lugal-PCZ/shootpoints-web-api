@@ -1,7 +1,7 @@
 """This module contains the API for ShootPoints."""
 
 from typing import Optional
-from fastapi import FastAPI, Form, Response
+from fastapi import FastAPI, File, Form, Response, UploadFile
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import datetime
@@ -252,6 +252,27 @@ async def export_stations(sites_id: int):
     )
 
 
+############################
+# DATA IMPORTING ENDPOINTS #
+############################
+
+
+@app.post("/import/classes/")
+async def import_classes(
+    import_classes_file: UploadFile = File(...),
+):
+    outcome = core.importers.import_classes(import_classes_file.file)
+    return outcome
+
+
+@app.post("/import/stations/")
+async def import_stations(
+    import_stations_file: UploadFile = File(...),
+):
+    outcome = core.importers.import_stations(import_stations_file.file)
+    return outcome
+
+
 ######################
 # DATABASE ENDPOINTS #
 ######################
@@ -261,7 +282,6 @@ async def export_stations(sites_id: int):
 async def reset_database(
     preservesitesandstations: bool = Form(False),
     preserveclassesandsubclasses: bool = Form(False),
-    ignore: str = Form("ignore"),
 ):
     """This function resets the ShootPoints database."""
     outcome = core.database.reset_database(preservesitesandstations, preserveclassesandsubclasses)

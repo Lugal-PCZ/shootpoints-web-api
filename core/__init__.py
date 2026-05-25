@@ -11,6 +11,7 @@ from . import calculations as calculations
 from . import classifications as classifications
 from . import database as database
 from . import exporters as exporters
+from . import importers as importers
 from . import prism as prism
 from . import sites as sites
 from . import survey as survey
