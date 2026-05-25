@@ -36,9 +36,7 @@ def _save_to_database(sql: str, data: tuple) -> dict:
         except sqlite3.Error as err:
             outcome["errors"].append(str(err))
     else:
-        outcome["errors"].append(
-            "The given sql does not appear to be an INSERT or UPDATE query."
-        )
+        outcome["errors"].append("The given sql does not appear to be an INSERT or UPDATE query.")
     return format_outcome(outcome)
 
 
@@ -97,15 +95,9 @@ def _upgrade_database() -> dict:
     if latestversion > 0:
         outcome = _read_from_database("SELECT dbversion FROM savedstate")
         if "errors" in outcome and outcome["errors"][0] == "no such column: dbversion":
-            cursor.execute(
-                "ALTER TABLE savedstate ADD COLUMN dbversion INTEGER NOT NULL DEFAULT 1"
-            )
+            cursor.execute("ALTER TABLE savedstate ADD COLUMN dbversion INTEGER NOT NULL DEFAULT 1")
             dbconn.commit()
-    currentversion = int(
-        _read_from_database("SELECT dbversion FROM savedstate")["results"][0][
-            "dbversion"
-        ]
-    )
+    currentversion = int(_read_from_database("SELECT dbversion FROM savedstate")["results"][0]["dbversion"])
     outcome = {"errors": [], "result": ""}
     sqlstatements = []
     for i in range(currentversion, latestversion):
@@ -131,9 +123,7 @@ def _upgrade_database() -> dict:
                     "INSERT INTO configs VALUES('demo',0,'Topcon','GTS-300 Series',3.0);",
                 ]
                 if Path("configs.ini").is_file():
-                    configsfile = ConfigParser(
-                        comment_prefixes="|", allow_no_value=True
-                    )
+                    configsfile = ConfigParser(comment_prefixes="|", allow_no_value=True)
                     configsfile.optionxform = str  # type: ignore
                     configsfile.read("configs.ini")
                     sql = "UPDATE configs SET serial_port = ?, serial_uart = ?, totalstation_make = ?, totalstation_model = ?, backsight_tolerance = ?"
@@ -152,14 +142,12 @@ def _upgrade_database() -> dict:
             case 4:  # upgrade from version 3 to version 4
                 try:
                     currentbacksighttolerance = float(
-                        _read_from_database("SELECT backsight_tolerance FROM configs")[
-                            "results"
-                        ][0]["backsight_tolerance"]
+                        _read_from_database("SELECT backsight_tolerance FROM configs")["results"][0][
+                            "backsight_tolerance"
+                        ]
                     )
                 except IndexError:
-                    currentbacksighttolerance = (
-                        3.0  # this is the default value for a blank database
-                    )
+                    currentbacksighttolerance = 3.0  # this is the default value for a blank database
                 sqlstatements = [
                     "ALTER TABLE configs DROP COLUMN backsight_tolerance",
                     "ALTER TABLE configs ADD COLUMN backsight_tolerance_h REAL NOT NULL DEFAULT 3.0",
@@ -176,9 +164,7 @@ def _upgrade_database() -> dict:
     if latestversion != currentversion:
         cursor.execute(f"UPDATE savedstate SET dbversion = {latestversion}")
         dbconn.commit()
-        outcome["result"] = (
-            f"ShootPoints database upgraded from version {currentversion} to version {latestversion}."
-        )
+        outcome["result"] = f"ShootPoints database upgraded from version {currentversion} to version {latestversion}."
     return format_outcome(outcome)
 
 
@@ -197,7 +183,8 @@ def get_setup_errors() -> dict:
 
 
 def reset_database(
-    preservesitesandstations: bool = True, preserveclassesandsubclasses: bool = True
+    preservesitesandstations: bool = True,
+    preserveclassesandsubclasses: bool = True,
 ) -> dict:
     """This function creates a new blank database, optionally with some data saved from the current one."""
     global dbconn
@@ -217,9 +204,7 @@ def reset_database(
     # Back up the current database to the backups folder and restore a pristine copy
     dbconn.close()
     thedatetime = datetime.datetime.now().strftime("%Y-%m-%d %H_%M_%S")
-    shutil.copy2(
-        "ShootPoints.db", str(Path("backups") / f"ShootPoints ({thedatetime}).db")
-    )
+    shutil.copy2("ShootPoints.db", str(Path("backups") / f"ShootPoints ({thedatetime}).db"))
     os.remove("ShootPoints.db")
     dbconn = sqlite3.connect("ShootPoints.db", check_same_thread=False)
     dbconn.row_factory = sqlite3.Row
@@ -246,13 +231,9 @@ def reset_database(
     # Return result message
     outcome["result"] = "Database replaced with pristine copy."
     if preservesitesandstations and preserveclassesandsubclasses:
-        outcome["result"] = (
-            "Database reset, preserving existing sites, stations, classes, and subclasses."
-        )
+        outcome["result"] = "Database reset, preserving existing sites, stations, classes, and subclasses."
     elif preservesitesandstations:
         outcome["result"] = "Database reset, preserving existing sites and stations."
     elif preserveclassesandsubclasses:
-        outcome["result"] = (
-            "Database reset, preserving existing classes and subclasses."
-        )
+        outcome["result"] = "Database reset, preserving existing classes and subclasses."
     return outcome
