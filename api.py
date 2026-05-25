@@ -70,7 +70,8 @@ async def set_rpi_clock(
 ):
     """This function sets the date and time on the Raspberry Pi."""
     os.system(f"sudo date -s '{datetimestring}'")
-    return {"result": "Raspberry Pi clock updated."}
+    outcome = {"result": "Raspberry Pi clock updated."}
+    return outcome
 
 
 ##################
@@ -81,7 +82,8 @@ async def set_rpi_clock(
 @app.get("/configs/")
 async def get_configs():
     """This function gets the current configs in the configs.ini file and the available ports and total station models."""
-    return core.get_configs()
+    outcome = core.get_configs()
+    return outcome
 
 
 @app.put("/configs/", status_code=201)
@@ -104,13 +106,15 @@ async def set_configs(
 async def get_setup_errors():
     """This function returns any ShootPoints setup errors."""
     core._load_application()
-    return core.database.get_setup_errors()
+    outcome = core.database.get_setup_errors()
+    return outcome
 
 
 @app.get("/version/")
 async def get_version():
     """This function gets the version of ShootPoints-Web app and database."""
-    return {"version": core.__version__}
+    outcome = {"version": core.__version__}
+    return outcome
 
 
 #############################
@@ -270,9 +274,8 @@ async def reset_database(
     ignore: str = Form("ignore"),
 ):
     """This function resets the ShootPoints database."""
-    return core.database.reset_database(
-        preservesitesandstations, preserveclassesandsubclasses
-    )
+    outcome = core.database.reset_database(preservesitesandstations, preserveclassesandsubclasses)
+    return outcome
 
 
 ###################
@@ -283,7 +286,8 @@ async def reset_database(
 @app.get("/offsets/")
 async def get_offset_types_and_directions():
     """This function gets the types of prism offsets and their applicable directions."""
-    return core.prism.get_offset_types_and_directions()
+    outcome = core.prism.get_offset_types_and_directions()
+    return outcome
 
 
 @app.get("/prism/")
@@ -386,7 +390,8 @@ async def abort_resection():
 @app.get("/atmosphere/")
 async def get_atmospheric_conditions():
     """This function gets the pressure and temperature, as last set and saved to the ShootPoints database."""
-    return core.survey.get_atmospheric_conditions()
+    outcome = core.survey.get_atmospheric_conditions()
+    return outcome
 
 
 @app.put("/atmosphere/", status_code=201)
@@ -405,13 +410,15 @@ async def set_atmospheric_conditions(
 @app.get("/geometry/")
 async def get_geometries():
     """This function gets the geometries in the ShootPoints database, for use when creating a new grouping."""
-    return core.survey.get_geometries()
+    outcome = core.survey.get_geometries()
+    return outcome
 
 
 @app.get("/grouping/")
 async def get_current_grouping():
     """This function gets basic information about the currently active point grouping."""
-    return core.survey.get_current_grouping()
+    outcome = core.survey.get_current_grouping()
+    return outcome
 
 
 @app.post("/grouping/", status_code=201)
@@ -423,9 +430,7 @@ async def start_new_grouping(
     description: Optional[str] = Form(None),
 ):
     """This function saves a new grouping to the database."""
-    outcome = core.survey.start_new_grouping(
-        geometries_id, subclasses_id, label, description
-    )
+    outcome = core.survey.start_new_grouping(geometries_id, subclasses_id, label, description)
     if "errors" in outcome:
         response.status_code = 400
     return outcome
@@ -443,19 +448,22 @@ async def end_current_grouping(response: Response):
 @app.get("/livemap/")
 async def export_session_for_livemap(sessions_id: Optional[int] = None):
     """This function gets a survey data from a session to be plotted by leafletjs."""
-    return core.survey.export_session_for_livemap(sessions_id)
+    outcome = core.survey.export_session_for_livemap(sessions_id)
+    return outcome
 
 
 @app.get("/session/")
 async def get_current_session():
     """This function gets basic information about the currently active surveying session."""
-    return core.survey.get_current_session()
+    outcome = core.survey.get_current_session()
+    return outcome
 
 
 @app.get("/sessions/")
 async def get_all_sessions():
     """This function gets basic identifying information about all the surveying sessions in the database."""
-    return core.survey.get_all_sessions()
+    outcome = core.survey.get_all_sessions()
+    return outcome
 
 
 @app.post("/session/", status_code=201)
