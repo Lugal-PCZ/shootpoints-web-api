@@ -141,9 +141,7 @@ async def get_subclasses(response: Response, classes_id: int):
 
 
 @app.post("/class/", status_code=201)
-async def save_new_class(
-    response: Response, name: str = Form(...), description: Optional[str] = Form(None)
-):
+async def save_new_class(response: Response, name: str = Form(...), description: Optional[str] = Form(None)):
     """This function saves a new class to the database."""
     outcome = core.classifications.save_new_class(name, description)
     if "errors" in outcome:
@@ -203,9 +201,7 @@ async def download_entire_database():
     return FileResponse(
         "exports/database.zip",
         media_type="application/zip",
-        headers={
-            "Content-Disposition": f"attachment; filename=ShootPoints Database {date}.zip"
-        },
+        headers={"Content-Disposition": f"attachment; filename=ShootPoints Database {date}.zip"},
     )
 
 
@@ -216,9 +212,7 @@ async def export_all_classes():
     return FileResponse(
         "exports/classes_export.json",
         media_type="application/json",
-        headers={
-            "Content-Disposition": "attachment; filename=ShootPoints Classes and Subclasses.json"
-        },
+        headers={"Content-Disposition": "attachment; filename=ShootPoints Classes and Subclasses.json"},
     )
 
 
@@ -236,9 +230,7 @@ async def export_session_data(sessions_id: int):
     return FileResponse(
         "exports/export.zip",
         media_type="application/zip",
-        headers={
-            "Content-Disposition": f"attachment; filename=ShootPoints Data ({sessionlabel}).zip"
-        },
+        headers={"Content-Disposition": f"attachment; filename=ShootPoints Data ({sessionlabel}).zip"},
     )
 
 
@@ -256,9 +248,7 @@ async def export_stations(sites_id: int):
     return FileResponse(
         "exports/stations_export.json",
         media_type="application/json",
-        headers={
-            "Content-Disposition": f"attachment; filename=Stations at {sitename}.json"
-        },
+        headers={"Content-Disposition": f"attachment; filename=Stations at {sitename}.json"},
     )
 
 
