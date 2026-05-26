@@ -62,14 +62,8 @@ def export_classes_file() -> None:
     )
     classes = database._read_from_database(sql)["results"]
     date = datetime.datetime.now().strftime("%Y-%m-%d")
-    dbversion = int(
-        database._read_from_database("SELECT dbversion FROM savedstate")["results"][0][
-            "dbversion"
-        ]
-    )
-    classesdict = {
-        "_comment": f"ShootPoints classes and subclasses. Database version {dbversion}. Exported on {date}."
-    }
+    dbversion = int(database._read_from_database("SELECT dbversion FROM savedstate")["results"][0]["dbversion"])
+    classesdict = {"_comment": f"ShootPoints classes and subclasses. Database version {dbversion}. Exported on {date}."}
     current_class = ""
     for eachclass in classes:
         if eachclass["class_name"] == current_class:
@@ -93,9 +87,7 @@ def export_classes_file() -> None:
 def export_database_file() -> None:
     """This function creates a ZIP file of the ShootPoints database file, for download by the browser."""
     date = datetime.datetime.now().strftime("%Y-%m-%d")
-    with ZipFile(
-        str(Path("exports") / "database.zip"), "w", compression=ZIP_DEFLATED
-    ) as f:
+    with ZipFile(str(Path("exports") / "database.zip"), "w", compression=ZIP_DEFLATED) as f:
         f.write(
             "ShootPoints.db",
             arcname=str(Path(f"ShootPoints Database {date}") / "ShootPoints.db"),
@@ -298,9 +290,7 @@ def export_session_data(sessions_id: int) -> None:
         )
         shotsdata = database._read_from_database(sql, (sessions_id,))["results"]
         # Save all shots to a flat CSV file.
-        with open(
-            str(Path("exports") / "shots_data.csv"), "w", encoding="utf8", newline=""
-        ) as f:
+        with open(str(Path("exports") / "shots_data.csv"), "w", encoding="utf8", newline="") as f:
             shotsfile = csv.DictWriter(f, fieldnames=shotsdata[0].keys())
             shotsfile.writeheader()
             shotsfile.writerows(shotsdata)
@@ -322,9 +312,7 @@ def export_session_data(sessions_id: int) -> None:
                     "subclass": eachshot["subclass"],
                 }
                 shotsinthisgroup = []
-            shotsinthisgroup.append(
-                [eachshot["easting"], eachshot["northing"], eachshot["elevation"]]
-            )
+            shotsinthisgroup.append([eachshot["easting"], eachshot["northing"], eachshot["elevation"]])
             allshots.append(
                 {
                     "group_id": eachshot["group_id"],
@@ -357,11 +345,7 @@ def export_session_data(sessions_id: int) -> None:
 
     # Then save the shapefiles and GCP files.
     prjfile = (
-        str(
-            Path("core")
-            / "prj_templates"
-            / f"{sessiondata['occupied_station_utmzone']}.txt"
-        )
+        str(Path("core") / "prj_templates" / f"{sessiondata['occupied_station_utmzone']}.txt")
         if sessiondata["occupied_station_utmzone"]
         else ""
     )
@@ -385,9 +369,7 @@ def export_session_data(sessions_id: int) -> None:
                 str(Path("exports") / "gis_shapefiles_spatialcontrol.prj"),
             )
     if allshots:
-        with shapefile.Writer(
-            str(Path("exports") / "gis_shapefiles_allshots"), shapeType=shapefile.POINTZ
-        ) as w:
+        with shapefile.Writer(str(Path("exports") / "gis_shapefiles_allshots"), shapeType=shapefile.POINTZ) as w:
             w.field("group_id", "N")
             w.field("shot_id", "N")
             w.field("label", "C")
@@ -480,23 +462,15 @@ def export_session_data(sessions_id: int) -> None:
         for eachext in ["dbf", "shp", "shx", "prj"]:
             filesinarchive.append(str(Path("gis_shapefiles") / f"{eachfile}.{eachext}"))
     for eachfile in gcpfiles:
-        filesinarchive.append(
-            str(
-                Path("photogrammetry_gcps")
-                / f"gcps_for_{eachfile['name']}.{eachfile['type']}"
-            )
-        )
-    archivename = f"ShootPoints Data ({sessiondata['session_label'].replace('/', '_').replace(':', '_').replace(chr(92), '_')})"
-    with ZipFile(
-        str(Path("exports") / "export.zip"), "w", compression=ZIP_DEFLATED
-    ) as f:
+        filesinarchive.append(str(Path("photogrammetry_gcps") / f"gcps_for_{eachfile['name']}.{eachfile['type']}"))
+    archivename = (
+        f"ShootPoints Data ({sessiondata['session_label'].replace('/', '_').replace(':', '_').replace(chr(92), '_')})"
+    )
+    with ZipFile(str(Path("exports") / "export.zip"), "w", compression=ZIP_DEFLATED) as f:
         for eachfile in filesinarchive:
             try:
                 f.write(
-                    str(
-                        Path("exports")
-                        / f"{eachfile.replace('/', '_').replace(chr(92), '_')}"
-                    ),
+                    str(Path("exports") / f"{eachfile.replace('/', '_').replace(chr(92), '_')}"),
                     arcname=str(Path(archivename) / eachfile),
                 )
             except FileNotFoundError:
@@ -528,11 +502,7 @@ def export_stations_file(sites_id: int) -> None:
     )
     stations = database._read_from_database(sql, (sites_id,))["results"]
     date = datetime.datetime.now().strftime("%Y-%m-%d")
-    dbversion = int(
-        database._read_from_database("SELECT dbversion FROM savedstate")["results"][0][
-            "dbversion"
-        ]
-    )
+    dbversion = int(database._read_from_database("SELECT dbversion FROM savedstate")["results"][0]["dbversion"])
     stationsdict = {
         "_comment": f"ShootPoints stations for {stations[0]['site_name']}. Database version {dbversion}. Exported on {date}.",
         "site": stations[0]["site_name"],
@@ -571,15 +541,13 @@ def _write_gcps_to_file(
             fileinfo["coords"][2],
         ]
     else:
+        if not session["occupied_station_utmzone"]:
+            session["occupied_station_utmzone"] = ""
         headers = [
-            eachheader.replace("|UTMZONE|", session["occupied_station_utmzone"])
-            for eachheader in fileinfo["headers"]
+            eachheader.replace("|UTMZONE|", session["occupied_station_utmzone"]) for eachheader in fileinfo["headers"]
         ]
     with open(
-        str(
-            Path("exports")
-            / f"photogrammetry_gcps_gcps_for_{fileinfo['name']}.{fileinfo['type']}"
-        ),
+        str(Path("exports") / f"photogrammetry_gcps_gcps_for_{fileinfo['name']}.{fileinfo['type']}"),
         "w",
         encoding="utf8",
         newline="",
