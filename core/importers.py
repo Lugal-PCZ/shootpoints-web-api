@@ -1,4 +1,4 @@
-"""This module handles exporting ShootPoints data."""
+"""This module handles importing ShootPoints data."""
 
 import json
 

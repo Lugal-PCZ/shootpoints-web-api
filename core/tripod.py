@@ -38,9 +38,7 @@ def _validate_site_coordinates(northing: float, easting: float, errors: list) ->
         errors.append(f"Non-numeric easting given ({easting}).")
 
 
-def _validate_utm_coordinates(
-    northing: float, easting: float, utmzone: str, errors: list
-) -> None:
+def _validate_utm_coordinates(northing: float, easting: float, utmzone: str, errors: list) -> None:
     """This function verifies the validity of the UTM coordinates given."""
     try:
         float(northing)
@@ -55,9 +53,7 @@ def _validate_utm_coordinates(
         errors.append(f"Non-numeric easting given ({easting}).")
     else:
         if not 100000 <= easting <= 999999:
-            errors.append(
-                f"Easting given ({easting}) is out of range (100000–999999m)."
-            )
+            errors.append(f"Easting given ({easting}) is out of range (100000–999999m).")
     utmzonenumber = 0
     try:
         utmzone = str(utmzone).upper()
@@ -72,14 +68,10 @@ def _validate_utm_coordinates(
         else:
             utmzoneletter = utmzone[-1]
             if utmzoneletter not in "NS":
-                errors.append(
-                    f"Invalid UTM Zone letter given ({utmzoneletter}). It should be either N or S."
-                )
+                errors.append(f"Invalid UTM Zone letter given ({utmzoneletter}). It should be either N or S.")
 
 
-def _validate_latlong_coordinates(
-    latitude: float, longitude: float, errors: list
-) -> None:
+def _validate_latlong_coordinates(latitude: float, longitude: float, errors: list) -> None:
     """This function verifies the validity of the Latitude and Longitude coordinates given."""
     try:
         latitude = float(latitude)
@@ -97,14 +89,12 @@ def _validate_latlong_coordinates(
             errors.append("Longitude given is out of range (±180°).")
 
 
-def _validate_uniqueness_of_station(
-    sites_id: int, name: str, northing: float, easting: float, errors: list
-) -> None:
+def _validate_uniqueness_of_station(sites_id: int, name: str, northing: float, easting: float, errors: list) -> None:
     """This function verifies that the station name is unique at this site, as is its northing and easting."""
     try:
-        sitename = database._read_from_database(
-            "SELECT name FROM sites WHERE id = ?", (sites_id,)
-        )["results"][0]["name"]
+        sitename = database._read_from_database("SELECT name FROM sites WHERE id = ?", (sites_id,))["results"][0][
+            "name"
+        ]
     except IndexError:
         sitename = None
     if sitename:
@@ -143,17 +133,8 @@ def _validate_instrument_height(height: float) -> str:
 def get_stations(sites_id: int) -> dict:
     """This function returns all the stations at the indicated site."""
     outcome = {"errors": [], "stations": {}}
-    if (
-        len(
-            database._read_from_database(
-                "SELECT id FROM sites WHERE id = ?", (sites_id,)
-            )["results"]
-        )
-        > 0
-    ):
-        query = database._read_from_database(
-            "SELECT * FROM stations WHERE sites_id = ? ORDER BY name", (sites_id,)
-        )
+    if len(database._read_from_database("SELECT id FROM sites WHERE id = ?", (sites_id,))["results"]) > 0:
+        query = database._read_from_database("SELECT * FROM stations WHERE sites_id = ? ORDER BY name", (sites_id,))
         if "errors" not in query:
             outcome["stations"] = query["results"]
     else:
@@ -164,14 +145,7 @@ def get_stations(sites_id: int) -> dict:
 def get_station(sites_id: int, id: int) -> dict:
     """ "This function returns the name and coordinates of the indicated station."""
     outcome = {"errors": [], "station": {}}
-    if (
-        len(
-            database._read_from_database(
-                "SELECT id FROM sites WHERE id = ?", (sites_id,)
-            )["results"]
-        )
-        > 0
-    ):
+    if len(database._read_from_database("SELECT id FROM sites WHERE id = ?", (sites_id,))["results"]) > 0:
         query = database._read_from_database(
             "SELECT * FROM stations WHERE sites_id = ? AND id = ?",
             (
@@ -182,9 +156,7 @@ def get_station(sites_id: int, id: int) -> dict:
         if "errors" not in query and len(query["results"]) > 0:
             outcome["station"] = query["results"][0]
         else:
-            outcome["errors"].append(
-                f"Station id {id} was not found at site {sites_id}."
-            )
+            outcome["errors"].append(f"Station id {id} was not found at site {sites_id}.")
     else:
         outcome["errors"].append(f"There is no site with id {sites_id}.")
     return format_outcome(outcome)
@@ -202,9 +174,7 @@ def save_new_station(
     _validate_elevation(coordinates["elevation"], outcome["errors"])
     if coordinatesystem == "Site":
         # Note: Latitude, longitude, and UTM zone are not needed or calculated when the coordinate system is 'Site'.
-        _validate_site_coordinates(
-            coordinates["northing"], coordinates["easting"], outcome["errors"]
-        )
+        _validate_site_coordinates(coordinates["northing"], coordinates["easting"], outcome["errors"])
         if not outcome["errors"]:
             northing = float(coordinates["northing"])
             easting = float(coordinates["easting"])
@@ -231,16 +201,12 @@ def save_new_station(
                 utmzone[-1].upper(),
             )
     elif coordinatesystem == "Lat/Lon":
-        _validate_latlong_coordinates(
-            coordinates["latitude"], coordinates["longitude"], outcome["errors"]
-        )
+        _validate_latlong_coordinates(coordinates["latitude"], coordinates["longitude"], outcome["errors"])
         if not outcome["errors"]:
             latitude = float(coordinates["latitude"])
             longitude = float(coordinates["longitude"])
             elevation = float(coordinates["elevation"])
-            northing, easting, utmzone = calculations._convert_latlon_to_utm(
-                latitude, longitude
-            )
+            northing, easting, utmzone = calculations._convert_latlon_to_utm(latitude, longitude)
     else:
         outcome["errors"].append(
             f"Invalid coordinate system given ({coordinatesystem}) It should be one of Site, UTM, or Lat/Lon."
@@ -248,9 +214,7 @@ def save_new_station(
     if not outcome["errors"]:
         name = name.strip()
         description = description.strip() if description else None
-        _validate_uniqueness_of_station(
-            sites_id, name, northing, easting, outcome["errors"]
-        )
+        _validate_uniqueness_of_station(sites_id, name, northing, easting, outcome["errors"])
         if not outcome["errors"]:
             sql = (
                 "INSERT INTO stations "
@@ -286,9 +250,7 @@ def delete_station(sites_id: int, id: int) -> dict:
         ),
     )
     if "errors" not in exists:
-        if exists[
-            "results"
-        ]:  # This is an empty list if there are no matches for the above query.
+        if exists["results"]:  # This is an empty list if there are no matches for the above query.
             name = exists["results"][0]["name"]
             sql = "DELETE FROM stations WHERE id = ?"
             deleted = database._delete_from_database(sql, (id,))
@@ -304,9 +266,7 @@ def delete_station(sites_id: int, id: int) -> dict:
             except IndexError:
                 pass
         else:
-            outcome["errors"].append(
-                f"Station id {id} does not exist at site {sites_id}."
-            )
+            outcome["errors"].append(f"Station id {id} does not exist at site {sites_id}.")
     else:
         outcome["errors"] = exists["errors"]
     return format_outcome(outcome)

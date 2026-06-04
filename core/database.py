@@ -104,10 +104,10 @@ def _upgrade_database() -> dict:
         match i + 1:
             case 2:  # upgrade from version 1 to version 2
                 sqlstatements = [
-                    "ALTER TABLE savedstate ADD COLUMN resection_instrumentheight REAL NOT NULL DEFAULT 0",
-                    "ALTER TABLE savedstate ADD COLUMN resection_backsight1 TEXT NOT NULL DEFAULT '{}'",
-                    "ALTER TABLE savedstate ADD COLUMN resection_backsight2 TEXT NOT NULL DEFAULT '{}'",
-                    "ALTER TABLE savedstate ADD COLUMN resection_backsight1_measurement TEXT NOT NULL DEFAULT '{}'",
+                    "ALTER TABLE savedstate ADD COLUMN resection_instrumentheight REAL NOT NULL DEFAULT 0;",
+                    "ALTER TABLE savedstate ADD COLUMN resection_backsight1 TEXT NOT NULL DEFAULT '{}';",
+                    "ALTER TABLE savedstate ADD COLUMN resection_backsight2 TEXT NOT NULL DEFAULT '{}';",
+                    "ALTER TABLE savedstate ADD COLUMN resection_backsight1_measurement TEXT NOT NULL DEFAULT '{}';",
                 ]
             case 3:  # upgrade from version 2 to version 3
                 sqlstatements = [
@@ -149,18 +149,42 @@ def _upgrade_database() -> dict:
                 except IndexError:
                     currentbacksighttolerance = 3.0  # this is the default value for a blank database
                 sqlstatements = [
-                    "ALTER TABLE configs DROP COLUMN backsight_tolerance",
-                    "ALTER TABLE configs ADD COLUMN backsight_tolerance_h REAL NOT NULL DEFAULT 3.0",
-                    "ALTER TABLE configs ADD COLUMN backsight_tolerance_v REAL NOT NULL DEFAULT 3.0",
-                    f"UPDATE configs SET backsight_tolerance_h={currentbacksighttolerance}",
-                    "UPDATE configs SET backsight_tolerance_v=3.0",
+                    "ALTER TABLE configs DROP COLUMN backsight_tolerance;",
+                    "ALTER TABLE configs ADD COLUMN backsight_tolerance_h REAL NOT NULL DEFAULT 3.0;",
+                    "ALTER TABLE configs ADD COLUMN backsight_tolerance_v REAL NOT NULL DEFAULT 3.0;",
+                    f"UPDATE configs SET backsight_tolerance_h={currentbacksighttolerance};",
+                    "UPDATE configs SET backsight_tolerance_v=3.0;",
                 ]
-    if sqlstatements:
-        for each_statement in sqlstatements:
-            try:
-                cursor.execute(each_statement)
-            except sqlite3.OperationalError:
-                pass
+            case 5:  # upgrade from version 4 to version 5
+                sqlstatements = [
+                    "PRAGMA foreign_keys=OFF;",
+                    (
+                        "CREATE TABLE `stations_temp` ("
+                        "  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT"
+                        ",  `sites_id` INTEGER NOT NULL"
+                        ",  `name` TEXT COLLATE NOCASE NOT NULL"
+                        ",  `description` TEXT"
+                        ",  `northing` REAL NOT NULL"
+                        ",  `easting` REAL NOT NULL"
+                        ",  `elevation` REAL NOT NULL"
+                        ",  `utmzone` TEXT"
+                        ",  `latitude` REAL"
+                        ",  `longitude` REAL"
+                        ",  UNIQUE (`name`,`sites_id`)"
+                        ",  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`sites_id`) REFERENCES `sites` (`id`)"
+                        ");"
+                    ),
+                    "INSERT INTO stations_temp (id, sites_id, name, description, northing, easting, elevation, utmzone, latitude, longitude) SELECT id, sites_id, name, description, northing, easting, elevation, utmzone, latitude, longitude FROM stations;",
+                    "DROP TABLE stations;",
+                    "ALTER TABLE stations_temp RENAME TO stations;",
+                    "PRAGMA foreign_keys=ON;",
+                ]
+        if sqlstatements:
+            for each_statement in sqlstatements:
+                try:
+                    cursor.execute(each_statement)
+                except sqlite3.OperationalError:
+                    pass
     if latestversion != currentversion:
         cursor.execute(f"UPDATE savedstate SET dbversion = {latestversion}")
         dbconn.commit()

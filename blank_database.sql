@@ -58,7 +58,7 @@ CREATE TABLE `savedstate` (
 ,  `resection_backsight2` TEXT NOT NULL DEFAULT '{}'
 ,  `resection_backsight1_measurement` TEXT NOT NULL DEFAULT '{}'
 );
-INSERT INTO savedstate VALUES(4,0.0,0.0,0.0,0.0,0.0,0.0,760,15,0,0,0.0,'{}','{}','{}');
+INSERT INTO savedstate VALUES(5,0.0,0.0,0.0,0.0,0.0,0.0,760,15,0,0,0.0,'{}','{}','{}');
 CREATE TABLE `sessions` (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `label` TEXT NOT NULL
@@ -120,7 +120,6 @@ CREATE TABLE `stations` (
 ,  `latitude` REAL
 ,  `longitude` REAL
 ,  UNIQUE (`name`,`sites_id`)
-,  UNIQUE (`northing`,`easting`,`sites_id`)
 ,  CONSTRAINT `shots_ibfk_1` FOREIGN KEY (`sites_id`) REFERENCES `sites` (`id`)
 );
 CREATE TABLE `subclasses` (
